@@ -1,4 +1,3 @@
-
 "use client"; 
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -96,7 +95,7 @@ export default function DashboardPage() {
                 <Button variant="outline" asChild>
                     <Link href={`/${currentLocale}/dashboard/islamic-inheritance`}>Go to Islamic Inheritance</Link>
                 </Button>
-                 <Button variant="link" asChild className="text-xs p-0 h-auto"> {/* Ensure link button styling */}
+                 <Button variant="link" asChild className="text-xs p-0 h-auto">
                     <Link href={`/${currentLocale}/dashboard/settings`}>Manage Settings & Sadaqah</Link>
                  </Button>
             </div>
