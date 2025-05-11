@@ -1,3 +1,4 @@
+
 "use client";
 
 import type React from 'react';
@@ -27,7 +28,7 @@ const defaultProfile: UserProfile = {
   language: 'en',
   subscriptionTier: 'free',
   is2FAEnabled: false,
-  encryptionKey: undefined, // Explicitly undefined
+  encryptionKey: undefined, 
 };
 
 export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -42,7 +43,6 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
         setProfileState(storedProfile);
       } catch (e) {
         console.error("Failed to parse userProfile from localStorage", e);
-        // Fallback to a guest profile if parsing fails
         setProfileState({...defaultProfile, id: 'guestUser', displayName: 'Guest User'});
       }
     } else {
@@ -57,15 +57,14 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
       localStorage.setItem('userProfile', JSON.stringify(newProfile));
     } else {
       localStorage.removeItem('userProfile');
-      // When logging out or clearing profile, ensure we revert to a clean guest state
       setProfileState({...defaultProfile, id: 'guestUser', displayName: 'Guest User'});
     }
   }, []);
   
   const updateProfileField = useCallback((updates: Partial<UserProfile>) => {
     setProfileState(prevProfile => {
-      if (!prevProfile) return null;
-      const updatedProfile = { ...prevProfile, ...updates };
+      const baseProfile = prevProfile || defaultProfile;
+      const updatedProfile = { ...baseProfile, ...updates, id: baseProfile.id || (updates.id || 'guestUser') };
       localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
       return updatedProfile;
     });
@@ -88,8 +87,6 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
     if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
       window.crypto.getRandomValues(array);
     } else {
-      // Fallback for environments where window.crypto is not available (e.g., some SSR scenarios if not careful)
-      // This is NOT cryptographically secure for production, for demo/SSR safety only.
       for (let i = 0; i < array.length; i++) {
         array[i] = Math.floor(Math.random() * Math.pow(2,32));
       }

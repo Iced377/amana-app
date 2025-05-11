@@ -14,7 +14,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import type { Language, UserPreferenceMode, ActiveSession } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import Link from 'next/link'; // Added import for Link
+import Link from 'next/link';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,8 +26,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { usePathname } from 'next/navigation'; // Added import for usePathname
-import type { LocaleTypes } from '@/locales/settings'; // Added import for LocaleTypes
+import { usePathname } from 'next/navigation';
+import type { LocaleTypes } from '@/locales/settings';
 
 const initialActiveSessions: ActiveSession[] = [
   { id: '1', ipAddress: '192.168.1.101', userAgent: 'Chrome on Windows', lastAccessed: new Date().toISOString(), location: 'New York, USA' },
@@ -41,8 +41,8 @@ export default function SettingsPage() {
   const [activeSessions, setActiveSessions] = useState<ActiveSession[]>(initialActiveSessions);
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const pathname = usePathname(); // Added usePathname
-  const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes; // Added currentLocale
+  const pathname = usePathname(); 
+  const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes;
 
 
   const handle2FAToggle = (checked: boolean) => {
@@ -69,6 +69,15 @@ export default function SettingsPage() {
     setActiveSessions(prev => prev.filter(session => session.id !== sessionId));
     toast({ title: "Session Revoked", description: "The selected session has been signed out."});
   }
+
+  const handleModeChange = (checked: boolean) => {
+    const newMode = checked ? 'islamic' : 'conventional';
+    setMode(newMode);
+    toast({
+      title: "Mode Changed",
+      description: `Application mode set to ${newMode === 'islamic' ? 'Islamic' : 'Conventional'}.`,
+    });
+  };
 
   if (isProfileLoading || !profile) {
     return <div>Loading settings...</div>; 
@@ -128,7 +137,7 @@ export default function SettingsPage() {
             <Switch 
               id="islamicMode" 
               checked={mode === 'islamic'} 
-              onCheckedChange={(checked) => setMode(checked ? 'islamic' : 'conventional')}
+              onCheckedChange={handleModeChange}
             />
           </div>
           <Button onClick={() => toast({ title: "Profile Updated", description: "Your profile settings have been saved."})}>Save Profile Changes</Button>
