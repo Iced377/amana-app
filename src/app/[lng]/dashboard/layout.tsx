@@ -3,6 +3,7 @@
 // Marking as client component because it uses hooks like useUserPreferences and useTranslation
 
 import type React from 'react';
+import { use } from 'react'; // Import React.use
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -41,11 +42,17 @@ export default function DashboardLayout({
   params, 
 }: {
   children: React.ReactNode;
-  params: { lng: LocaleTypes }; 
+  params: { lng: LocaleTypes }; // params might be a Promise initially
 }) {
   const { profile } = useUserPreferences();
   const pathname = usePathname();
-  const currentLocale = params.lng;
+  
+  // Unwrap params using React.use() if it's a Promise
+  // If params is already an object (e.g., fully client-side), use() should handle it or Next.js error is specific to a Promise context.
+  // For client components, Next.js docs say params is a plain object. However, the error suggests it might be a Promise during SSR pass.
+  const resolvedParams = use(params);
+  const currentLocale = resolvedParams.lng;
+  
   const { t } = useTranslation(currentLocale); 
 
 
