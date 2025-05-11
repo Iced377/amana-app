@@ -12,37 +12,39 @@ import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings'; // 
 const plans = [
   {
     name: "Monthly",
-    price: "$9.99",
-    billingCycle: "/month",
+    price: "$9.99", // Monthly price
+    billingCycle: "/month", // Displayed billing cycle
     features: ["Secure 10 GB Storage", "AI File Tagging", "Beneficiary Management", "Death Trigger", "Email Support"],
     cta: "Choose Monthly",
     popular: false,
+    billedAsText: "Billed $9.99 monthly" 
   },
   {
     name: "Quarterly",
-    price: "$19.99",
-    billingCycle: "/quarter",
-    originalPrice: "$29.97",
-    savings: "Save 33%",
+    price: `$${(19.99 / 3).toFixed(2)}`, // Approx $6.66
+    billingCycle: "/month",
+    billedAsText: "Billed as $19.99 every 3 months",
+    savingsText: "Save ~33% compared to monthly plan", 
     features: ["Secure 25 GB Storage", "All Monthly Features", "Priority Email Support", "Early Access to New Features"],
     cta: "Choose Quarterly",
     popular: true,
   },
   {
     name: "Yearly",
-    price: "$199.99",
-    billingCycle: "/year",
-    originalPrice: "$239.88", 
-    savings: "Save ~17% vs Quarterly", 
+    price: `$${(199.99 / 12).toFixed(2)}`, // Approx $16.67
+    billingCycle: "/month",
+    billedAsText: "Billed as $199.99 per year",
+    // No savingsText as it's a premium tier with different features and higher per-month cost than base.
     features: ["Secure 100 GB Storage", "All Quarterly Features", "Phone & Chat Support", "Advanced Security Options"],
     cta: "Choose Yearly",
     popular: false,
   },
-    {
+  {
     name: "Bi-Yearly",
-    price: "$299.99",
-    billingCycle: "/2 years",
-    savings: "Best Value: Save ~25% vs Yearly",
+    price: `$${(299.99 / 24).toFixed(2)}`, // Approx $12.50
+    billingCycle: "/month",
+    billedAsText: "Billed as $299.99 every 2 years",
+    savingsText: "Save ~25% compared to yearly plan features", 
     features: ["Secure 250 GB Storage", "All Yearly Features", "Dedicated Account Manager", "Customizable Reporting"],
     cta: "Choose Bi-Yearly",
     popular: false,
@@ -51,6 +53,7 @@ const plans = [
     name: "Lifetime",
     price: "$499.99",
     billingCycle: "one-time payment",
+    savingsText: "Ultimate value for lifetime access",
     features: ["Unlimited Storage (fair use)", "All Bi-Yearly Features", "Lifetime Updates & Support", "Exclusive Community Access"],
     cta: "Get Lifetime Access",
     popular: false,
@@ -112,11 +115,11 @@ export default function PricingPage() {
                       <span className="text-4xl font-bold">{plan.price}</span>
                       <span className="text-muted-foreground">{plan.billingCycle}</span>
                     </div>
-                    {plan.originalPrice && (
-                      <p className="text-sm text-muted-foreground line-through">{plan.originalPrice}</p>
+                    {plan.billedAsText && (
+                      <p className="text-xs text-muted-foreground mt-1">{plan.billedAsText}</p>
                     )}
-                    {plan.savings && (
-                      <p className="text-sm text-green-600 dark:text-green-400 font-medium">{plan.savings}</p>
+                    {plan.savingsText && (
+                      <p className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">{plan.savingsText}</p>
                     )}
                   </CardHeader>
                   <CardContent className="flex-grow">
@@ -215,3 +218,4 @@ export default function PricingPage() {
     </div>
   );
 }
+
