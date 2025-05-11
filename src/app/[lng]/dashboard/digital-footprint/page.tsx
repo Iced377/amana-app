@@ -1,4 +1,3 @@
-
 "use client";
 
 import type React from 'react';
@@ -197,7 +196,8 @@ export default function DigitalFootprintPage({ params }: { params: { lng: Locale
   const getCategoryTranslation = (categoryKey: DigitalAccountCategory): string => {
       const translationKey = `accountCategory${categoryKey.replace(/\s+/g, '')}`;
       const translated = t(translationKey);
-      return translated === translationKey ? categoryKey : translated;
+      // Fallback to categoryKey if translation is missing (e.g. key itself is returned)
+      return translated === translationKey || translated === "" ? categoryKey : translated;
   }
 
 
@@ -216,16 +216,16 @@ export default function DigitalFootprintPage({ params }: { params: { lng: Locale
         </CardHeader>
         <CardContent className="grid md:grid-cols-2 gap-4">
           <Button variant="outline" onClick={() => handleScanInbox('Gmail')} disabled className="w-full justify-start text-left p-4 h-auto">
-            <Mail className="mr-2 rtl:ml-2 h-5 w-5" />
-            <div>
-              <span className="font-semibold">{t('scanInboxButtonGmail')}</span>
+            <Mail className="mr-2 rtl:ml-2 h-5 w-5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <span className="font-semibold block">{t('scanInboxButtonGmail')}</span>
               <p className="text-xs text-muted-foreground">{t('scanInboxDesc')}</p>
             </div>
           </Button>
           <Button variant="outline" onClick={() => handleScanInbox('Outlook')} disabled className="w-full justify-start text-left p-4 h-auto">
-             <Mail className="mr-2 rtl:ml-2 h-5 w-5" />
-            <div>
-              <span className="font-semibold">{t('scanInboxButtonOutlook')}</span>
+             <Mail className="mr-2 rtl:ml-2 h-5 w-5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <span className="font-semibold block">{t('scanInboxButtonOutlook')}</span>
               <p className="text-xs text-muted-foreground">{t('scanInboxDesc')}</p>
             </div>
           </Button>
