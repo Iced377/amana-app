@@ -2,7 +2,7 @@
 "use client";
 
 import type React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react'; // Added use
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,7 +54,10 @@ const initialAssetFormState = {
 };
 
 
-export default function RegisterAssetsPage({ params: { lng } }: { params: { lng: LocaleTypes }}) {
+export default function RegisterAssetsPage({ params }: { params: { lng: LocaleTypes }}) {
+  const resolvedParams = use(params);
+  const lng = resolvedParams.lng;
+  
   const { t } = useTranslation(lng, 'translation');
   const { profile } = useUserPreferences();
   const { toast } = useToast();
@@ -318,3 +321,4 @@ export default function RegisterAssetsPage({ params: { lng } }: { params: { lng:
     </div>
   );
 }
+
