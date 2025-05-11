@@ -33,20 +33,28 @@ import { AppLogo } from '@/components/AppLogo';
 import { ModeToggle } from '@/components/mode-toggle';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { useTranslation } from '@/locales/client'; 
-import type { LocaleTypes } from '@/locales/settings';
+import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings';
 
 export default function DashboardLayout({
   children,
-  params, // Add params to receive route parameters
+  params, // params is part of Next.js layout signature, kept for convention
 }: {
   children: React.ReactNode;
   params: { lng: LocaleTypes }; // Define params type
 }) {
-  const { profile, language } = useUserPreferences();
-  // Use params.lng as the current locale, as it's guaranteed by the route structure
-  const currentLocale = params.lng;
-  const { t } = useTranslation(currentLocale); // Pass currentLocale to useTranslation
+  const { profile } = useUserPreferences();
   const pathname = usePathname();
+
+  let derivedLocale: LocaleTypes = fallbackLng;
+  if (pathname) {
+    const segments = pathname.split('/');
+    if (segments.length > 1 && locales.includes(segments[1] as LocaleTypes)) {
+      derivedLocale = segments[1] as LocaleTypes;
+    }
+  }
+  const currentLocale = derivedLocale; // Use the derived locale
+
+  const { t } = useTranslation(currentLocale); 
 
 
   const navItems = [
@@ -62,6 +70,7 @@ export default function DashboardLayout({
   
   const getLabel = (key: string) => {
     const translated = t(key);
+    // Fallback logic for keys not found in translation files
     if (translated === key) { 
         switch (key) {
             case 'dashboardTitle': return 'Dashboard';
@@ -72,7 +81,7 @@ export default function DashboardLayout({
             case 'islamicInheritancePlanning': return 'Islamic Inheritance';
             case 'pricingTitle': return 'Pricing';
             case 'infoHelpTitle': return 'Info & Help';
-            default: return key.replace(/([A-Z])/g, ' $1').trim(); 
+            default: return key.replace(/([A-Z])/g, ' $1').trim(); // Format camelCase to Title Case
         }
     }
     return translated;
