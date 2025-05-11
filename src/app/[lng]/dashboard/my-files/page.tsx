@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import type { VaultFile, FileType } from '@/types';
-import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole, Unlock, Eye, Download } from 'lucide-react';
+import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole, Unlock, Eye, Download, X } from 'lucide-react';
 import { performAiTagging, performShariahComplianceCheck } from './actions';
 import {
   DropdownMenu,
@@ -119,7 +119,7 @@ export default function MyFilesPage() {
         type: fileType,
         size, 
         uploadDate: new Date().toISOString(),
-        encryptedDataUri: storedDataUri, 
+        dataUri: storedDataUri, // Storing unencrypted data URI
         aiTags: aiTaggingResult.tags || ['untagged'],
         shariahCompliance: shariahComplianceResult ? { ...shariahComplianceResult, checkedAt: new Date().toISOString() } : undefined,
         icon: getFileIcon(fileType),
@@ -162,23 +162,23 @@ export default function MyFilesPage() {
   };
 
   const handlePreviewFile = async (file: VaultFile) => {
-    if (!file.encryptedDataUri) { 
+    if (!file.dataUri) { 
       toast({ title: "Preview Error", description: "File data is missing.", variant: "destructive" });
       return;
     }
     
-    setPreviewContentUrl(file.encryptedDataUri); 
+    setPreviewContentUrl(file.dataUri); 
     setFileToPreview(file);
     setIsPreviewOpen(true);
   };
 
   const handleDownloadFile = (file: VaultFile) => {
-    if (!file.encryptedDataUri) {
+    if (!file.dataUri) {
       toast({ title: "Download Error", description: "File data is missing.", variant: "destructive" });
       return;
     }
     const link = document.createElement('a');
-    link.href = file.encryptedDataUri;
+    link.href = file.dataUri;
     link.download = file.name;
     document.body.appendChild(link);
     link.click();
@@ -551,3 +551,5 @@ export default function MyFilesPage() {
   );
 }
 
+
+    
