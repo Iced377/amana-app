@@ -39,7 +39,7 @@ const initialActiveSessions: ActiveSession[] = [
 
 export default function SettingsPage() {
   const { profile, updateProfileField, language, setLanguage, mode, setMode, isLoading: isProfileLoading } = useUserPreferences();
-  const { toast } } from "@/hooks/use-toast";
+  const { toast } = useToast();
   const [activeSessions, setActiveSessions] = useState<ActiveSession[]>(initialActiveSessions);
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
@@ -406,7 +406,7 @@ export default function SettingsPage() {
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" className="w-full">Delete My Account</Button>
-            AlertDialogTrigger>
+            </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
