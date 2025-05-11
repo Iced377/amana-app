@@ -61,7 +61,10 @@ export default function HomePage() {
                     <Link href={`/${currentLocale}/signup`}>Get Started for Free</Link>
                   </Button>
                   <Button asChild variant="outline" size="lg">
-                    <Link href={`/${currentLocale}/#features`}>Learn More</Link> {/* Ensure anchor links are also localized if page is /lng/ */}
+                    <Link href={`/${currentLocale}/#features`}>
+                      Learn More
+                      {/* Ensure anchor links are also localized if page is /lng/ */}
+                    </Link>
                   </Button>
                 </div>
               </div>
