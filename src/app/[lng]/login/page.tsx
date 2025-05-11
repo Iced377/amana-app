@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,8 @@ import {
   type ConfirmationResult
 } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
+import { AppLogo } from "@/components/AppLogo";
+
 
 // Inline SVG for Google Icon
 const GoogleIcon = () => (
@@ -65,7 +68,7 @@ export default function LoginPage() {
   const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes;
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && !window.recaptchaVerifierInstance) { // Changed to recaptchaVerifierInstance to avoid conflict
+    if (typeof window !== 'undefined' && !window.recaptchaVerifierInstance) { 
       window.recaptchaVerifierInstance = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
         'callback': (response: any) => {
@@ -94,13 +97,14 @@ export default function LoginPage() {
         encryptionKey: undefined,
         sadaqahEnabled: currentGlobalProfile?.sadaqahEnabled || false,
       };
-      const key = generateEncryptionKey();
-      if (!key) {
-        console.error(`Failed to generate encryption key on ${method} login.`);
-        toast({ title: "Login Error", description: "Could not initialize security settings.", variant: "destructive" });
-        return;
-      }
-      userProfile.encryptionKey = key;
+      // Encryption key is no longer generated/needed on login/signup based on previous changes
+      // const key = generateEncryptionKey(); 
+      // if (!key) {
+      //   console.error(`Failed to generate encryption key on ${method} login.`);
+      //   toast({ title: "Login Error", description: "Could not initialize security settings.", variant: "destructive" });
+      //   return;
+      // }
+      // userProfile.encryptionKey = key;
     } else {
       userProfile = {
         ...currentGlobalProfile,
@@ -109,15 +113,15 @@ export default function LoginPage() {
         displayName: firebaseUser.displayName || currentGlobalProfile.displayName, 
         language: currentLocale,
       };
-      if (!userProfile.encryptionKey) {
-        const key = generateEncryptionKey();
-        if (!key) {
-            console.error(`Failed to generate encryption key for existing profile on ${method} login.`);
-            toast({ title: "Security Warning", description: "Could not re-verify security settings.", variant: "destructive" });
-        } else {
-            userProfile.encryptionKey = key;
-        }
-      }
+      // if (!userProfile.encryptionKey) {
+      //   const key = generateEncryptionKey();
+      //   if (!key) {
+      //       console.error(`Failed to generate encryption key for existing profile on ${method} login.`);
+      //       toast({ title: "Security Warning", description: "Could not re-verify security settings.", variant: "destructive" });
+      //   } else {
+      //       userProfile.encryptionKey = key;
+      //   }
+      // }
     }
     
     setProfile(userProfile);
@@ -150,36 +154,35 @@ export default function LoginPage() {
       toast({ title: "Phone Number Required", description: "Please enter your phone number.", variant: "destructive" });
       return;
     }
-    if (!window.recaptchaVerifierInstance) { // Changed to recaptchaVerifierInstance
+    if (!window.recaptchaVerifierInstance) { 
       toast({ title: "reCAPTCHA Error", description: "reCAPTCHA not initialized. Please refresh.", variant: "destructive" });
       return;
     }
     setLoadingOtp(true);
     try {
       const formattedPhoneNumber = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
-      const confirmation = await signInWithPhoneNumber(auth, formattedPhoneNumber, window.recaptchaVerifierInstance); // Changed
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhoneNumber, window.recaptchaVerifierInstance); 
       setConfirmationResult(confirmation);
       setOtpSent(true);
       toast({ title: "OTP Sent", description: `An OTP has been sent to ${formattedPhoneNumber}.` });
     } catch (error: any) {
       console.error("Error sending OTP:", error);
       toast({ title: "Failed to Send OTP", description: error.message || "Please check the phone number or try again.", variant: "destructive" });
-      if (window.grecaptcha && window.recaptchaVerifierInstance?.verifierId !== undefined) { // Check grecaptcha and verifierId
+      if (window.grecaptcha && window.recaptchaVerifierInstance?.verifierId !== undefined) { 
          try {
             // @ts-ignore
-            const widgetId = window.recaptchaVerifierInstance.widgetId; // Access widgetId if available
+            const widgetId = window.recaptchaVerifierInstance.widgetId; 
             if (typeof widgetId === 'number') {
                 window.grecaptcha.reset(widgetId);
             } else {
-                // Fallback if widgetId is not directly accessible or normal recaptcha
                 const recaptchaContainer = document.getElementById('recaptcha-container');
-                if (recaptchaContainer) recaptchaContainer.innerHTML = ''; // Clear container
+                if (recaptchaContainer) recaptchaContainer.innerHTML = ''; 
                  window.recaptchaVerifierInstance = new RecaptchaVerifier(auth, 'recaptcha-container', {
                     'size': 'invisible',
                     'callback': () => {},
                     'expired-callback': () => {}
                  });
-                 if(window.recaptchaVerifierInstance.render) window.recaptchaVerifierInstance.render(); // Re-render if possible
+                 if(window.recaptchaVerifierInstance.render) window.recaptchaVerifierInstance.render(); 
             }
          } catch(e) {
             console.warn("Could not reset reCAPTCHA explicitly", e);
@@ -220,11 +223,11 @@ export default function LoginPage() {
       </div>
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
-          <Link href={`/${currentLocale}/`} className="inline-block mb-4">
-             <ShieldCheck className="h-16 w-16 text-primary mx-auto" />
-          </Link>
+          <div className="inline-block mb-4">
+            <AppLogo iconSize={16} />
+          </div>
           <CardTitle className="text-3xl font-bold">Welcome Back</CardTitle>
-          <CardDescription>Log in to your Guardian Angel account.</CardDescription>
+          <CardDescription>Log in to your Amana account.</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="email" className="w-full">
@@ -320,7 +323,7 @@ export default function LoginPage() {
         </CardFooter>
       </Card>
        <p className="mt-8 text-xs text-muted-foreground">
-        &copy; {new Date().getFullYear()} Guardian Angel. All rights reserved.
+        &copy; {new Date().getFullYear()} Amana. All rights reserved.
       </p>
     </div>
   );
@@ -328,7 +331,7 @@ export default function LoginPage() {
 
 declare global {
   interface Window {
-    recaptchaVerifierInstance?: RecaptchaVerifier; // Changed to recaptchaVerifierInstance
+    recaptchaVerifierInstance?: RecaptchaVerifier; 
     grecaptcha?: any;
   }
 }

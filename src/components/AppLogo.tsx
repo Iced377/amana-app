@@ -29,7 +29,7 @@ export function AppLogo({ className, iconSize = 8, textSize = "text-xl", showTex
   return (
     <Link href={`/${currentLocale}/`} className={cn("flex items-center gap-2", className)}>
       <ShieldCheck className={`h-${iconSize} w-${iconSize} text-primary`} />
-      {showText && <span className={`${textSize} font-bold`}>Guardian Angel</span>}
+      {showText && <span className={`${textSize} font-bold`}>Amana</span>}
     </Link>
   );
 }

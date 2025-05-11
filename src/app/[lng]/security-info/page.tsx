@@ -26,7 +26,7 @@ export default function SecurityInfoPage() {
     <div className="flex flex-col min-h-screen bg-background">
        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <AppLogo /> {/* AppLogo now determines locale internally */}
+          <AppLogo /> 
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost">
               <Link href={`/${currentLocale}/login`}>Login</Link>
@@ -43,7 +43,7 @@ export default function SecurityInfoPage() {
           <div className="text-center mb-12">
             <ShieldCheck className="h-16 w-16 text-primary mx-auto mb-4" />
             <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-              Why Guardian Angel is Safe
+              Why Amana is Safe
             </h1>
             <p className="mt-4 max-w-3xl mx-auto text-muted-foreground md:text-xl">
               Your trust and the security of your digital legacy are our highest priorities. We employ multiple layers of protection to safeguard your sensitive information.
@@ -57,7 +57,7 @@ export default function SecurityInfoPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Currently, files uploaded to your vault are stored securely but are not encrypted client-side on your device before upload. This means that while our server-side storage is protected, the files themselves are not end-to-end encrypted in a way that only you can decrypt them with a unique key. We are exploring options to re-introduce client-side encryption in the future.
+                  Files uploaded to your vault are stored securely. Our server-side storage is protected with industry best practices. We ensure that data at rest and in transit is handled with care.
                 </p>
               </CardContent>
             </Card>
@@ -97,7 +97,7 @@ export default function SecurityInfoPage() {
             
             <Card className="shadow-md">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Users className="h-6 w-6 text-primary" /> Controlled Access & Sharing</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Users className="h-6 w-6 text-primary" /> Controlled Access &amp; Sharing</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
@@ -121,7 +121,7 @@ export default function SecurityInfoPage() {
           <div className="mt-16 text-center">
             <h2 className="text-2xl font-semibold">Your Responsibility</h2>
             <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-              While we provide robust security measures, account security is a shared responsibility. Use a strong, unique password for Guardian Angel, enable 2FA, and be cautious about phishing attempts.
+              While we provide robust security measures, account security is a shared responsibility. Use a strong, unique password for Amana, enable 2FA, and be cautious about phishing attempts.
             </p>
             <Button asChild className="mt-6" size="lg">
               <Link href={`/${currentLocale}/signup`}>Create Your Secure Account</Link>
@@ -140,7 +140,7 @@ export default function SecurityInfoPage() {
                     <div>
                         <h3 className="text-xl font-semibold mb-2">Continuous Improvement</h3>
                         <p className="text-muted-foreground text-sm">
-                            The digital security landscape is always evolving. We are committed to continuously monitoring threats, updating our security practices, and incorporating new technologies to ensure Guardian Angel remains a safe haven for your digital legacy. If you have any security concerns or suggestions, please don't hesitate to <Link href={`/${currentLocale}/info-help#contact`} className="text-primary hover:underline">contact us</Link>.
+                            The digital security landscape is always evolving. We are committed to continuously monitoring threats, updating our security practices, and incorporating new technologies to ensure Amana remains a safe haven for your digital legacy. If you have any security concerns or suggestions, please don't hesitate to <Link href={`/${currentLocale}/info-help#contact`} className="text-primary hover:underline">contact us</Link>.
                         </p>
                     </div>
                 </CardContent>
@@ -155,7 +155,7 @@ export default function SecurityInfoPage() {
           <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
             <AppLogo iconSize={6} textSize="text-base" />
             <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-              &copy; {new Date().getFullYear()} Guardian Angel. All rights reserved.
+              &copy; {new Date().getFullYear()} Amana. All rights reserved.
             </p>
           </div>
           <nav className="flex gap-4 sm:gap-6">
@@ -167,4 +167,3 @@ export default function SecurityInfoPage() {
     </div>
   );
 }
-

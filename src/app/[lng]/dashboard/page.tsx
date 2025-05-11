@@ -16,11 +16,13 @@ export default function DashboardPage() {
   const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes;
 
   const vaultSummary = {
-    totalFiles: 125, 
-    storageUsed: "2.5 GB", 
+    totalFiles: 0, // Example initial value, ideally fetched
+    storageUsed: "0 GB", 
     lastUpdate: new Date().toLocaleDateString(profile?.language || 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-    beneficiariesCount: 5, 
+    beneficiariesCount: 0, // Example initial value
   };
+
+  // TODO: Fetch actual summary data from Firestore or state
 
   return (
     <div className="flex flex-col gap-6">
@@ -82,24 +84,24 @@ export default function DashboardPage() {
             <CardTitle className="flex items-center gap-2"><Landmark className="h-6 w-6 text-primary" /> Islamic Legacy Planning</CardTitle>
             <CardDescription>Access tools for Wasiyyah and Faraid considerations in line with Islamic principles.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3"> {/* Increased space-y for better separation */}
+          <CardContent className="space-y-3"> 
             <p className="text-sm text-muted-foreground">
               You are currently in Islamic Mode. This enables features tailored for Islamic inheritance.
             </p>
             {profile.sadaqahEnabled && (
               <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 p-3 rounded-md">
-                <Gift className="h-5 w-5" /> {/* Using Gift icon */}
+                <Gift className="h-5 w-5" /> 
                 <p>
                   Your subscription supports Sadaqah ({profile.sadaqahPercentage || 1}% contribution) for those in need. JazakAllah Khair! 🌟
                 </p>
               </div>
             )}
-            <div className="flex flex-wrap gap-2"> {/* Added flex-wrap for smaller screens */}
+            <div className="flex flex-wrap gap-2"> 
                 <Button variant="outline" asChild>
                     <Link href={`/${currentLocale}/dashboard/islamic-inheritance`}>Go to Islamic Inheritance</Link>
                 </Button>
-                 <Button variant="link" asChild className="text-xs p-0 h-auto">
-                    <Link href={`/${currentLocale}/dashboard/settings`}>Manage Settings & Sadaqah</Link>
+                 <Button variant="link" asChild className="text-xs p-0 h-auto"> 
+                    <Link href={`/${currentLocale}/dashboard/settings`}>Manage Settings &amp; Sadaqah</Link>
                  </Button>
             </div>
           </CardContent>
@@ -110,15 +112,15 @@ export default function DashboardPage() {
         <Card className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Unlock className="h-6 w-6 text-primary" /> Security Overview</CardTitle>
-            <CardDescription>Your vault is protected with various security measures. File encryption during upload is currently optional/disabled.</CardDescription>
+            <CardDescription>Your vault is protected with various security measures. Ensure your account settings are up to date.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg">
+             <div className="flex items-center justify-between p-3 bg-green-100 dark:bg-green-900/50 rounded-lg">
                 <div>
-                    <h3 className="font-semibold text-yellow-700 dark:text-yellow-300">File Upload Security Note</h3>
-                    <p className="text-sm text-yellow-600 dark:text-yellow-400">Files are currently uploaded without client-side encryption. Consider this when uploading sensitive information.</p>
+                    <h3 className="font-semibold text-green-700 dark:text-green-300">File Security</h3>
+                    <p className="text-sm text-green-600 dark:text-green-400">Your files are stored securely. Manage visibility per file in "My Files".</p>
                 </div>
-                <Unlock className="h-8 w-8 text-yellow-500" />
+                <ShieldCheck className="h-8 w-8 text-green-500" />
             </div>
             <p className="text-sm text-muted-foreground">
               Ensure you use a strong password and consider enabling Two-Factor Authentication (2FA) in settings for account-level security.
@@ -175,7 +177,7 @@ export default function DashboardPage() {
        <Card className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle>Need Help?</CardTitle>
-            <CardDescription>Find resources and support to make the most of Guardian Angel.</CardDescription>
+            <CardDescription>Find resources and support to make the most of Amana.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col sm:flex-row gap-4 items-start">
             <Image src="https://picsum.photos/300/200?watu" alt="Support illustration" width={200} height={133} className="rounded-lg object-cover" data-ai-hint="support helpdesk"/>
@@ -184,7 +186,7 @@ export default function DashboardPage() {
                 Our comprehensive FAQ and support guides can help you navigate the app and plan your digital legacy effectively.
               </p>
               <div className="flex gap-2">
-                <Button variant="outline" asChild><Link href={`/${currentLocale}/info-help`}>View FAQs & Guides</Link></Button>
+                <Button variant="outline" asChild><Link href={`/${currentLocale}/info-help`}>View FAQs &amp; Guides</Link></Button>
                 <Button variant="outline" asChild><Link href={`/${currentLocale}/info-help#contact`}>Contact Support</Link></Button>
               </div>
             </div>

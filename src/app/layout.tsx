@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import './globals.css'; // Keep global styles here
 
 export const metadata: Metadata = {
-  title: 'Guardian Angel',
-  description: 'Secure your digital legacy.',
+  title: 'Amana',
+  description: 'Amana - Secure your digital legacy.',
 };
 
 export default function RootLayout({

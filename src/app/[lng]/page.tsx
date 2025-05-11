@@ -9,6 +9,7 @@ import Image from "next/image";
 import { ModeToggle } from "@/components/mode-toggle";
 import { usePathname } from 'next/navigation'; 
 import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings'; 
+import { AppLogo } from "@/components/AppLogo";
 
 export default function HomePage() {
   const pathname = usePathname();
@@ -25,10 +26,7 @@ export default function HomePage() {
     <div className="flex flex-col min-h-screen">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <Link href={`/${currentLocale}/`} className="flex items-center gap-2">
-            <ShieldCheck className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold">Guardian Angel</span>
-          </Link>
+          <AppLogo />
           <div className="flex items-center gap-2">
             <ModeToggle />
             <Button asChild variant="ghost">
@@ -48,7 +46,7 @@ export default function HomePage() {
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
                   <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                    Secure Your Digital Legacy with Guardian Angel
+                    Secure Your Digital Legacy with Amana
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
                     Safeguard your important documents, precious memories, and final wishes. Ensure your digital assets are passed on securely and privately to your loved ones.
@@ -59,9 +57,7 @@ export default function HomePage() {
                     <Link href={`/${currentLocale}/signup`}>Get Started for Free</Link>
                   </Button>
                   <Button asChild variant="outline" size="lg">
-                    <Link href={`/${currentLocale}/#features`}>
-                      Learn More
-                    </Link>
+                    <Link href={`/${currentLocale}/#features`}>Learn More</Link>
                   </Button>
                 </div>
               </div>
@@ -84,7 +80,7 @@ export default function HomePage() {
                 <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm text-secondary-foreground">Key Features</div>
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Everything You Need to Protect Your Legacy</h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Guardian Angel provides a comprehensive suite of tools to manage and secure your digital assets for the future.
+                  Amana provides a comprehensive suite of tools to manage and secure your digital assets for the future.
                 </p>
               </div>
             </div>
@@ -190,7 +186,7 @@ export default function HomePage() {
                 Ready to Secure Your Digital Future?
               </h2>
               <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Join Guardian Angel today and gain peace of mind knowing your digital legacy is protected.
+                Join Amana today and gain peace of mind knowing your digital legacy is protected.
               </p>
             </div>
             <div className="mx-auto w-full max-w-sm space-y-2">
@@ -209,11 +205,9 @@ export default function HomePage() {
       <footer className="border-t">
         <div className="container flex flex-col items-center justify-between gap-4 py-10 md:h-24 md:flex-row md:py-0">
           <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
-             <Link href={`/${currentLocale}/`} className="flex items-center gap-2"> 
-                <ShieldCheck className="h-6 w-6 text-primary" />
-             </Link>
+            <AppLogo iconSize={6} textSize="text-base" showText={false} />
             <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-              &copy; {new Date().getFullYear()} Guardian Angel. All rights reserved.
+              &copy; {new Date().getFullYear()} Amana. All rights reserved.
             </p>
           </div>
           <nav className="flex gap-4 sm:gap-6">
@@ -227,4 +221,3 @@ export default function HomePage() {
     </div>
   );
 }
-

@@ -73,7 +73,7 @@ export default function PricingPage() {
     <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-           <AppLogo /> {/* AppLogo now determines locale internally */}
+           <AppLogo /> 
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost">
               <Link href={`/${currentLocale}/login`}>Login</Link>
@@ -144,7 +144,7 @@ export default function PricingPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Guardian Angel offers a Sadaqah (charitable giving) option for users in Islamic Mode. If you enable this feature in your account settings, a portion of your subscription fee will be automatically donated to support reputable charitable causes, such as those assisting orphans and widows.
+                  Amana offers a Sadaqah (charitable giving) option for users in Islamic Mode. If you enable this feature in your account settings, a portion of your subscription fee will be automatically donated to support reputable charitable causes, such as those assisting orphans and widows.
                 </p>
                 <p className="text-sm text-muted-foreground mt-2">
                   This is an optional way to make your subscription even more meaningful. You can manage this preference at any time in your account settings after signing up.
@@ -170,7 +170,7 @@ export default function PricingPage() {
          <section className="py-12 md:py-20 bg-secondary/30">
           <div className="container px-4 md:px-6">
             <div className="text-center">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">Why Choose Guardian Angel?</h2>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">Why Choose Amana?</h2>
                  <p className="mt-4 max-w-3xl mx-auto text-muted-foreground md:text-lg">
                     We are committed to providing a secure, reliable, and user-friendly platform for managing your digital legacy, with features designed for everyone, including options aligning with Islamic principles.
                 </p>
@@ -179,7 +179,7 @@ export default function PricingPage() {
                 <div className="flex flex-col items-center text-center">
                     <ShieldCheck className="h-12 w-12 text-primary mb-4" />
                     <h3 className="text-xl font-semibold">Bank-Level Security</h3>
-                    <p className="mt-2 text-muted-foreground text-sm">Client-side encryption, 2FA, and robust infrastructure to protect your sensitive data.</p>
+                    <p className="mt-2 text-muted-foreground text-sm">Robust infrastructure, 2FA, and data protection measures to protect your sensitive data.</p>
                 </div>
                 <div className="flex flex-col items-center text-center">
                     <Star className="h-12 w-12 text-primary mb-4" /> 
@@ -201,7 +201,7 @@ export default function PricingPage() {
           <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
             <AppLogo iconSize={6} textSize="text-base" />
             <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-              &copy; {new Date().getFullYear()} Guardian Angel. All rights reserved.
+              &copy; {new Date().getFullYear()} Amana. All rights reserved.
             </p>
           </div>
           <nav className="flex gap-4 sm:gap-6">
@@ -215,4 +215,3 @@ export default function PricingPage() {
     </div>
   );
 }
-

@@ -15,8 +15,9 @@ import { useUserPreferences } from "@/context/UserPreferencesContext";
 import type { UserPreferenceMode, UserProfile } from "@/types";
 import type { LocaleTypes } from "@/locales/settings";
 import { useToast } from "@/hooks/use-toast";
-import { auth, googleProvider } from '@/lib/firebase'; // Import Firebase auth and provider
-import { signInWithPopup, type UserCredential } from "firebase/auth"; // Import signInWithPopup
+import { auth, googleProvider } from '@/lib/firebase'; 
+import { signInWithPopup, type UserCredential } from "firebase/auth"; 
+import { AppLogo } from "@/components/AppLogo";
 
 // Inline SVG for Google Icon
 const GoogleIcon = () => (
@@ -60,28 +61,29 @@ export default function SignupPage() {
       const firebaseUser = result.user;
 
       const newUserProfile: UserProfile = {
-        id: firebaseUser.uid, // Use Firebase UID
+        id: firebaseUser.uid, 
         email: firebaseUser.email,
-        displayName: firebaseUser.displayName || fullName, // Use Google display name or entered full name
-        mode: selectedMode, // Use the mode selected on the form
+        displayName: firebaseUser.displayName || fullName, 
+        mode: selectedMode, 
         language: currentLocale,
         subscriptionTier: 'free',
         is2FAEnabled: false,
-        encryptionKey: undefined, // Will be generated
+        encryptionKey: undefined, 
       };
 
-      const key = generateEncryptionKey();
-      if (!key) {
-        console.error("Failed to generate encryption key on Google signup.");
-        toast({ title: "Signup Error", description: "Could not initialize security settings.", variant: "destructive" });
-        return;
-      }
-      newUserProfile.encryptionKey = key;
+      // Encryption key is no longer generated/needed on login/signup
+      // const key = generateEncryptionKey();
+      // if (!key) {
+      //   console.error("Failed to generate encryption key on Google signup.");
+      //   toast({ title: "Signup Error", description: "Could not initialize security settings.", variant: "destructive" });
+      //   return;
+      // }
+      // newUserProfile.encryptionKey = key;
       
       console.log("Google Sign-Up Profile being set in SignupPage:", JSON.stringify(newUserProfile, null, 2));
       setProfile(newUserProfile);
 
-      toast({ title: "Account Created with Google!", description: "Welcome to Guardian Angel. Redirecting...", variant: "default" });
+      toast({ title: "Account Created with Google!", description: "Welcome to Amana. Redirecting...", variant: "default" });
       router.push(`/${currentLocale}/dashboard`);
 
     } catch (error: any) {
@@ -117,26 +119,26 @@ export default function SignupPage() {
       encryptionKey: undefined,
     };
 
-    try {
-      const key = generateEncryptionKey(); 
-      if (!key) {
-        console.error("Failed to generate encryption key on signup.");
-        toast({ title: "Signup Error", description: "Could not initialize security settings. Please try again.", variant: "destructive" });
-        return;
-      } else {
-        console.log("Encryption key generated and will be associated with profile.");
-        newUserProfile.encryptionKey = key;
-      }
-    } catch (error) {
-       console.error("Error generating encryption key:", error);
-       toast({ title: "Signup Error", description: "An unexpected error occurred with security setup. Please try again.", variant: "destructive" });
-       return;
-    }
+    // try {
+    //   const key = generateEncryptionKey(); 
+    //   if (!key) {
+    //     console.error("Failed to generate encryption key on signup.");
+    //     toast({ title: "Signup Error", description: "Could not initialize security settings. Please try again.", variant: "destructive" });
+    //     return;
+    //   } else {
+    //     console.log("Encryption key generated and will be associated with profile.");
+    //     newUserProfile.encryptionKey = key;
+    //   }
+    // } catch (error) {
+    //    console.error("Error generating encryption key:", error);
+    //    toast({ title: "Signup Error", description: "An unexpected error occurred with security setup. Please try again.", variant: "destructive" });
+    //    return;
+    // }
 
     console.log("Profile being set in SignupPage:", JSON.stringify(newUserProfile, null, 2));
     setProfile(newUserProfile); 
 
-    toast({ title: "Account Created!", description: "Welcome to Guardian Angel. Redirecting to your dashboard..." });
+    toast({ title: "Account Created!", description: "Welcome to Amana. Redirecting to your dashboard..." });
     router.push(`/${currentLocale}/dashboard`); 
   };
 
@@ -147,11 +149,11 @@ export default function SignupPage() {
       </div>
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
-           <Link href={`/${currentLocale}/`} className="inline-block mb-4">
-            <ShieldCheck className="h-16 w-16 text-primary mx-auto" />
-          </Link>
+           <div className="inline-block mb-4">
+            <AppLogo iconSize={16} />
+          </div>
           <CardTitle className="text-3xl font-bold">Create Your Account</CardTitle>
-          <CardDescription>Join Guardian Angel to secure your digital legacy.</CardDescription>
+          <CardDescription>Join Amana to secure your digital legacy.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -214,7 +216,7 @@ export default function SignupPage() {
         </CardFooter>
       </Card>
       <p className="mt-8 text-xs text-muted-foreground">
-        &copy; {new Date().getFullYear()} Guardian Angel. All rights reserved.
+        &copy; {new Date().getFullYear()} Amana. All rights reserved.
       </p>
     </div>
   );

@@ -14,7 +14,7 @@ import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings';
 const faqs = [
   {
     question: "How is my data secured?",
-    answer: "We prioritize your data's security. All communication with our servers uses HTTPS/TLS encryption. We employ secure cloud infrastructure with industry-standard protections. For account access, we offer Two-Factor Authentication (2FA). Currently, files are uploaded securely to our servers but are not client-side encrypted on your device before upload. We are working on re-introducing client-side encryption for an added layer of privacy where only you can decrypt your files."
+    answer: "We prioritize your data's security. All communication with our servers uses HTTPS/TLS encryption. We employ secure cloud infrastructure with industry-standard protections. For account access, we offer Two-Factor Authentication (2FA). Currently, files are uploaded securely to our servers but are not client-side encrypted on your device before upload. We are exploring options to re-introduce client-side encryption for an added layer of privacy where only you can decrypt your files."
   },
   {
     question: "What is the difference between Islamic Mode and Conventional Mode?",
@@ -53,7 +53,7 @@ export default function InfoHelpPage() {
     <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <AppLogo /> {/* AppLogo now determines locale internally */}
+          <AppLogo /> 
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost">
               <Link href={`/${currentLocale}/login`}>Login</Link>
@@ -70,10 +70,10 @@ export default function InfoHelpPage() {
           <div className="text-center mb-12">
             <LifeBuoy className="h-16 w-16 text-primary mx-auto mb-4" />
             <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-              Information & Help Center
+              Information &amp; Help Center
             </h1>
             <p className="mt-4 max-w-3xl mx-auto text-muted-foreground md:text-xl">
-              Find answers to your questions, learn about digital legacy planning, and understand how Guardian Angel works.
+              Find answers to your questions, learn about digital legacy planning, and understand how Amana works.
             </p>
           </div>
 
@@ -98,7 +98,7 @@ export default function InfoHelpPage() {
                     <h3 className="font-semibold text-lg mb-2">Islamic vs. Conventional Inheritance</h3>
                     <p className="text-sm text-muted-foreground mb-2">
                       An overview of key differences and considerations. For Islamic mode, we aim to align with principles like Wasiyyah (bequest) and Faraid (obligatory shares).
-                      <em className="block mt-1 text-xs">Note: Guardian Angel provides tools, not legal or religious advice. Always consult qualified professionals.</em>
+                      <em className="block mt-1 text-xs">Note: Amana provides tools, not legal or religious advice. Always consult qualified professionals.</em>
                     </p>
                      <div className="aspect-video bg-muted rounded-lg flex items-center justify-center my-2" data-ai-hint="inheritance infographic">
                         <p className="text-muted-foreground">Islamic Inheritance Info [Video/Infographic Placeholder]</p>
@@ -178,7 +178,7 @@ export default function InfoHelpPage() {
           <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
             <AppLogo iconSize={6} textSize="text-base" />
             <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-              &copy; {new Date().getFullYear()} Guardian Angel. All rights reserved.
+              &copy; {new Date().getFullYear()} Amana. All rights reserved.
             </p>
           </div>
           <nav className="flex gap-4 sm:gap-6">
@@ -190,4 +190,3 @@ export default function InfoHelpPage() {
     </div>
   );
 }
-

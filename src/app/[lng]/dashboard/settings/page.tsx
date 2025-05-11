@@ -39,12 +39,11 @@ const initialActiveSessions: ActiveSession[] = [
 
 export default function SettingsPage() {
   const { profile, updateProfileField, language, setLanguage, mode, setMode, isLoading: isProfileLoading } = useUserPreferences();
-  const { toast } = useToast();
+  const { toast } } from "@/hooks/use-toast";
   const [activeSessions, setActiveSessions] = useState<ActiveSession[]>(initialActiveSessions);
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   
-  // State for profile form fields
   const [displayName, setDisplayName] = useState(profile?.displayName || '');
   const [userCountryCode, setUserCountryCode] = useState(profile?.countryCode || '');
   const [userPhoneNumber, setUserPhoneNumber] = useState(profile?.phoneNumber || '');
@@ -89,7 +88,7 @@ export default function SettingsPage() {
 
   const handleModeChange = (checked: boolean) => {
     const newMode = checked ? 'islamic' : 'conventional';
-    setMode(newMode); // This internally calls updateProfileField
+    setMode(newMode); 
     toast({
       title: "Mode Changed",
       description: `Application mode set to ${newMode === 'islamic' ? 'Islamic' : 'Conventional'}.`,
@@ -138,7 +137,7 @@ export default function SettingsPage() {
 
       <Card className="shadow-md">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><UserCircle className="h-6 w-6 text-primary" /> Profile & Account</CardTitle>
+          <CardTitle className="flex items-center gap-2"><UserCircle className="h-6 w-6 text-primary" /> Profile &amp; Account</CardTitle>
           <CardDescription>Update your personal information and account preferences.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -282,8 +281,8 @@ export default function SettingsPage() {
       
       <Card className="shadow-md">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><CreditCard className="h-6 w-6 text-primary" /> Subscription & Billing</CardTitle>
-          <CardDescription>Manage your Guardian Angel subscription plan and charitable contributions.</CardDescription>
+          <CardTitle className="flex items-center gap-2"><CreditCard className="h-6 w-6 text-primary" /> Subscription &amp; Billing</CardTitle>
+          <CardDescription>Manage your Amana subscription plan and charitable contributions.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
             <div>
@@ -387,10 +386,10 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <Button variant="outline" className="w-full">
-            <Download className="mr-2 h-4 w-4" /> Export My Data (GDPR)
+            <Download className="mr-2 h-4 w-4" /> Export My Data from Amana (GDPR)
           </Button>
           <p className="text-sm text-muted-foreground">
-            Request an export of all your personal data stored in Guardian Angel.
+            Request an export of all your personal data stored in Amana.
           </p>
         </CardContent>
       </Card>
@@ -407,7 +406,7 @@ export default function SettingsPage() {
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" className="w-full">Delete My Account</Button>
-            </AlertDialogTrigger>
+            AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
