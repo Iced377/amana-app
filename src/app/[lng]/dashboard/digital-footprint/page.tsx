@@ -1,3 +1,4 @@
+
 "use client";
 
 import type React from 'react';
@@ -41,12 +42,12 @@ import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { useTranslation } from '@/locales/client';
 import type { LocaleTypes } from '@/locales/settings';
 import type { DiscoveredAccount, DigitalAccountAction, DigitalAccountCategory, VaultFile, Beneficiary, DigitalAccountDiscoveryMethod } from '@/types';
-import { Fingerprint, Mail, Search, CheckSquare, Edit3, Trash2, LinkIcon, PlusCircle, Info } from 'lucide-react';
+import { Fingerprint, Mail, Search, CheckSquare, Edit3, Trash2, LinkIcon, PlusCircle, Info, FileText as VaultFileIcon } from 'lucide-react';
 
 // Mock data - replace with actual data fetching
 const MOCK_VAULT_FILES: VaultFile[] = [
-  { id: 'file1', name: 'Passwords.docx', type: 'document', size: 12345, uploadDate: new Date().toISOString(), dataUri: '', aiTags: [], visibility: 'private', icon: Fingerprint },
-  { id: 'file2', name: 'SocialMediaLogins.pdf', type: 'document', size: 67890, uploadDate: new Date().toISOString(), dataUri: '', aiTags: [], visibility: 'private', icon: Fingerprint },
+  { id: 'file1', name: 'Passwords.docx', type: 'document', size: 12345, uploadDate: new Date().toISOString(), dataUri: '', aiTags: [], visibility: 'private', icon: VaultFileIcon },
+  { id: 'file2', name: 'SocialMediaLogins.pdf', type: 'document', size: 67890, uploadDate: new Date().toISOString(), dataUri: '', aiTags: [], visibility: 'private', icon: VaultFileIcon },
 ];
 const MOCK_BENEFICIARIES: Beneficiary[] = [
   { id: 'ben1', name: 'Alice Wonderland', email: 'alice@example.com' },
@@ -219,14 +220,12 @@ export default function DigitalFootprintPage({ params }: { params: { lng: Locale
             <Mail className="mr-2 rtl:ml-2 h-5 w-5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <span className="font-semibold block">{t('scanInboxButtonGmail')}</span>
-              <p className="text-xs text-muted-foreground">{t('scanInboxDesc')}</p>
             </div>
           </Button>
           <Button variant="outline" onClick={() => handleScanInbox('Outlook')} disabled className="w-full justify-start text-left p-4 h-auto">
              <Mail className="mr-2 rtl:ml-2 h-5 w-5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <span className="font-semibold block">{t('scanInboxButtonOutlook')}</span>
-              <p className="text-xs text-muted-foreground">{t('scanInboxDesc')}</p>
             </div>
           </Button>
         </CardContent>
