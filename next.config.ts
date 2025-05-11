@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '4.5mb', // Default is 1MB, increase for file uploads (data URIs)
+    },
+  },
 };
 
 export default nextConfig;
