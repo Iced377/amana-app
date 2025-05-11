@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Users, ShieldCheck, UploadCloud, Clock, HardDrive, Landmark, Info } from "lucide-react";
+import { FileText, Users, ShieldCheck, UploadCloud, Clock, HardDrive, Landmark, Info, Unlock } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
@@ -97,19 +97,19 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-6 w-6 text-primary" /> Security Overview</CardTitle>
-            <CardDescription>Your vault is protected with client-side encryption and other measures.</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Unlock className="h-6 w-6 text-primary" /> Security Overview</CardTitle>
+            <CardDescription>Your vault is protected with various security measures. File encryption during upload is currently optional/disabled.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-green-100 dark:bg-green-900/50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg">
                 <div>
-                    <h3 className="font-semibold text-green-700 dark:text-green-300">Client-Side Encryption Active</h3>
-                    <p className="text-sm text-green-600 dark:text-green-400">All files are encrypted on your device before upload.</p>
+                    <h3 className="font-semibold text-yellow-700 dark:text-yellow-300">File Upload Security Note</h3>
+                    <p className="text-sm text-yellow-600 dark:text-yellow-400">Files are currently uploaded without client-side encryption. Consider this when uploading sensitive information.</p>
                 </div>
-                <ShieldCheck className="h-8 w-8 text-green-500" />
+                <Unlock className="h-8 w-8 text-yellow-500" />
             </div>
             <p className="text-sm text-muted-foreground">
-              Ensure you use a strong password and consider enabling Two-Factor Authentication (2FA) in settings.
+              Ensure you use a strong password and consider enabling Two-Factor Authentication (2FA) in settings for account-level security.
             </p>
             <Button variant="outline" asChild>
                 <Link href={`/${currentLocale}/dashboard/settings`}>Manage Security Settings</Link>
@@ -181,3 +181,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

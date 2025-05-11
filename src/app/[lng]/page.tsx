@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { ShieldCheck, Lock, Users, UploadCloud, BrainCircuit } from "lucide-react";
+import { ShieldCheck, Lock, Users, UploadCloud, BrainCircuit, Package } from "lucide-react";
 import Image from "next/image";
 import { ModeToggle } from "@/components/mode-toggle";
 import { usePathname } from 'next/navigation'; 
@@ -100,7 +100,7 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Upload documents, images, and videos. Files are encrypted client-side before upload for maximum security.
+                    Upload documents, images, and videos to your personal vault for safekeeping.
                   </p>
                 </CardContent>
               </Card>
@@ -153,14 +153,14 @@ export default function HomePage() {
                 <CardHeader className="pb-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-primary/10 rounded-md">
-                      <ShieldCheck className="h-6 w-6 text-primary" />
+                      <Package className="h-6 w-6 text-primary" />
                     </div>
-                    <CardTitle>Client-Side Encryption</CardTitle>
+                    <CardTitle>Secure Storage</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Your data is encrypted on your device before upload, ensuring only you can access your original files.
+                    Your data is stored securely with robust infrastructure and access controls.
                   </p>
                 </CardContent>
               </Card>
@@ -227,3 +227,4 @@ export default function HomePage() {
     </div>
   );
 }
+

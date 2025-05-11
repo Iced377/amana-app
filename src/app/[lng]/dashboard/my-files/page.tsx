@@ -1,3 +1,4 @@
+
 "use client";
 
 import type React from 'react';
@@ -11,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import type { VaultFile, FileType } from '@/types';
-import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole } from 'lucide-react';
+import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole, Unlock } from 'lucide-react';
 import { performAiTagging, performShariahComplianceCheck } from './actions';
 import {
   DropdownMenu,
@@ -31,7 +32,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { useUserPreferences } from '@/context/UserPreferencesContext';
-import { encryptDataUri, decryptDataUri } from '@/lib/encryption'; 
+// Encryption related imports are no longer needed for upload
+// import { encryptDataUri, decryptDataUri } from '@/lib/encryption'; 
 
 const getFileIcon = (type: FileType) => {
   switch (type) {
@@ -80,15 +82,16 @@ export default function MyFilesPage() {
       return;
     }
 
-    const encryptionKey = profile?.encryptionKey;
-    console.log("Current profile in MyFilesPage for upload:", JSON.stringify(profile, null, 2));
-    console.log("Retrieved encryption key for upload directly from profile:", encryptionKey);
+    // Encryption key is no longer checked or used for upload
+    // const encryptionKey = profile?.encryptionKey;
+    // console.log("Current profile in MyFilesPage for upload:", JSON.stringify(profile, null, 2));
+    // console.log("Retrieved encryption key for upload directly from profile:", encryptionKey);
 
-    if (!encryptionKey) {
-      toast({ title: "Encryption Key Missing", description: "Cannot upload file without an encryption key. Please check your profile.", variant: "destructive" });
-      setIsUploading(false); // Reset uploading state
-      return;
-    }
+    // if (!encryptionKey) {
+    //   toast({ title: "Encryption Key Missing", description: "Cannot upload file without an encryption key. Please check your profile.", variant: "destructive" });
+    //   setIsUploading(false); // Reset uploading state
+    //   return;
+    // }
 
     setIsUploading(true);
     setUploadProgress(0);
@@ -112,10 +115,12 @@ export default function MyFilesPage() {
         shariahComplianceResult = await performShariahComplianceCheck({ fileDataUri: previewDataUrl, filename: name, fileType });
       }
 
-      const encryptedDataUri = await encryptDataUri(previewDataUrl, encryptionKey);
-      if (!encryptedDataUri) {
-        throw new Error("File encryption failed.");
-      }
+      // Encryption is removed. Store the previewDataUrl directly.
+      // const encryptedDataUri = await encryptDataUri(previewDataUrl, encryptionKey);
+      // if (!encryptedDataUri) {
+      //   throw new Error("File encryption failed.");
+      // }
+      const storedDataUri = previewDataUrl; // Storing the unencrypted data URI
 
       if (progressInterval) clearInterval(progressInterval);
       setUploadProgress(100);
@@ -126,13 +131,13 @@ export default function MyFilesPage() {
         type: fileType,
         size, 
         uploadDate: new Date().toISOString(),
-        encryptedDataUri: encryptedDataUri, 
+        encryptedDataUri: storedDataUri, // Store the unencrypted Data URI
         aiTags: aiTaggingResult.tags || ['untagged'],
         shariahCompliance: shariahComplianceResult ? { ...shariahComplianceResult, checkedAt: new Date().toISOString() } : undefined,
         icon: getFileIcon(fileType),
       };
       setFiles(prevFiles => [newFile, ...prevFiles]);
-      toast({ title: "File Uploaded Securely", description: `${name} has been encrypted and uploaded.` });
+      toast({ title: "File Uploaded", description: `${name} has been uploaded.` }); // Updated message
       setIsUploadDialogOpen(false);
 
     } catch (error) {
@@ -176,7 +181,7 @@ export default function MyFilesPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold md:text-3xl">My Secure Files</h1>
+        <h1 className="text-2xl font-semibold md:text-3xl">My Files</h1>
         <Dialog open={isUploadDialogOpen} onOpenChange={(isOpen) => {
           setIsUploadDialogOpen(isOpen);
           if (!isOpen) {
@@ -194,9 +199,9 @@ export default function MyFilesPage() {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Upload a New File Securely</DialogTitle>
+              <DialogTitle>Upload a New File</DialogTitle>
               <DialogDescription>
-                Choose a file. It will be AI-tagged, encrypted on your device, then stored.
+                Choose a file. It will be AI-tagged and stored.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -230,7 +235,7 @@ export default function MyFilesPage() {
                 <div className="col-span-4">
                   <Progress value={uploadProgress} className="w-full" />
                   <p className="text-sm text-center mt-1">
-                    {uploadProgress < 30 ? "Preparing..." : uploadProgress < 60 ? "AI Tagging..." : uploadProgress < 90 ? "Encrypting..." : "Finalizing..."} ({uploadProgress}%)
+                    {uploadProgress < 45 ? "Preparing..." : uploadProgress < 90 ? "AI Tagging..." : "Finalizing..."} ({uploadProgress}%)
                   </p>
                 </div>
               )}
@@ -238,7 +243,7 @@ export default function MyFilesPage() {
             <DialogFooter>
                 <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>Cancel</Button>
               <Button onClick={handleUpload} disabled={isUploading || !selectedFile || !previewDataUrl}>
-                {isUploading ? 'Processing...' : 'Encrypt & Upload'}
+                {isUploading ? 'Processing...' : 'Upload File'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -249,8 +254,8 @@ export default function MyFilesPage() {
         <CardHeader>
           <div className="flex flex-col md:flex-row justify-between items-center gap-2">
             <div>
-              <CardTitle className="flex items-center gap-2"><LockKeyhole className="h-5 w-5 text-primary"/> Your Encrypted Vault</CardTitle>
-              <CardDescription>Manage your securely encrypted documents, images, and videos.</CardDescription>
+              <CardTitle className="flex items-center gap-2"><Unlock className="h-5 w-5 text-primary"/> Your Vault</CardTitle> 
+              <CardDescription>Manage your documents, images, and videos.</CardDescription>
             </div>
             <div className="flex items-center gap-2 w-full md:w-auto">
               <div className="relative flex-grow md:flex-grow-0">
@@ -410,3 +415,4 @@ export default function MyFilesPage() {
     </div>
   );
 }
+

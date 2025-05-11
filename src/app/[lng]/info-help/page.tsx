@@ -13,8 +13,8 @@ import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings';
 
 const faqs = [
   {
-    question: "How does client-side encryption work?",
-    answer: "Client-side encryption means your files are encrypted on your device (in your browser) BEFORE they are uploaded to our servers. We use strong AES-256 encryption. Only you hold the key to decrypt your files, ensuring we cannot access their content."
+    question: "How is my data secured?",
+    answer: "We prioritize your data's security. All communication with our servers uses HTTPS/TLS encryption. We employ secure cloud infrastructure with industry-standard protections. For account access, we offer Two-Factor Authentication (2FA). Currently, files are uploaded securely to our servers but are not client-side encrypted on your device before upload. We are working on re-introducing client-side encryption for an added layer of privacy where only you can decrypt your files."
   },
   {
     question: "What is the difference between Islamic Mode and Conventional Mode?",
@@ -34,7 +34,7 @@ const faqs = [
   },
   {
     question: "What happens if I forget my password?",
-    answer: "We use standard secure password recovery methods. However, if you lose your password AND any recovery options for your encryption key (if managed separately), access to your encrypted files may be permanently lost due to the nature of client-side encryption. It's crucial to keep your password and any key recovery information safe."
+    answer: "We use standard secure password recovery methods. It's crucial to keep your password and any recovery information safe. For features involving client-side encryption (if re-enabled in the future), losing your password AND recovery key could mean permanent loss of access to those specific encrypted files."
   }
 ];
 
@@ -88,7 +88,7 @@ export default function InfoHelpPage() {
                   <div>
                     <h3 className="font-semibold text-lg mb-2">Understanding Data Security</h3>
                     <p className="text-sm text-muted-foreground mb-2">
-                      Learn about client-side encryption, 2FA, and best practices for keeping your digital information safe. We use AES-256, a globally recognized strong encryption standard.
+                      Learn about account security, 2FA, and best practices for keeping your digital information safe. File uploads are stored securely on our servers.
                     </p>
                     <Image src="https://picsum.photos/seed/datasecurity/600/200" alt="Data security concept" width={600} height={200} className="rounded-lg object-cover aspect-[3/1]" data-ai-hint="cyber security lock" />
                      <Button variant="link" asChild className="mt-2"><Link href={`/${currentLocale}/security-info`}>Read more on our security</Link></Button>
@@ -190,3 +190,4 @@ export default function InfoHelpPage() {
     </div>
   );
 }
+

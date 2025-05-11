@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ShieldCheck, Lock, KeyRound, DatabaseZap, Users, ShieldAlert } from "lucide-react";
+import { ShieldCheck, Lock, KeyRound, DatabaseZap, Users, ShieldAlert, Info } from "lucide-react";
 import Image from "next/image";
 import { AppLogo } from "@/components/AppLogo";
 import { usePathname } from "next/navigation"; // For currentLocale
@@ -53,22 +53,22 @@ export default function SecurityInfoPage() {
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             <Card className="shadow-md">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><KeyRound className="h-6 w-6 text-primary" /> Client-Side Encryption</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Info className="h-6 w-6 text-primary" /> File Upload Security Note</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  All your uploaded files are encrypted directly in your browser using strong AES-256 encryption *before* they are sent to our servers. This means only you, with your unique encryption key (derived from your password or managed by you), can decrypt and view your files. We never have access to your unencrypted file content.
+                  Currently, files uploaded to your vault are stored securely but are not encrypted client-side on your device before upload. This means that while our server-side storage is protected, the files themselves are not end-to-end encrypted in a way that only you can decrypt them with a unique key. We are exploring options to re-introduce client-side encryption in the future.
                 </p>
               </CardContent>
             </Card>
 
             <Card className="shadow-md">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Lock className="h-6 w-6 text-primary" /> End-to-End Protection</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Lock className="h-6 w-6 text-primary" /> Account and Transmission Security</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Beyond file encryption, all data transmitted between your device and our servers is protected using HTTPS/TLS, ensuring it cannot be intercepted. Your metadata (like filenames and tags) is also stored securely in our database with strict access controls.
+                  All data transmitted between your device and our servers is protected using HTTPS/TLS, ensuring it cannot be intercepted. Your account access is protected by your password, and we strongly recommend enabling Two-Factor Authentication (2FA).
                 </p>
               </CardContent>
             </Card>
@@ -90,7 +90,7 @@ export default function SecurityInfoPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  We leverage robust cloud infrastructure (e.g., Firebase/Google Cloud) with industry-standard security practices, including regular security audits, intrusion detection systems, and data redundancy to protect against data loss and unauthorized access.
+                  We leverage robust cloud infrastructure (e.g., Firebase/Google Cloud) with industry-standard security practices, including regular security audits, intrusion detection systems, and data redundancy to protect against data loss and unauthorized access to our systems.
                 </p>
               </CardContent>
             </Card>
@@ -112,7 +112,7 @@ export default function SecurityInfoPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  We are committed to your privacy. We collect only the necessary data to provide our services and are transparent about how your information is used. Our client-side encryption model ensures we cannot access your private file contents.
+                  We are committed to your privacy. We collect only the necessary data to provide our services and are transparent about how your information is used. 
                 </p>
               </CardContent>
             </Card>
@@ -167,3 +167,4 @@ export default function SecurityInfoPage() {
     </div>
   );
 }
+
