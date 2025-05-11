@@ -29,6 +29,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger, // Added DialogTrigger
 } from "@/components/ui/dialog"
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { encryptDataUri, decryptDataUri } from '@/lib/encryption'; 
