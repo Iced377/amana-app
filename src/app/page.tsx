@@ -6,17 +6,13 @@ import Link from "next/link";
 import { ShieldCheck, Lock, Users, UploadCloud, BrainCircuit } from "lucide-react";
 import Image from "next/image";
 import { ModeToggle } from "@/components/mode-toggle";
-import { usePathname } from "next/navigation"; // To get current locale if needed for links
 
 export default function HomePage() {
-  const pathname = usePathname();
-  const currentLocale = pathname.split('/')[1] || 'en'; // Infer locale from path or default
-
   return (
     <div className="flex flex-col min-h-screen">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <Link href={`/${currentLocale}/`} className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <ShieldCheck className="h-8 w-8 text-primary" />
             <span className="text-xl font-bold">Guardian Angel</span>
           </Link>

@@ -1,14 +1,19 @@
+
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google'; // Using Inter as a clean sans-serif font
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
+import { I18nProviderClient } from '@/locales/client';
 import { UserPreferencesProvider } from '@/context/UserPreferencesContext';
-import { I18nProviderClient } from '@/locales/client'; // For client-side i18n
+import { locales } from '@/locales/settings';
+// For server-side initial locale to pass to html tag, and for dir attribute
+import { useTranslation } from '@/locales/server';
+
 
 const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-sans', // Changed from Geist to Inter as per "Clean, sans-serif"
+  variable: '--font-sans',
 });
 
 export const metadata: Metadata = {
@@ -16,31 +21,36 @@ export const metadata: Metadata = {
   description: 'Secure your digital legacy.',
 };
 
-export default function RootLayout({
+// Required for static generation with dynamic segments (i18n routes)
+export async function generateStaticParams() {
+  return locales.map((lng) => ({ lng }));
+}
+
+export default async function RootLayout({
   children,
-  params: { locale } // Next.js 13+ app router passes locale this way if using middleware for routing
+  params: { lng } // Locale is passed as a parameter from the route
 }: Readonly<{
   children: React.ReactNode;
-  params: { locale?: string };
+  params: { lng: string }; // Define params type to include lng
 }>) {
-  const currentLocale = locale || 'en'; // Default to 'en' if locale is not in params
+  // Validate lng or set a default, important for robustness
+  // Ensure `locales` is an array of strings like ['en', 'ar']
+  const currentLocale = locales.includes(lng as 'en' | 'ar') ? lng : 'en';
+  
+  // `useTranslation` from server can be used to get i18n instance for `dir`
+  const { i18n } = await useTranslation(currentLocale);
 
   return (
-    <html lang={currentLocale} dir={currentLocale === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning>
+    <html lang={currentLocale} dir={i18n.dir(currentLocale)} suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <UserPreferencesProvider>
+        <UserPreferencesProvider> {/* UserPreferencesProvider should wrap ThemeProvider and I18nProviderClient */}
           <ThemeProvider
             attribute="class"
-            defaultTheme="light"
+            defaultTheme="light" // Can be 'system' or specific like 'light'/'dark'
             enableSystem
             disableTransitionOnChange
           >
-            {/*
-              Wrap with I18nProviderClient if you need client components to access translations.
-              If all translations are handled by server components, this might not be strictly necessary
-              at the root, but good for consistency if any client component needs i18n.
-            */}
-            <I18nProviderClient locale={currentLocale}>
+            <I18nProviderClient locale={currentLocale}> {/* Pass the current locale to the client provider */}
               <main>{children}</main>
               <Toaster />
             </I18nProviderClient>
