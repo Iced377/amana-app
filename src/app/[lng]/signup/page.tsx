@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,7 @@ import type { LocaleTypes } from "@/locales/settings";
 export default function SignupPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const { setProfile, generateAndStoreEncryptionKey } = useUserPreferences();
+  const { setProfile, generateEncryptionKey } = useUserPreferences();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +27,7 @@ export default function SignupPage() {
   const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes;
 
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => { // Removed async
     event.preventDefault();
     if (password !== confirmPassword) {
       alert("Passwords do not match!");
@@ -47,20 +46,24 @@ export default function SignupPage() {
       language: currentLocale, 
       subscriptionTier: 'free',
       is2FAEnabled: false,
+      encryptionKey: undefined, // Ensure encryptionKey is part of the type
     };
 
-    setProfile(newUserProfile);
-
     try {
-      const key = await generateAndStoreEncryptionKey();
+      const key = generateEncryptionKey(); 
       if (!key) {
         console.error("Failed to generate encryption key on signup.");
+        // Optionally, prevent signup or inform user
       } else {
-        console.log("Encryption key generated and associated with profile.");
+        console.log("Encryption key generated and will be associated with profile.");
+        newUserProfile.encryptionKey = key;
       }
     } catch (error) {
        console.error("Error generating encryption key:", error);
+       // Optionally, prevent signup or inform user
     }
+
+    setProfile(newUserProfile); // Set the profile with the key included
 
     router.push(`/${currentLocale}/dashboard`); 
   };
@@ -138,3 +141,4 @@ export default function SignupPage() {
     </div>
   );
 }
+

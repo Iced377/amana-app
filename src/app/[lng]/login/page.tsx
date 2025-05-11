@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -17,23 +16,22 @@ import type { LocaleTypes } from "@/locales/settings";
 export default function LoginPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const { setProfile, profile, generateAndStoreEncryptionKey } = useUserPreferences();
+  const { profile: currentGlobalProfile, setProfile, generateEncryptionKey } = useUserPreferences(); // Renamed profile to currentGlobalProfile to avoid conflict
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes;
 
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => { // Removed async as generateEncryptionKey is sync now
     event.preventDefault();
-    // Mock login logic
     console.log("Login submitted for:", email);
 
     const mockUserId = `user_${email.split('@')[0] || Date.now()}`; 
     
-    let userProfile = profile; 
+    let userProfile: UserProfile; 
 
-    if (!userProfile || userProfile.id === 'guestUser') { 
+    if (!currentGlobalProfile || currentGlobalProfile.id === 'guestUser') { 
         userProfile = {
             id: mockUserId,
             email: email,
@@ -42,34 +40,32 @@ export default function LoginPage() {
             language: currentLocale, 
             subscriptionTier: 'free',
             is2FAEnabled: false,
+            encryptionKey: undefined, // Ensure encryptionKey is part of the type
         };
-        setProfile(userProfile); 
-
-        if (!userProfile.encryptionKey) {
-            try {
-                const key = await generateAndStoreEncryptionKey(); 
-                if (!key) console.error("Failed to generate encryption key on login.");
-                else console.log("Encryption key generated/ensured on login.");
-            } catch (error) {
-                console.error("Error with encryption key on login:", error);
-            }
-        }
-
     } else {
-        if (userProfile.language !== currentLocale) {
-            setProfile({...userProfile, language: currentLocale});
-        }
-        if (!userProfile.encryptionKey) {
-             try {
-                const key = await generateAndStoreEncryptionKey();
-                if (!key) console.error("Failed to generate encryption key on login for existing user.");
-                else console.log("Encryption key generated/ensured on login for existing user.");
-            } catch (error) {
-                console.error("Error with encryption key on login for existing user:", error);
+        userProfile = { 
+          ...currentGlobalProfile, 
+          email: email, // Update email if necessary, or keep existing
+          id: currentGlobalProfile.id || mockUserId, // Ensure ID is consistent
+          language: currentLocale, // Update language
+        };
+    }
+    
+    if (!userProfile.encryptionKey) {
+        try {
+            const key = generateEncryptionKey();
+            if (!key) {
+              console.error("Failed to generate encryption key on login.");
+            } else {
+              console.log("Encryption key generated/ensured on login.");
+              userProfile.encryptionKey = key;
             }
+        } catch (error) {
+            console.error("Error with encryption key on login:", error);
         }
     }
     
+    setProfile(userProfile); // Set the profile with the key included
     router.push(`/${currentLocale}/dashboard`);
   };
 
@@ -121,3 +117,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

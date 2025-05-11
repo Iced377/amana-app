@@ -1,4 +1,3 @@
-
 "use client";
 
 import type React from 'react';
@@ -14,7 +13,7 @@ interface UserPreferencesContextType {
   setLanguage: (language: Language) => void;
   isLoading: boolean;
   updateProfileField: (updates: Partial<UserProfile>) => void;
-  generateAndStoreEncryptionKey: () => Promise<string | null>;
+  generateEncryptionKey: () => string; // Changed name and signature
   getEncryptionKey: () => string | null;
 }
 
@@ -75,25 +74,18 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
     document.documentElement.dir = newLanguage === 'ar' ? 'rtl' : 'ltr';
   }, [updateProfileField]);
 
-  const generateAndStoreEncryptionKey = async (): Promise<string | null> => {
-    if (!profile) return null;
-    // Basic key generation for demo. In a real app, use a strong KDF.
-    // For Web Crypto API, we'd generate a CryptoKey and export it.
-    // For crypto-js, a simple random string can act as a passphrase.
+  // Generates a new encryption key string. Does not store it or update profile.
+  const generateEncryptionKey = (): string => {
+    // Basic key generation for demo. In a real app, use a strong KDF or more robust generation.
     const array = new Uint32Array(8);
     window.crypto.getRandomValues(array);
-    const key = Array.from(array, dec => ('0' + dec.toString(16)).substr(-2)).join(''); // Simple hex string key
-
-    updateProfileField({ encryptionKey: key });
-    // Also store in localStorage for persistence across sessions (demo only, insecure for prod)
-    localStorage.setItem(`encryptionKey_${profile.id}`, key);
+    const key = Array.from(array, dec => ('0' + dec.toString(16)).slice(-2)).join(''); // Ensure two hex characters per segment
     return key;
   };
 
+  // Retrieves the encryption key from the current user profile.
   const getEncryptionKey = (): string | null => {
-    if (!profile) return null;
-    // Retrieve from profile state or localStorage (demo fallback)
-    return profile.encryptionKey || localStorage.getItem(`encryptionKey_${profile.id}`);
+    return profile?.encryptionKey || null;
   };
 
 
@@ -120,7 +112,7 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
       setLanguage,
       isLoading,
       updateProfileField,
-      generateAndStoreEncryptionKey,
+      generateEncryptionKey, // Updated function name
       getEncryptionKey,
     }}>
       {children}
@@ -135,3 +127,4 @@ export const useUserPreferences = (): UserPreferencesContextType => {
   }
   return context;
 };
+
