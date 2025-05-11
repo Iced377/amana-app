@@ -3,7 +3,7 @@
 
 import type React from 'react';
 import { useState, useEffect, useRef } from 'react';
-import Image from 'next/image'; // Ensure Image is imported from next/image
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import type { VaultFile, FileType } from '@/types';
-import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List } from 'lucide-react';
+import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole } from 'lucide-react';
 import { performAiTagging } from './actions';
 import {
   DropdownMenu,
@@ -29,8 +29,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
+import { useUserPreferences } from '@/context/UserPreferencesContext';
+import { encryptDataUri, decryptDataUri } from '@/lib/encryption'; // Import encryption utilities
+import { performShariahComplianceCheck } from './actions'; // For AI Shariah check
 
 const getFileIcon = (type: FileType) => {
   switch (type) {
@@ -44,7 +46,7 @@ const getFileIcon = (type: FileType) => {
 export default function MyFilesPage() {
   const [files, setFiles] = useState<VaultFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
+  const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null); // Unencrypted preview
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -55,6 +57,7 @@ export default function MyFilesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { toast } = useToast();
+  const { profile, getEncryptionKey, mode: userMode } = useUserPreferences();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setPreviewDataUrl(null);
@@ -62,97 +65,119 @@ export default function MyFilesPage() {
       const file = event.target.files[0];
       setSelectedFile(file);
 
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setPreviewDataUrl(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        // This previewDataUrl is for display and AI tagging, will be unencrypted.
+        setPreviewDataUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file); // Read as Data URI for preview/AI
     } else {
       setSelectedFile(null);
     }
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) {
-      toast({ title: "No file selected", description: "Please select a file to upload.", variant: "destructive" });
+    if (!selectedFile || !previewDataUrl) { // previewDataUrl will hold the unencrypted data for AI
+      toast({ title: "No file selected or data missing", description: "Please select a file to upload.", variant: "destructive" });
+      return;
+    }
+
+    const encryptionKey = getEncryptionKey();
+    if (!encryptionKey) {
+      toast({ title: "Encryption Key Missing", description: "Cannot upload file without an encryption key. Please check your profile.", variant: "destructive" });
+      // Potentially prompt to generate key or re-login
       return;
     }
 
     setIsUploading(true);
     setUploadProgress(0);
-
     let progressInterval: NodeJS.Timeout | null = null;
+
     try {
-      // Simulate upload progress
-      let progress = 0;
       progressInterval = setInterval(() => {
-        progress += 10;
-        if (progress <= 100) {
-          setUploadProgress(progress);
-        } else {
-          if (progressInterval) clearInterval(progressInterval);
-        }
+        setUploadProgress(prev => Math.min(prev + 10, 90)); // Stop at 90% before final ops
       }, 100);
-      
-      const reader = new FileReader();
-      reader.readAsDataURL(selectedFile);
 
-      reader.onload = async (e) => {
-        const fileDataUri = e.target?.result as string;
-        if (!fileDataUri) {
-            toast({ title: "File Read Error", description: "Could not read file data.", variant: "destructive" });
-            if (progressInterval) clearInterval(progressInterval);
-            setIsUploading(false);
-            setUploadProgress(0);
-            return;
-        }
-
-        const { name, type: mimeType, size } = selectedFile;
-        const fileType: FileType = mimeType.startsWith('image/') ? 'image' :
+      const { name, type: mimeType, size } = selectedFile;
+      const fileType: FileType = mimeType.startsWith('image/') ? 'image' :
                                   mimeType.startsWith('video/') ? 'video' :
                                   mimeType === 'application/pdf' || mimeType.startsWith('text/') || mimeType.includes('document') ? 'document' : 
                                   'other';
-
-        const aiResult = await performAiTagging({ fileDataUri, filename: name, fileType });
-        
-        if (progressInterval) clearInterval(progressInterval);
-        setUploadProgress(100);
-
-        const newFile: VaultFile = {
-          id: crypto.randomUUID(),
-          name,
-          type: fileType,
-          size,
-          uploadDate: new Date().toISOString(),
-          aiTags: aiResult.tags || ['untagged'],
-          icon: getFileIcon(fileType),
-          // fileObject: selectedFile, // Avoid storing large File objects in state if not strictly needed long-term
-        };
-        setFiles(prevFiles => [newFile, ...prevFiles]);
-        toast({ title: "File Uploaded", description: `${name} has been uploaded and tagged.` });
-        setIsUploadDialogOpen(false); // This will trigger onOpenChange(false) and reset form
-      };
-
-      reader.onerror = () => {
-        toast({ title: "File Read Error", description: "Error reading file.", variant: "destructive" });
-        if (progressInterval) clearInterval(progressInterval);
-        setIsUploading(false);
-        setUploadProgress(0);
+      
+      // 1. Perform AI Tagging on unencrypted data
+      const aiTaggingResult = await performAiTagging({ fileDataUri: previewDataUrl, filename: name, fileType });
+      
+      // 2. (Optional) Perform Shariah Compliance Check if in Islamic mode
+      let shariahComplianceResult;
+      if (userMode === 'islamic') {
+        shariahComplianceResult = await performShariahComplianceCheck({ fileDataUri: previewDataUrl, filename: name, fileType });
       }
+
+      // 3. Encrypt the file data (previewDataUrl is the unencrypted Data URI)
+      const encryptedDataUri = await encryptDataUri(previewDataUrl, encryptionKey);
+      if (!encryptedDataUri) {
+        throw new Error("File encryption failed.");
+      }
+
+      if (progressInterval) clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      const newFile: VaultFile = {
+        id: crypto.randomUUID(),
+        name,
+        type: fileType,
+        size, // Store original size, encrypted size might differ slightly due to encoding/metadata
+        uploadDate: new Date().toISOString(),
+        encryptedDataUri: encryptedDataUri, // Store encrypted data
+        aiTags: aiTaggingResult.tags || ['untagged'],
+        shariahCompliance: shariahComplianceResult ? { ...shariahComplianceResult, checkedAt: new Date().toISOString() } : undefined,
+        icon: getFileIcon(fileType),
+      };
+      setFiles(prevFiles => [newFile, ...prevFiles]);
+      toast({ title: "File Uploaded Securely", description: `${name} has been encrypted and uploaded.` });
+      setIsUploadDialogOpen(false);
+
     } catch (error) {
       console.error("Upload error:", error);
-      toast({ title: "Upload Failed", description: "An error occurred during upload.", variant: "destructive" });
+      toast({ title: "Upload Failed", description: `An error occurred: ${error instanceof Error ? error.message : "Unknown error"}`, variant: "destructive" });
       if (progressInterval) clearInterval(progressInterval);
     } finally {
-      // Ensure uploading state is reset after a short delay to show 100%
        setTimeout(() => {
          setIsUploading(false);
          setUploadProgress(0);
+         // Reset selected file and preview for next upload
+         setSelectedFile(null);
+         setPreviewDataUrl(null);
+         if (fileInputRef.current) fileInputRef.current.value = '';
        }, 500);
     }
   };
+
+  // Placeholder for handleDecryptAndPreview
+  // In a real app, this would be triggered when user wants to view a file.
+  // const handleDecryptAndPreview = async (file: VaultFile) => {
+  //   if (!file.encryptedDataUri) {
+  //     toast({ title: "No encrypted data", description: "This file does not have encrypted content.", variant: "warning" });
+  //     return;
+  //   }
+  //   const encryptionKey = getEncryptionKey();
+  //   if (!encryptionKey) {
+  //     toast({ title: "Encryption Key Missing", description: "Cannot decrypt file.", variant: "destructive" });
+  //     return;
+  //   }
+  //   const decryptedUri = await decryptDataUri(file.encryptedDataUri, encryptionKey);
+  //   if (decryptedUri) {
+  //     // Display the decrypted content (e.g., in a modal or new tab)
+  //     // For images: set an <img> src
+  //     // For PDFs: use an <embed> or a library like PDF.js
+  //     // For videos: set a <video> src
+  //     console.log("Decrypted URI:", decryptedUri.substring(0,100) + "..."); // For brevity
+  //     toast({title: "File Decrypted", description: "File content is available (logged to console for demo)."});
+  //   } else {
+  //     toast({ title: "Decryption Failed", variant: "destructive" });
+  //   }
+  // };
+
 
   const handleDeleteFile = (fileId: string) => {
     setFiles(files.filter(file => file.id !== fileId));
@@ -180,16 +205,13 @@ export default function MyFilesPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold md:text-3xl">My Files</h1>
+        <h1 className="text-2xl font-semibold md:text-3xl">My Secure Files</h1>
         <Dialog open={isUploadDialogOpen} onOpenChange={(isOpen) => {
           setIsUploadDialogOpen(isOpen);
           if (!isOpen) {
             setSelectedFile(null);
             setPreviewDataUrl(null);
-            if (fileInputRef.current) {
-              fileInputRef.current.value = '';
-            }
-            // Reset upload-specific states when dialog closes
+            if (fileInputRef.current) fileInputRef.current.value = '';
             setIsUploading(false);
             setUploadProgress(0);
           }
@@ -201,9 +223,9 @@ export default function MyFilesPage() {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Upload a New File</DialogTitle>
+              <DialogTitle>Upload a New File Securely</DialogTitle>
               <DialogDescription>
-                Choose a file from your device. It will be securely stored and automatically tagged.
+                Choose a file. It will be AI-tagged, encrypted on your device, then stored.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -219,7 +241,7 @@ export default function MyFilesPage() {
                   {previewDataUrl && selectedFile.type.startsWith('image/') && (
                     <div className="mt-2 flex justify-center">
                       <Image
-                        src={previewDataUrl}
+                        src={previewDataUrl} // Show unencrypted preview
                         alt="Selected file preview"
                         width={200}
                         height={200}
@@ -228,19 +250,24 @@ export default function MyFilesPage() {
                       />
                     </div>
                   )}
+                   {!selectedFile.type.startsWith('image/') && previewDataUrl && (
+                     <p className="text-xs text-muted-foreground mt-1">Preview not available for this file type.</p>
+                   )}
                 </div>
               )}
               {isUploading && (
                 <div className="col-span-4">
                   <Progress value={uploadProgress} className="w-full" />
-                  <p className="text-sm text-center mt-1">{uploadProgress > 0 ? `${uploadProgress}%` : "Initializing upload..."}</p>
+                  <p className="text-sm text-center mt-1">
+                    {uploadProgress < 30 ? "Preparing..." : uploadProgress < 60 ? "AI Tagging..." : uploadProgress < 90 ? "Encrypting..." : "Finalizing..."} ({uploadProgress}%)
+                  </p>
                 </div>
               )}
             </div>
             <DialogFooter>
                 <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleUpload} disabled={isUploading || !selectedFile}>
-                {isUploading ? 'Uploading...' : 'Upload'}
+              <Button onClick={handleUpload} disabled={isUploading || !selectedFile || !previewDataUrl}>
+                {isUploading ? 'Processing...' : 'Encrypt & Upload'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -251,8 +278,8 @@ export default function MyFilesPage() {
         <CardHeader>
           <div className="flex flex-col md:flex-row justify-between items-center gap-2">
             <div>
-              <CardTitle>Your Vault</CardTitle>
-              <CardDescription>Manage your uploaded documents, images, and videos.</CardDescription>
+              <CardTitle className="flex items-center gap-2"><LockKeyhole className="h-5 w-5 text-primary"/> Your Encrypted Vault</CardTitle>
+              <CardDescription>Manage your securely encrypted documents, images, and videos.</CardDescription>
             </div>
             <div className="flex items-center gap-2 w-full md:w-auto">
               <div className="relative flex-grow md:flex-grow-0">
@@ -292,6 +319,7 @@ export default function MyFilesPage() {
                   <TableHead>Size</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>AI Tags</TableHead>
+                  {userMode === 'islamic' && <TableHead>Shariah Compliance</TableHead>}
                   <TableHead>Beneficiary</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -306,8 +334,22 @@ export default function MyFilesPage() {
                     <TableCell>
                       {file.aiTags && file.aiTags.map(tag => <Badge key={tag} variant="secondary" className="mr-1 mb-1">{tag}</Badge>)}
                     </TableCell>
+                     {userMode === 'islamic' && (
+                        <TableCell>
+                          {file.shariahCompliance ? (
+                            <Badge variant={file.shariahCompliance.isCompliant ? "default" : "destructive"}>
+                              {file.shariahCompliance.isCompliant ? "Compliant" : "Review Needed"}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline">N/A</Badge>
+                          )}
+                        </TableCell>
+                      )}
                     <TableCell>{file.beneficiary || 'N/A'}</TableCell>
                     <TableCell className="text-right">
+                      {/* <Button variant="ghost" size="icon" onClick={() => handleDecryptAndPreview(file)} className="mr-1" title="Decrypt & Preview (Demo)">
+                        <Eye className="h-4 w-4" /> <span className="sr-only">Decrypt and Preview</span>
+                      </Button> */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon"><Edit3 className="h-4 w-4" /><span className="sr-only">Edit file options</span></Button>
@@ -327,7 +369,7 @@ export default function MyFilesPage() {
                 ))}
               </TableBody>
             </Table>
-          ) : (
+          ) : ( // Grid View
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {filteredFiles.map((file) => (
                   <Card key={file.id} className="flex flex-col">
@@ -341,6 +383,9 @@ export default function MyFilesPage() {
                            <DropdownMenuItem onClick={() => handleEditFile(file)}>
                             <Edit3 className="mr-2 h-4 w-4" /> Edit Beneficiary
                           </DropdownMenuItem>
+                          {/* <DropdownMenuItem onClick={() => handleDecryptAndPreview(file)}>
+                            <Eye className="mr-2 h-4 w-4" /> Decrypt & Preview (Demo)
+                          </DropdownMenuItem> */}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => handleDeleteFile(file.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                             <Trash2 className="mr-2 h-4 w-4" /> Delete
@@ -356,6 +401,13 @@ export default function MyFilesPage() {
                         {file.aiTags && file.aiTags.slice(0,2).map(tag => <Badge key={tag} variant="secondary" className="mr-1 mb-1 text-xs">{tag}</Badge>)}
                         {file.aiTags && file.aiTags.length > 2 && <Badge variant="secondary" className="text-xs">+{file.aiTags.length-2}</Badge>}
                       </div>
+                      {userMode === 'islamic' && file.shariahCompliance && (
+                        <div className="mt-1">
+                           <Badge variant={file.shariahCompliance.isCompliant ? "default" : "destructive"} className="text-xs">
+                              {file.shariahCompliance.isCompliant ? "Shariah Compliant" : "Shariah Review Needed"}
+                           </Badge>
+                        </div>
+                      )}
                        <p className="text-xs text-muted-foreground mt-1">Beneficiary: {file.beneficiary || 'N/A'}</p>
                     </CardContent>
                   </Card>
@@ -393,4 +445,3 @@ export default function MyFilesPage() {
     </div>
   );
 }
-

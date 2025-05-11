@@ -1,16 +1,25 @@
+
+"use client"; // Required for hooks
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Users, ShieldCheck, UploadCloud, Clock, HardDrive } from "lucide-react";
+import { FileText, Users, ShieldCheck, UploadCloud, Clock, HardDrive, Landmark, Info } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { useUserPreferences } from "@/context/UserPreferencesContext";
+import { usePathname } from "next/navigation";
 
 export default function DashboardPage() {
+  const { profile } = useUserPreferences();
+  const pathname = usePathname();
+  const currentLocale = pathname.split('/')[1] || 'en';
+
   // Mock data - replace with actual data fetching
   const vaultSummary = {
-    totalFiles: 125,
-    storageUsed: "2.5 GB", // Example: "2.5 GB" / "5 GB"
-    lastUpdate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-    beneficiariesCount: 5,
+    totalFiles: 125, // This would come from files.length in a real scenario
+    storageUsed: "2.5 GB", 
+    lastUpdate: new Date().toLocaleDateString(profile?.language || 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+    beneficiariesCount: 5, // This would come from beneficiaries.length
   };
 
   return (
@@ -18,8 +27,8 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold md:text-3xl">Dashboard</h1>
         <Button asChild>
-          <Link href="/dashboard/my-files">
-            <UploadCloud className="mr-2 h-4 w-4" /> Upload New File
+          <Link href={`/${currentLocale}/dashboard/my-files`}>
+            <UploadCloud className="mr-2 rtl:ml-2 h-4 w-4" /> Upload New File
           </Link>
         </Button>
       </div>
@@ -67,25 +76,43 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      {profile?.mode === 'islamic' && (
+        <Card className="shadow-md hover:shadow-lg transition-shadow bg-primary/5 dark:bg-primary/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Landmark className="h-6 w-6 text-primary" /> Islamic Legacy Planning</CardTitle>
+            <CardDescription>Access tools for Wasiyyah and Faraid considerations in line with Islamic principles.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              You are currently in Islamic Mode. This enables features tailored for Islamic inheritance.
+            </p>
+            <Button variant="outline" asChild>
+                <Link href={`/${currentLocale}/dashboard/islamic-inheritance`}>Go to Islamic Inheritance</Link>
+            </Button>
+             <Button variant="link" asChild className="text-xs"><Link href={`/${currentLocale}/dashboard/settings`}>Switch to Conventional Mode</Link></Button>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-6 w-6 text-primary" /> Security Overview</CardTitle>
-            <CardDescription>Your vault is protected with industry-standard security measures.</CardDescription>
+            <CardDescription>Your vault is protected with client-side encryption and other measures.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between p-3 bg-green-100 dark:bg-green-900/50 rounded-lg">
                 <div>
-                    <h3 className="font-semibold text-green-700 dark:text-green-300">Encryption Active</h3>
-                    <p className="text-sm text-green-600 dark:text-green-400">All files are encrypted client-side.</p>
+                    <h3 className="font-semibold text-green-700 dark:text-green-300">Client-Side Encryption Active</h3>
+                    <p className="text-sm text-green-600 dark:text-green-400">All files are encrypted on your device before upload.</p>
                 </div>
                 <ShieldCheck className="h-8 w-8 text-green-500" />
             </div>
             <p className="text-sm text-muted-foreground">
-              Remember to use a strong, unique password and enable two-factor authentication if available.
+              Ensure you use a strong password and consider enabling Two-Factor Authentication (2FA) in settings.
             </p>
             <Button variant="outline" asChild>
-                <Link href="/dashboard/settings">Manage Security Settings</Link>
+                <Link href={`/${currentLocale}/dashboard/settings`}>Manage Security Settings</Link>
             </Button>
           </CardContent>
         </Card>
@@ -101,7 +128,7 @@ export default function DashboardPage() {
               <div>
                 <h4 className="font-semibold">Upload Your Important Files</h4>
                 <p className="text-sm text-muted-foreground">Documents, photos, videos - secure them all.</p>
-                <Button variant="link" className="p-0 h-auto text-sm" asChild><Link href="/dashboard/my-files">Go to My Files</Link></Button>
+                <Button variant="link" className="p-0 h-auto text-sm" asChild><Link href={`/${currentLocale}/dashboard/my-files`}>Go to My Files</Link></Button>
               </div>
             </div>
              <div className="flex items-start gap-3">
@@ -109,7 +136,7 @@ export default function DashboardPage() {
               <div>
                 <h4 className="font-semibold">Add Your Beneficiaries</h4>
                 <p className="text-sm text-muted-foreground">Designate who receives your assets.</p>
-                 <Button variant="link" className="p-0 h-auto text-sm" asChild><Link href="/dashboard/beneficiaries">Manage Beneficiaries</Link></Button>
+                 <Button variant="link" className="p-0 h-auto text-sm" asChild><Link href={`/${currentLocale}/dashboard/beneficiaries`}>Manage Beneficiaries</Link></Button>
               </div>
             </div>
              <div className="flex items-start gap-3">
@@ -117,9 +144,19 @@ export default function DashboardPage() {
               <div>
                 <h4 className="font-semibold">Set Up Your Death Trigger</h4>
                 <p className="text-sm text-muted-foreground">Ensure your legacy is passed on as intended.</p>
-                 <Button variant="link" className="p-0 h-auto text-sm" asChild><Link href="/dashboard/shared-upon-death">Configure Trigger</Link></Button>
+                 <Button variant="link" className="p-0 h-auto text-sm" asChild><Link href={`/${currentLocale}/dashboard/shared-upon-death`}>Configure Trigger</Link></Button>
               </div>
             </div>
+            {profile?.mode === 'islamic' && (
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">4</div>
+                  <div>
+                    <h4 className="font-semibold">Review Islamic Inheritance</h4>
+                    <p className="text-sm text-muted-foreground">Explore Wasiyyah and Faraid planning tools.</p>
+                    <Button variant="link" className="p-0 h-auto text-sm" asChild><Link href={`/${currentLocale}/dashboard/islamic-inheritance`}>Go to Islamic Planning</Link></Button>
+                  </div>
+                </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -129,14 +166,14 @@ export default function DashboardPage() {
             <CardDescription>Find resources and support to make the most of Guardian Angel.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col sm:flex-row gap-4 items-start">
-            <Image src="https://picsum.photos/300/200? watu" alt="Support illustration" width={200} height={133} className="rounded-lg object-cover" data-ai-hint="support helpdesk"/>
+            <Image src="https://picsum.photos/300/200?watu" alt="Support illustration" width={200} height={133} className="rounded-lg object-cover" data-ai-hint="support helpdesk"/>
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
                 Our comprehensive FAQ and support guides can help you navigate the app and plan your digital legacy effectively.
               </p>
               <div className="flex gap-2">
-                <Button variant="outline">View FAQs</Button>
-                <Button variant="outline">Contact Support</Button>
+                <Button variant="outline" asChild><Link href={`/${currentLocale}/info-help`}>View FAQs & Guides</Link></Button>
+                <Button variant="outline" asChild><Link href={`/${currentLocale}/info-help#contact`}>Contact Support</Link></Button>
               </div>
             </div>
           </CardContent>

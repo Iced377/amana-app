@@ -1,0 +1,18 @@
+
+{
+  "dashboardTitle": "لوحة التحكم",
+  "myFilesTitle": "ملفاتي",
+  "beneficiariesTitle": "المستفيدون",
+  "sharedUponDeathTitle": "تُشارك بعد الوفاة",
+  "settingsTitle": "الإعدادات",
+  "logout": "تسجيل الخروج",
+  "welcomeMessage": "أهلاً بك في الملاك الحارس",
+  "chooseMode": "اختر وضع تجربتك",
+  "conventionalMode": "الوضع التقليدي",
+  "islamicMode": "الوضع الإسلامي (مثلاً، للوصية والفرائض)",
+  "islamicModeDescription": "الوضع الإسلامي يُخصص الميزات وفقًا للمبادئ الإسلامية. يمكنك تغيير هذا لاحقًا في الإعدادات.",
+  "language": "اللغة",
+  "english": "English (الإنجليزية)",
+  "arabic": "العربية",
+  "theme": "المظهر"
+}

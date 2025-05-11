@@ -62,11 +62,11 @@
     --input: 220 13% 25%;
     --ring: 195 38.1% 73.9%; /* Light Teal for ring */
     
-    --sidebar-background: 220 13% 12%; /* Dark sidebar background */
+    --sidebar-background: 220 13% 15%; /* Slightly lighter dark sidebar background */
     --sidebar-foreground: 0 0% 95%; /* Light text */
     --sidebar-primary: 195 38.1% 73.9%; /* Light Teal */
     --sidebar-primary-foreground: 200 46.1% 25%; /* Dark Blue */
-    --sidebar-accent: 200 46.1% 35.1%; /* Deep Blue */
+    --sidebar-accent: 200 46.1% 45.1%; /* Slightly brighter Deep Blue for dark sidebar accent */
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 220 13% 20%;
     --sidebar-ring: 195 38.1% 73.9%;
@@ -80,4 +80,68 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* RTL specific styles */
+  html[dir="rtl"] .text-left {
+    text-align: right !important;
+  }
+  html[dir="rtl"] .text-right {
+    text-align: left !important;
+  }
+  html[dir="rtl"] .mr-1 { margin-left: 0.25rem !important; margin-right: 0 !important; }
+  html[dir="rtl"] .ml-1 { margin-right: 0.25rem !important; margin-left: 0 !important; }
+  html[dir="rtl"] .mr-2 { margin-left: 0.5rem !important; margin-right: 0 !important; }
+  html[dir="rtl"] .ml-2 { margin-right: 0.5rem !important; margin-left: 0 !important; }
+  html[dir="rtl"] .space-x-2 > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 1 !important; /* Reverses space-x for RTL */
+  }
+   html[dir="rtl"] .pl-8 {
+    padding-right: 2rem !important;
+    padding-left: unset !important; /* Or specific padding if needed */
+  }
+  html[dir="rtl"] .pr-8 {
+    padding-left: 2rem !important;
+    padding-right: unset !important;
+  }
+  html[dir="rtl"] .left-2\.5 {
+    right: 0.625rem !important;
+    left: auto !important;
+  }
+   html[dir="rtl"] .right-2\.5 {
+    left: 0.625rem !important;
+    right: auto !important;
+  }
+  html[dir="rtl"] .left-0 {
+    right: 0 !important;
+    left: auto !important;
+  }
+  html[dir="rtl"] .right-0 {
+    left: 0 !important;
+    right: auto !important;
+  }
+  html[dir="rtl"] .right-4 {
+    left: 1rem !important;
+    right: auto !important;
+  }
+  html[dir="rtl"] .left-4 {
+    right: 1rem !important;
+    left: auto !important;
+  }
+
+  /* For dropdowns and other absolutely positioned elements that might need specific side adjustments */
+   html[dir="rtl"] [data-side="left"] {
+    /* For Radix/Shadcn components, they might handle this internally, but good to be aware */
+   }
+   html[dir="rtl"] [data-side="right"] {
+    /* */
+   }
+   html[dir="rtl"] [align="end"] {
+    /* Shadcn dropdowns use align="end" to mean right. In RTL, this should mean left. */
+    /* This might require component-level adjustments or specific classes if not handled by Radix */
+   }
+}
+
+/* Add .dark:bg-sidebar-dark to sidebar elements that need explicit dark mode background */
+.dark .bg-sidebar {
+  background-color: hsl(var(--sidebar-background)); /* Uses the CSS var defined in .dark */
 }

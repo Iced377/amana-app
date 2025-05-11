@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -23,6 +24,11 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '4.5mb', // Default is 1MB, increase for file uploads (data URIs)
     },
   },
+   // i18n configuration - remove if using path-based routing via middleware exclusively
+  // i18n: {
+  //   locales: ['en', 'ar'],
+  //   defaultLocale: 'en',
+  // },
 };
 
 export default nextConfig;

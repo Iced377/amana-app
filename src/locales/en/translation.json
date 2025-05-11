@@ -1,0 +1,18 @@
+
+{
+  "dashboardTitle": "Dashboard",
+  "myFilesTitle": "My Files",
+  "beneficiariesTitle": "Beneficiaries",
+  "sharedUponDeathTitle": "Shared Upon Death",
+  "settingsTitle": "Settings",
+  "logout": "Logout",
+  "welcomeMessage": "Welcome to Guardian Angel",
+  "chooseMode": "Choose Your Experience Mode",
+  "conventionalMode": "Conventional Mode",
+  "islamicMode": "Islamic Mode (e.g., for Wasiyyah, Faraid)",
+  "islamicModeDescription": "Islamic Mode tailors features according to Islamic principles. You can change this later in settings.",
+  "language": "Language",
+  "english": "English",
+  "arabic": "العربية (Arabic)",
+  "theme": "Theme"
+}

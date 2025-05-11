@@ -1,26 +1,33 @@
+
+// Make this a client component to use usePathname or pass locale as prop if server-side
+"use client"; 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { ShieldCheck, Lock, Users, UploadCloud, BrainCircuit } from "lucide-react";
 import Image from "next/image";
 import { ModeToggle } from "@/components/mode-toggle";
+import { usePathname } from "next/navigation"; // To get current locale if needed for links
 
 export default function HomePage() {
+  const pathname = usePathname();
+  const currentLocale = pathname.split('/')[1] || 'en'; // Infer locale from path or default
+
   return (
     <div className="flex flex-col min-h-screen">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href={`/${currentLocale}/`} className="flex items-center gap-2">
             <ShieldCheck className="h-8 w-8 text-primary" />
             <span className="text-xl font-bold">Guardian Angel</span>
           </Link>
           <div className="flex items-center gap-2">
             <ModeToggle />
             <Button asChild variant="ghost">
-              <Link href="/login">Login</Link>
+              <Link href={`/${currentLocale}/login`}>Login</Link>
             </Button>
             <Button asChild>
-              <Link href="/signup">Sign Up</Link>
+              <Link href={`/${currentLocale}/signup`}>Sign Up</Link>
             </Button>
           </div>
         </div>
@@ -41,7 +48,7 @@ export default function HomePage() {
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
                   <Button asChild size="lg">
-                    <Link href="/signup">Get Started for Free</Link>
+                    <Link href={`/${currentLocale}/signup`}>Get Started for Free</Link>
                   </Button>
                   <Button asChild variant="outline" size="lg">
                     <Link href="#features">Learn More</Link>
@@ -138,12 +145,12 @@ export default function HomePage() {
                     <div className="p-2 bg-primary/10 rounded-md">
                       <ShieldCheck className="h-6 w-6 text-primary" />
                     </div>
-                    <CardTitle>End-to-End Encryption</CardTitle>
+                    <CardTitle>Client-Side Encryption</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Your data is encrypted at rest and in transit, ensuring only you and your designated beneficiaries can access it.
+                    Your data is encrypted on your device before upload, ensuring only you can access your original files.
                   </p>
                 </CardContent>
               </Card>
@@ -158,7 +165,7 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Optional mode to tailor features according to Islamic inheritance principles (future feature).
+                    Optional mode to tailor features according to Islamic inheritance principles (Wasiyyah, Faraid).
                   </p>
                 </CardContent>
               </Card>
@@ -178,10 +185,11 @@ export default function HomePage() {
             </div>
             <div className="mx-auto w-full max-w-sm space-y-2">
               <Button asChild size="lg" className="w-full">
-                <Link href="/signup">Sign Up Now</Link>
+                <Link href={`/${currentLocale}/signup`}>Sign Up Now</Link>
               </Button>
               <p className="text-xs text-muted-foreground">
                 Free to start. No credit card required.
+                 <Link href={`/${currentLocale}/pricing`} className="text-primary hover:underline ml-1">View plans</Link>
               </p>
             </div>
           </div>
@@ -197,6 +205,8 @@ export default function HomePage() {
             </p>
           </div>
           <nav className="flex gap-4 sm:gap-6">
+            <Link href={`/${currentLocale}/security-info`} className="text-sm hover:underline underline-offset-4">Security</Link>
+            <Link href={`/${currentLocale}/info-help`} className="text-sm hover:underline underline-offset-4">Help</Link>
             <Link href="#" className="text-sm hover:underline underline-offset-4">Terms of Service</Link>
             <Link href="#" className="text-sm hover:underline underline-offset-4">Privacy Policy</Link>
           </nav>

@@ -1,5 +1,10 @@
+
+"use client"; 
+// Marking as client component because it uses hooks like useUserPreferences and useTranslation
+
 import type React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   Home,
   FileText,
@@ -10,6 +15,9 @@ import {
   UserCircle,
   Bell,
   ShieldCheck,
+  Landmark, // Example for Islamic Mode specific item
+  BookOpen, // For Info & Help
+  DollarSign, // For Pricing
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,27 +28,59 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
+// import { Input } from '@/components/ui/input'; // Search bar commented out
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { AppLogo } from '@/components/AppLogo';
 import { ModeToggle } from '@/components/mode-toggle';
-
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: Home },
-  { href: '/dashboard/my-files', label: 'My Files', icon: FileText },
-  { href: '/dashboard/beneficiaries', label: 'Beneficiaries', icon: Users },
-  { href: '/dashboard/shared-upon-death', label: 'Shared Upon Death', icon: Share2 },
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
-];
+import { useUserPreferences } from '@/context/UserPreferencesContext';
+import { useTranslation } from '@/locales/client'; 
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { profile, language } = useUserPreferences();
+  const { t } = useTranslation(language);
+  const pathname = usePathname();
+  const currentLocale = pathname.split('/')[1] || 'en';
+
+
+  const navItems = [
+    { href: `/${currentLocale}/dashboard`, labelKey: 'dashboardTitle', icon: Home },
+    { href: `/${currentLocale}/dashboard/my-files`, labelKey: 'myFilesTitle', icon: FileText },
+    { href: `/${currentLocale}/dashboard/beneficiaries`, labelKey: 'beneficiariesTitle', icon: Users },
+    { href: `/${currentLocale}/dashboard/shared-upon-death`, labelKey: 'sharedUponDeathTitle', icon: Share2 },
+    // Example: Conditional item for Islamic Mode
+    ...(profile?.mode === 'islamic' ? [{ href: `/${currentLocale}/dashboard/islamic-inheritance`, labelKey: 'islamicInheritancePlanning', icon: Landmark }] : []),
+    { href: `/${currentLocale}/dashboard/settings`, labelKey: 'settingsTitle', icon: Settings },
+    { href: `/${currentLocale}/pricing`, labelKey: 'pricingTitle', icon: DollarSign },
+    { href: `/${currentLocale}/info-help`, labelKey: 'infoHelpTitle', icon: BookOpen },
+  ];
+  
+  // Fallback labels for keys not yet in translation files
+  const getLabel = (key: string) => {
+    const translated = t(key);
+    if (translated === key) { // i18next returns key if not found
+        switch (key) {
+            case 'dashboardTitle': return 'Dashboard';
+            case 'myFilesTitle': return 'My Files';
+            case 'beneficiariesTitle': return 'Beneficiaries';
+            case 'sharedUponDeathTitle': return 'Shared Upon Death';
+            case 'settingsTitle': return 'Settings';
+            case 'islamicInheritancePlanning': return 'Islamic Inheritance';
+            case 'pricingTitle': return 'Pricing';
+            case 'infoHelpTitle': return 'Info & Help';
+            default: return key.replace(/([A-Z])/g, ' $1').trim(); // Basic fallback
+        }
+    }
+    return translated;
+  };
+
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-sidebar md:block">
+      <div className="hidden border-r bg-sidebar md:block dark:bg-sidebar-dark">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-16 items-center border-b px-4 lg:px-6">
             <AppLogo />
@@ -49,19 +89,17 @@ export default function DashboardLayout({
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
               {navItems.map((item) => (
                 <Link
-                  key={item.label}
+                  key={item.labelKey}
                   href={item.href}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground transition-all hover:text-primary hover:bg-sidebar-accent"
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 ${pathname === item.href || (item.href !== `/${currentLocale}/dashboard` && pathname.startsWith(item.href)) ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground'} transition-all hover:text-primary hover:bg-sidebar-accent/80`}
                 >
                   <item.icon className="h-4 w-4" />
-                  {item.label}
+                  {getLabel(item.labelKey)}
                 </Link>
               ))}
             </nav>
           </div>
-          <div className="mt-auto p-4">
-            {/* Future: Account/Logout button */}
-          </div>
+          {/* Future: Account/Logout button */}
         </div>
       </div>
       <div className="flex flex-col">
@@ -73,41 +111,30 @@ export default function DashboardLayout({
                 size="icon"
                 className="shrink-0 md:hidden"
               >
-                <ShieldCheck className="h-5 w-5" /> {/* Using ShieldCheck as Menu icon */}
+                <ShieldCheck className="h-5 w-5" /> 
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col bg-sidebar">
+            <SheetContent side="left" className="flex flex-col bg-sidebar dark:bg-sidebar-dark">
               <nav className="grid gap-2 text-lg font-medium">
                 <div className="flex h-16 items-center border-b px-4 mb-4">
                    <AppLogo />
                 </div>
                 {navItems.map((item) => (
                   <Link
-                    key={item.label}
+                    key={item.labelKey}
                     href={item.href}
-                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-sidebar-foreground hover:text-primary hover:bg-sidebar-accent"
+                    className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 ${pathname === item.href || (item.href !== `/${currentLocale}/dashboard` && pathname.startsWith(item.href)) ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground'} hover:text-primary hover:bg-sidebar-accent/80`}
                   >
                     <item.icon className="h-5 w-5" />
-                    {item.label}
+                    {getLabel(item.labelKey)}
                   </Link>
                 ))}
               </nav>
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
-            {/* Optional: Search bar 
-            <form>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search files..."
-                  className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
-                />
-              </div>
-            </form>
-            */}
+            {/* Optional: Search bar */}
           </div>
           <ModeToggle />
           <Button variant="ghost" size="icon" className="rounded-full">
@@ -122,19 +149,19 @@ export default function DashboardLayout({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{profile?.displayName || 'My Account'}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem>Billing</DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href={`/${currentLocale}/dashboard/settings`}>Profile</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href={`/${currentLocale}/pricing`}>Billing</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href={`/${currentLocale}/dashboard/settings`}>Settings</Link></DropdownMenuItem>
               <DropdownMenuSeparator />
                <DropdownMenuItem asChild>
-                <Link href="/login">Logout <LogOut className="ml-2 h-4 w-4" /></Link>
+                <Link href={`/${currentLocale}/login`}>{t('logout')} <LogOut className="ml-2 h-4 w-4" /></Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-secondary/30">
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-secondary/30 dark:bg-background">
           {children}
         </main>
       </div>

@@ -1,50 +1,75 @@
+
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { match } from '@formatjs/intl-localematcher'
+import Negotiator from 'negotiator'
 
-// This is a mock authentication check.
-// In a real Firebase app, you would use Firebase Admin SDK or client-side checks with redirects.
+const locales = ['en', 'ar']
+const defaultLocale = 'en'
+
+function getLocale(request: NextRequest): string {
+  const negotiatorHeaders: Record<string, string> = {}
+  request.headers.forEach((value, key) => (negotiatorHeaders[key] = value))
+
+  const languages = new Negotiator({ headers: negotiatorHeaders }).languages()
+  
+  try {
+    return match(languages, locales, defaultLocale)
+  } catch (e) {
+    // Catch error if match fails (e.g. languages is empty)
+    return defaultLocale
+  }
+}
+
 const isAuthenticated = (req: NextRequest) => {
-  // For now, let's assume the user is always authenticated if they try to access dashboard.
-  // Or, you could set a simple cookie for demo purposes.
-  // const sessionToken = req.cookies.get('sessionToken')?.value;
-  // return !!sessionToken;
-  return true; // MOCK: Allow access for UI development
+  // MOCK: Allow access for UI development
+  return true; 
 }
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Check if there is any supported locale in the pathname
+  const pathnameIsMissingLocale = locales.every(
+    (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
+  );
+
+  // Redirect if there is no locale
+  if (pathnameIsMissingLocale) {
+    const locale = getLocale(request)
+
+    // Add the locale prefix to the pathname
+    let newPathname = `/${locale}${pathname}`
+    if (pathname.endsWith('/') && pathname.length > 1) {
+        newPathname = newPathname.slice(0, -1); // Avoid double slashes like /en//dashboard
+    }
+    
+    return NextResponse.redirect(
+      new URL(newPathname, request.url)
+    )
+  }
+  
+  // Extract current locale from pathname for auth checks
+  const currentLocale = pathname.split('/')[1];
+  const pathWithoutLocale = pathname.startsWith(`/${currentLocale}`) ? pathname.substring(`/${currentLocale}`.length) || '/' : pathname;
+
+
   // Protect dashboard routes
-  if (pathname.startsWith('/dashboard')) {
+  if (pathWithoutLocale.startsWith('/dashboard')) {
     if (!isAuthenticated(request)) {
-      // If not authenticated, redirect to login page
-      const loginUrl = new URL('/login', request.url)
+      const loginUrl = new URL(`/${currentLocale}/login`, request.url)
       return NextResponse.redirect(loginUrl)
     }
   }
-
-  // If authenticated and trying to access login/signup, redirect to dashboard
-  // This part is commented out for easier UI dev without actual auth state.
-  /*
-  if (isAuthenticated(request) && (pathname === '/login' || pathname === '/signup')) {
-    const dashboardUrl = new URL('/dashboard', request.url)
-    return NextResponse.redirect(dashboardUrl)
-  }
-  */
 
   return NextResponse.next()
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public assets like images
-     */
+    // Skip all internal paths (_next)
     '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Optional: only run on root (/) URL
+    // '/'
   ],
 }
