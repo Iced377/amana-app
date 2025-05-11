@@ -19,7 +19,8 @@ import {
   Landmark, 
   BookOpen, 
   DollarSign, 
-  FolderPlus, // Added for Register Assets
+  FolderPlus, 
+  Fingerprint, // Added for Digital Footprint
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -48,8 +49,6 @@ export default function DashboardLayout({
   const pathname = usePathname();
   
   // Unwrap params using React.use() if it's a Promise
-  // If params is already an object (e.g., fully client-side), use() should handle it or Next.js error is specific to a Promise context.
-  // For client components, Next.js docs say params is a plain object. However, the error suggests it might be a Promise during SSR pass.
   const resolvedParams = use(params);
   const currentLocale = resolvedParams.lng;
   
@@ -59,7 +58,8 @@ export default function DashboardLayout({
   const navItems = [
     { href: `/${currentLocale}/dashboard`, labelKey: 'dashboardTitle', icon: Home },
     { href: `/${currentLocale}/dashboard/my-files`, labelKey: 'myFilesTitle', icon: FileText },
-    { href: `/${currentLocale}/dashboard/register-assets`, labelKey: 'registerAssetsTitle', icon: FolderPlus }, // New Nav Item
+    { href: `/${currentLocale}/dashboard/register-assets`, labelKey: 'registerAssetsTitle', icon: FolderPlus }, 
+    { href: `/${currentLocale}/dashboard/digital-footprint`, labelKey: 'digitalFootprintTitle', icon: Fingerprint }, // New Nav Item
     { href: `/${currentLocale}/dashboard/beneficiaries`, labelKey: 'beneficiariesTitle', icon: Users },
     { href: `/${currentLocale}/dashboard/shared-upon-death`, labelKey: 'sharedUponDeathTitle', icon: Share2 },
     ...(profile?.mode === 'islamic' ? [{ href: `/${currentLocale}/dashboard/islamic-inheritance`, labelKey: 'islamicInheritancePlanning', icon: Landmark }] : []),
@@ -70,11 +70,13 @@ export default function DashboardLayout({
   
   const getLabel = (key: string) => {
     const translated = t(key);
-    if (translated === key) { 
+    // Fallback for keys not yet in translation files
+    if (translated === key || translated === '') { 
         switch (key) {
             case 'dashboardTitle': return 'Dashboard';
             case 'myFilesTitle': return 'My Files';
             case 'registerAssetsTitle': return 'Register Assets';
+            case 'digitalFootprintTitle': return 'Digital Footprint';
             case 'beneficiariesTitle': return 'Beneficiaries';
             case 'sharedUponDeathTitle': return 'Shared Upon Death';
             case 'settingsTitle': return 'Settings';
@@ -164,7 +166,7 @@ export default function DashboardLayout({
               <DropdownMenuItem asChild><Link href={`/${currentLocale}/dashboard/settings`}>Settings</Link></DropdownMenuItem>
               <DropdownMenuSeparator />
                <DropdownMenuItem asChild>
-                <Link href={`/${currentLocale}/login`}>{t('logout')} <LogOut className="ml-2 h-4 w-4" /></Link>
+                <Link href={`/${currentLocale}/login`}>{getLabel('logout')} <LogOut className="ml-2 h-4 w-4" /></Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

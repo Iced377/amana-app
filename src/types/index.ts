@@ -87,3 +87,22 @@ export interface RegisteredAsset {
   visibility: FileVisibility;
   registrationDate: string; // ISO string of when the asset was registered
 }
+
+// Digital Footprint Discovery Types
+export type DigitalAccountAction = 'shareLogin' | 'notifyContact' | 'deleteAccount' | 'noAction';
+export type DigitalAccountCategory = 'Financial' | 'Social Media' | 'Email' | 'Work' | 'Utilities' | 'Shopping' | 'Entertainment' | 'Cloud Storage' | 'Gaming' | 'Other';
+export type DigitalAccountDiscoveryMethod = 'manual' | 'checklist' | 'inboxScan' | 'passwordManager';
+
+export interface DiscoveredAccount {
+  id: string;
+  userId: string;
+  serviceName: string;
+  category: DigitalAccountCategory;
+  username?: string; 
+  notes?: string; 
+  actionOnDeath: DigitalAccountAction;
+  assignedContactId?: string; 
+  linkedFileId?: string; 
+  discoveryMethod: DigitalAccountDiscoveryMethod;
+  dateAdded: string; // ISO string
+}
