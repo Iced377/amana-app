@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -208,7 +207,7 @@ export default function BeneficiariesPage() {
                         <SelectContent>
                             {countryCodes.map(country => (
                                 <SelectItem key={country.code} value={country.code}>
-                                   <span className="mr-1 rtl:ml-1">{country.flag}</span> {country.code}
+                                   <span className="mr-1 rtl:ml-1">{country.flag}</span> {country.name} ({country.code})
                                 </SelectItem>
                             ))}
                         </SelectContent>
