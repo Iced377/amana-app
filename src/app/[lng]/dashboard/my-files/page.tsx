@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import type { VaultFile, FileType } from '@/types';
-import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole, Unlock, Eye, Download, X } from 'lucide-react';
+import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole, Unlock, Eye, Download, X, Cloud, Info } from 'lucide-react';
 import { performAiTagging, performShariahComplianceCheck } from './actions';
 import {
   DropdownMenu,
@@ -197,6 +197,13 @@ export default function MyFilesPage() {
       setTimeout(() => {
         handleDownloadFile(file);
       }, index * 500); 
+    });
+  };
+
+  const handleConnectCloudService = (serviceName: string) => {
+    toast({
+      title: "Coming Soon!",
+      description: `Integration with ${serviceName} is planned for a future update.`,
     });
   };
   
@@ -448,6 +455,42 @@ export default function MyFilesPage() {
         </CardContent>
       </Card>
 
+      <Card className="shadow-md">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Cloud className="h-5 w-5 text-primary"/> Cloud Storage Integrations</CardTitle>
+          <CardDescription>Connect your existing cloud storage accounts to easily import files.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { name: "Dropbox", icon: Cloud },
+              { name: "Google Drive", icon: Cloud },
+              { name: "OneDrive", icon: Cloud },
+              { name: "iCloud", icon: Cloud },
+            ].map((service) => (
+              <Card key={service.name} className="p-4 flex flex-col items-center justify-center">
+                <service.icon className="h-10 w-10 text-muted-foreground mb-2" />
+                <p className="font-medium mb-3">{service.name}</p>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => handleConnectCloudService(service.name)}
+                >
+                  Connect
+                </Button>
+              </Card>
+            ))}
+          </div>
+          <div className="flex items-center p-3 bg-accent/50 rounded-lg mt-4">
+              <Info className="h-5 w-5 text-accent-foreground mr-2 rtl:ml-2 shrink-0" />
+              <p className="text-sm text-accent-foreground">
+              Importing files from cloud services is a planned feature. Connecting will allow you to browse and select files to add to your Guardian Angel vault.
+              </p>
+          </div>
+        </CardContent>
+      </Card>
+
+
       {editingFile && (
         <Dialog open={!!editingFile} onOpenChange={(isOpen) => { if(!isOpen) setEditingFile(null)}}>
           <DialogContent>
@@ -482,7 +525,7 @@ export default function MyFilesPage() {
         }
       }}>
         <DialogContent className="sm:max-w-[90vw] md:max-w-[70vw] lg:max-w-[60vw] xl:max-w-[50vw] h-[85vh] flex flex-col">
-          <DialogHeader>
+          <DialogHeader className="flex flex-row justify-between items-center">
             <DialogTitle>Preview: {fileToPreview?.name}</DialogTitle>
             <DialogClose asChild>
                 <Button variant="ghost" size="icon" onClick={() => { setIsPreviewOpen(false); setFileToPreview(null); setPreviewContentUrl(null); }}>
@@ -499,8 +542,8 @@ export default function MyFilesPage() {
                     <Image 
                         src={previewContentUrl} 
                         alt={`Preview of ${fileToPreview.name}`} 
-                        layout="fill" 
-                        objectFit="contain" 
+                        fill={true}
+                        style={{objectFit: "contain"}}
                         data-ai-hint="file preview content"
                     />
                   </div>
@@ -515,7 +558,7 @@ export default function MyFilesPage() {
                   <div className="flex flex-col items-center justify-center h-full text-center p-4">
                     <FileText className="h-16 w-16 text-muted-foreground mb-4" />
                     <p className="text-muted-foreground mb-2">Preview not available for this document type.</p>
-                    <Button onClick={() => handleDownloadFile(fileToPreview)}>
+                    <Button onClick={() => fileToPreview && handleDownloadFile(fileToPreview)}>
                         <Download className="mr-2 h-4 w-4" /> Download Document
                     </Button>
                   </div>
@@ -524,7 +567,7 @@ export default function MyFilesPage() {
                    <div className="flex flex-col items-center justify-center h-full text-center p-4">
                     <FileQuestion className="h-16 w-16 text-muted-foreground mb-4" />
                     <p className="text-muted-foreground mb-2">Preview not available for this file type.</p>
-                     <Button onClick={() => handleDownloadFile(fileToPreview)}>
+                     <Button onClick={() => fileToPreview && handleDownloadFile(fileToPreview)}>
                         <Download className="mr-2 h-4 w-4" /> Download File
                     </Button>
                    </div>
@@ -551,5 +594,7 @@ export default function MyFilesPage() {
   );
 }
 
+
+    
 
     
