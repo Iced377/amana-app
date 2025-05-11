@@ -33,7 +33,9 @@ import type { LocaleTypes } from '@/locales/settings';
 import type { InsurancePolicy, InsuranceType, Currency, FileVisibility, Beneficiary } from '@/types';
 import { insuranceTypes, currencies } from '@/types';
 import { addInsurancePolicy, updateInsurancePolicy, deleteInsurancePolicy } from './actions';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
+import { arSA } from 'date-fns/locale/ar-SA';
+import { enUS } from 'date-fns/locale/en-US';
 import { ShieldAlert, PlusCircle, Edit3, Trash2, CalendarIcon, Search, UploadCloud, Eye, Download, X, FileText as FileIcon, Users, ArchiveRestore, Lock, Settings2, GripVertical, List } from 'lucide-react';
 
 // MOCK Beneficiaries - In a real app, this would come from context or be fetched
@@ -102,6 +104,7 @@ export default function InsurancePoliciesPage({ params }: { params: { lng: Local
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const availableBeneficiaries = MOCK_BENEFICIARIES; // Use mocked beneficiaries
+  const currentLocaleForDate = lng === 'ar' ? arSA : enUS;
 
   useEffect(() => {
     // Fetch policies if needed, for now using local state
@@ -154,7 +157,7 @@ export default function InsurancePoliciesPage({ params }: { params: { lng: Local
   };
   
   const handleDateChange = (name: 'startDate' | 'endDate', date?: Date) => {
-    setFormData(prev => ({ ...prev, [name]: date ? date.toISOString() : undefined }));
+    setFormData(prev => ({ ...prev, [name]: date && isValid(date) ? date.toISOString() : undefined }));
   };
 
   const handlePolicyFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -259,7 +262,6 @@ export default function InsurancePoliciesPage({ params }: { params: { lng: Local
     const policyToDelete = policies.find(p => p.id === policyId);
     if (!policyToDelete) return;
 
-    // In a real app, filePath would come from policyToDelete.filePath if storing paths
     const result = await deleteInsurancePolicy(policyId, policyToDelete.fileName); 
     if (result.success) {
       setPolicies(prev => prev.filter(p => p.id !== policyId));
@@ -345,6 +347,7 @@ export default function InsurancePoliciesPage({ params }: { params: { lng: Local
                 {filteredPolicies.map(policy => {
                     const visInfo = getVisibilityIconAndText(policy, availableBeneficiaries);
                     const translatedVisText = t(visInfo.textKey) + (visInfo.details ? ` (${visInfo.details})` : '');
+                    const policyEndDate = policy.endDate ? parseISO(policy.endDate) : null;
                     return (
                     <TableRow key={policy.id}>
                         <TableCell>{getPolicyTypeTranslation(policy.insuranceType)}</TableCell>
@@ -354,7 +357,7 @@ export default function InsurancePoliciesPage({ params }: { params: { lng: Local
                         {policy.insuredAmount?.toLocaleString(lng, { style: 'currency', currency: typeof policy.currency === 'string' && policy.currency !== 'Other' ? policy.currency : 'USD' }) ?? t('notApplicableShort')}
                         {typeof policy.currency === 'string' && policy.currency === 'Other' && policy.insuredAmount && <span className="text-xs"> (Other Currency)</span>}
                         </TableCell>
-                        <TableCell>{policy.endDate ? format(parseISO(policy.endDate), 'P', {locale: lng === 'ar' ? require('date-fns/locale/ar-SA') : undefined}) : t('notApplicableShort')}</TableCell>
+                        <TableCell>{policyEndDate && isValid(policyEndDate) ? format(policyEndDate, 'P', {locale: currentLocaleForDate}) : t('notApplicableShort')}</TableCell>
                         <TableCell>
                         <div className="flex items-center gap-1" title={translatedVisText}>
                             <visInfo.icon className={`h-4 w-4 ${visInfo.color}`} />
@@ -379,6 +382,7 @@ export default function InsurancePoliciesPage({ params }: { params: { lng: Local
                 {filteredPolicies.map(policy => {
                     const visInfo = getVisibilityIconAndText(policy, availableBeneficiaries);
                     const translatedVisText = t(visInfo.textKey) + (visInfo.details ? ` (${visInfo.details})` : '');
+                    const policyEndDate = policy.endDate ? parseISO(policy.endDate) : null;
                     return (
                     <Card key={policy.id} className="flex flex-col">
                         <CardHeader className="pb-2">
@@ -397,7 +401,7 @@ export default function InsurancePoliciesPage({ params }: { params: { lng: Local
                         </CardHeader>
                         <CardContent className="text-sm space-y-1 flex-grow">
                             <p>{t('insuredAmountLabel')}: {policy.insuredAmount?.toLocaleString(lng, { style: 'currency', currency: typeof policy.currency === 'string' && policy.currency !== 'Other' ? policy.currency : 'USD' }) ?? t('notApplicableShort')}</p>
-                            <p>{t('endDateLabel')}: {policy.endDate ? format(parseISO(policy.endDate), 'P', {locale: lng === 'ar' ? require('date-fns/locale/ar-SA') : undefined}) : t('notApplicableShort')}</p>
+                            <p>{t('endDateLabel')}: {policyEndDate && isValid(policyEndDate) ? format(policyEndDate, 'P', {locale: currentLocaleForDate}) : t('notApplicableShort')}</p>
                              <div className="flex items-center gap-1" title={translatedVisText}>
                                 <visInfo.icon className={`h-4 w-4 ${visInfo.color}`} />
                                 <span className="text-xs">{translatedVisText}</span>
@@ -421,7 +425,7 @@ export default function InsurancePoliciesPage({ params }: { params: { lng: Local
             <DialogTitle>{editingPolicy ? t('editPolicyTitle') : t('addPolicyTitle')}</DialogTitle>
             <DialogDescription>{editingPolicy ? t('editPolicyDesc') : t('addPolicyDesc')}</DialogDescription>
           </DialogHeader>
-          <ScrollArea className="flex-grow pr-6 -mr-6"> {/* Added ScrollArea */}
+          <ScrollArea className="flex-grow pr-6 -mr-6"> 
             <div className="grid gap-4 py-4 ">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -468,10 +472,10 @@ export default function InsurancePoliciesPage({ params }: { params: { lng: Local
                             <PopoverTrigger asChild>
                             <Button variant="outline" className="w-full justify-start text-left font-normal">
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {formData.startDate ? format(parseISO(formData.startDate), "PPP", {locale: lng === 'ar' ? require('date-fns/locale/ar-SA') : undefined}) : <span>{t('pickDatePlaceholder')}</span>}
+                                {formData.startDate && isValid(parseISO(formData.startDate)) ? format(parseISO(formData.startDate), "PPP", {locale: currentLocaleForDate}) : <span>{t('pickDatePlaceholder')}</span>}
                             </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.startDate ? parseISO(formData.startDate) : undefined} onSelect={(date) => handleDateChange('startDate', date)} initialFocus /></PopoverContent>
+                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.startDate && isValid(parseISO(formData.startDate)) ? parseISO(formData.startDate) : undefined} onSelect={(date) => handleDateChange('startDate', date)} initialFocus /></PopoverContent>
                         </Popover>
                     </div>
                     <div>
@@ -480,10 +484,10 @@ export default function InsurancePoliciesPage({ params }: { params: { lng: Local
                             <PopoverTrigger asChild>
                             <Button variant="outline" className="w-full justify-start text-left font-normal">
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {formData.endDate ? format(parseISO(formData.endDate), "PPP", {locale: lng === 'ar' ? require('date-fns/locale/ar-SA') : undefined}) : <span>{t('pickDatePlaceholder')}</span>}
+                                {formData.endDate && isValid(parseISO(formData.endDate)) ? format(parseISO(formData.endDate), "PPP", {locale: currentLocaleForDate}) : <span>{t('pickDatePlaceholder')}</span>}
                             </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.endDate ? parseISO(formData.endDate) : undefined} onSelect={(date) => handleDateChange('endDate', date)} /></PopoverContent>
+                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.endDate && isValid(parseISO(formData.endDate)) ? parseISO(formData.endDate) : undefined} onSelect={(date) => handleDateChange('endDate', date)} /></PopoverContent>
                         </Popover>
                     </div>
                 </div>
@@ -560,3 +564,4 @@ export default function InsurancePoliciesPage({ params }: { params: { lng: Local
     </div>
   );
 }
+
