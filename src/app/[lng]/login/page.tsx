@@ -1,20 +1,26 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, LogIn } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ShieldCheck, LogIn, Phone, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ModeToggle } from "@/components/mode-toggle";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
 import type { UserProfile } from "@/types";
 import type { LocaleTypes } from "@/locales/settings";
-import { auth, googleProvider } from '@/lib/firebase'; // Import Firebase auth and provider
-import { signInWithPopup, type UserCredential } from "firebase/auth"; // Import signInWithPopup
+import { auth, googleProvider } from '@/lib/firebase';
+import { 
+  signInWithPopup, 
+  type UserCredential, 
+  RecaptchaVerifier, 
+  signInWithPhoneNumber,
+  type ConfirmationResult
+} from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 
 // Inline SVG for Google Icon
@@ -49,103 +55,163 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const { toast } = useToast();
 
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otp, setOtp] = useState('');
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [otpSent, setOtpSent] = useState(false);
+  const [loadingOtp, setLoadingOtp] = useState(false);
+  const [loadingVerifyOtp, setLoadingVerifyOtp] = useState(false);
+
   const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes;
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !window.recaptchaVerifierInstance) { // Changed to recaptchaVerifierInstance to avoid conflict
+      window.recaptchaVerifierInstance = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': (response: any) => {
+          // reCAPTCHA solved
+        },
+        'expired-callback': () => {
+          toast({ title: "reCAPTCHA Expired", description: "Please try sending OTP again.", variant: "destructive" });
+        }
+      });
+    }
+  }, [toast]);
+
+
+  const handleSuccessfulLogin = (firebaseUser: any, method: "Google" | "Email" | "Phone") => {
+    let userProfile: UserProfile;
+
+    if (!currentGlobalProfile || currentGlobalProfile.id === 'guestUser' || currentGlobalProfile.id !== firebaseUser.uid) {
+      userProfile = {
+        id: firebaseUser.uid,
+        email: firebaseUser.email || null, 
+        displayName: firebaseUser.displayName || (firebaseUser.phoneNumber ? `User ${firebaseUser.phoneNumber.slice(-4)}` : 'New User'),
+        mode: currentGlobalProfile?.mode || 'conventional',
+        language: currentLocale,
+        subscriptionTier: currentGlobalProfile?.subscriptionTier || 'free',
+        is2FAEnabled: currentGlobalProfile?.is2FAEnabled || false,
+        encryptionKey: undefined,
+        sadaqahEnabled: currentGlobalProfile?.sadaqahEnabled || false,
+      };
+      const key = generateEncryptionKey();
+      if (!key) {
+        console.error(`Failed to generate encryption key on ${method} login.`);
+        toast({ title: "Login Error", description: "Could not initialize security settings.", variant: "destructive" });
+        return;
+      }
+      userProfile.encryptionKey = key;
+    } else {
+      userProfile = {
+        ...currentGlobalProfile,
+        id: firebaseUser.uid,
+        email: firebaseUser.email || currentGlobalProfile.email, 
+        displayName: firebaseUser.displayName || currentGlobalProfile.displayName, 
+        language: currentLocale,
+      };
+      if (!userProfile.encryptionKey) {
+        const key = generateEncryptionKey();
+        if (!key) {
+            console.error(`Failed to generate encryption key for existing profile on ${method} login.`);
+            toast({ title: "Security Warning", description: "Could not re-verify security settings.", variant: "destructive" });
+        } else {
+            userProfile.encryptionKey = key;
+        }
+      }
+    }
+    
+    setProfile(userProfile);
+    router.push(`/${currentLocale}/dashboard`);
+  };
 
   const handleGoogleSignIn = async () => {
     try {
       const result: UserCredential = await signInWithPopup(auth, googleProvider);
-      const firebaseUser = result.user;
-
-      let userProfile: UserProfile;
-      // Check if a profile already exists for this user or if it's a guest profile
-      if (!currentGlobalProfile || currentGlobalProfile.id === 'guestUser' || currentGlobalProfile.id !== firebaseUser.uid) {
-        userProfile = {
-          id: firebaseUser.uid, // Use Firebase UID
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          mode: currentGlobalProfile?.mode || 'conventional', // Retain mode if existing profile was just guest
-          language: currentLocale,
-          subscriptionTier: currentGlobalProfile?.subscriptionTier || 'free',
-          is2FAEnabled: currentGlobalProfile?.is2FAEnabled || false, // Retain 2FA status or default
-          encryptionKey: currentGlobalProfile?.encryptionKey, // Attempt to retain existing key
-        };
-         // Ensure encryption key exists if it's a truly new profile context for this user
-        if (!userProfile.encryptionKey) {
-          const key = generateEncryptionKey();
-          if (!key) {
-            console.error("Failed to generate encryption key on Google login.");
-            toast({ title: "Login Error", description: "Could not initialize security settings.", variant: "destructive" });
-            return;
-          }
-          userProfile.encryptionKey = key;
-        }
-      } else {
-        // User is logging in again, use existing profile but update with Firebase details if necessary
-        userProfile = {
-          ...currentGlobalProfile,
-          id: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          language: currentLocale, // Update language if it changed
-        };
-      }
-      
-      console.log("Google Sign-In Profile being set in LoginPage:", JSON.stringify(userProfile, null, 2));
-      setProfile(userProfile);
-      router.push(`/${currentLocale}/dashboard`);
+      handleSuccessfulLogin(result.user, "Google");
     } catch (error: any) {
       console.error("Google Sign-In error:", error);
       toast({ title: "Google Sign-In Failed", description: error.message || "An unexpected error occurred.", variant: "destructive" });
     }
   };
 
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleEmailPasswordSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    console.log("Login submitted for:", email);
-
-    const mockUserId = `user_${email.split('@')[0] || Date.now()}`; 
-    
-    let userProfile: UserProfile; 
-
-    if (!currentGlobalProfile || currentGlobalProfile.id === 'guestUser') { 
-        userProfile = {
-            id: mockUserId,
-            email: email,
-            displayName: email.split('@')[0], 
-            mode: 'conventional', 
-            language: currentLocale, 
-            subscriptionTier: 'free',
-            is2FAEnabled: false,
-            encryptionKey: undefined,
-        };
-    } else {
-        userProfile = { 
-          ...currentGlobalProfile, 
-          email: email, 
-          id: currentGlobalProfile.id || mockUserId, 
-          language: currentLocale, 
-        };
-    }
-    
-    if (!userProfile.encryptionKey) {
-        try {
-            const key = generateEncryptionKey();
-            if (!key) {
-              console.error("Failed to generate encryption key on login.");
-            } else {
-              console.log("Encryption key generated/ensured on login.");
-              userProfile.encryptionKey = key;
-            }
-        } catch (error) {
-            console.error("Error with encryption key on login:", error);
-        }
-    }
-    
-    console.log("Profile being set in LoginPage:", JSON.stringify(userProfile, null, 2));
-    setProfile(userProfile); 
-    router.push(`/${currentLocale}/dashboard`);
+    console.log("Email/Password Login submitted for:", email);
+    const mockFirebaseUser = {
+      uid: `user_${email.split('@')[0] || Date.now()}`,
+      email: email,
+      displayName: email.split('@')[0],
+    };
+    handleSuccessfulLogin(mockFirebaseUser, "Email");
   };
+  
+  const handleSendOtp = async () => {
+    if (!phoneNumber) {
+      toast({ title: "Phone Number Required", description: "Please enter your phone number.", variant: "destructive" });
+      return;
+    }
+    if (!window.recaptchaVerifierInstance) { // Changed to recaptchaVerifierInstance
+      toast({ title: "reCAPTCHA Error", description: "reCAPTCHA not initialized. Please refresh.", variant: "destructive" });
+      return;
+    }
+    setLoadingOtp(true);
+    try {
+      const formattedPhoneNumber = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhoneNumber, window.recaptchaVerifierInstance); // Changed
+      setConfirmationResult(confirmation);
+      setOtpSent(true);
+      toast({ title: "OTP Sent", description: `An OTP has been sent to ${formattedPhoneNumber}.` });
+    } catch (error: any) {
+      console.error("Error sending OTP:", error);
+      toast({ title: "Failed to Send OTP", description: error.message || "Please check the phone number or try again.", variant: "destructive" });
+      if (window.grecaptcha && window.recaptchaVerifierInstance?.verifierId !== undefined) { // Check grecaptcha and verifierId
+         try {
+            // @ts-ignore
+            const widgetId = window.recaptchaVerifierInstance.widgetId; // Access widgetId if available
+            if (typeof widgetId === 'number') {
+                window.grecaptcha.reset(widgetId);
+            } else {
+                // Fallback if widgetId is not directly accessible or normal recaptcha
+                const recaptchaContainer = document.getElementById('recaptcha-container');
+                if (recaptchaContainer) recaptchaContainer.innerHTML = ''; // Clear container
+                 window.recaptchaVerifierInstance = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                    'size': 'invisible',
+                    'callback': () => {},
+                    'expired-callback': () => {}
+                 });
+                 if(window.recaptchaVerifierInstance.render) window.recaptchaVerifierInstance.render(); // Re-render if possible
+            }
+         } catch(e) {
+            console.warn("Could not reset reCAPTCHA explicitly", e);
+         }
+      }
+    } finally {
+      setLoadingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp) {
+      toast({ title: "OTP Required", description: "Please enter the OTP.", variant: "destructive" });
+      return;
+    }
+    if (!confirmationResult) {
+      toast({ title: "Verification Error", description: "OTP not sent or session expired. Please try sending OTP again.", variant: "destructive" });
+      return;
+    }
+    setLoadingVerifyOtp(true);
+    try {
+      const result = await confirmationResult.confirm(otp);
+      toast({ title: "Phone Verification Successful!", description: "Logging you in..." });
+      handleSuccessfulLogin(result.user, "Phone");
+    } catch (error: any) {
+      console.error("Error verifying OTP:", error);
+      toast({ title: "OTP Verification Failed", description: error.message || "Invalid OTP or an error occurred.", variant: "destructive" });
+    } finally {
+      setLoadingVerifyOtp(false);
+    }
+  };
+
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-secondary/30 p-4">
@@ -161,38 +227,96 @@ export default function LoginPage() {
           <CardDescription>Log in to your Guardian Angel account.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link href={`/${currentLocale}/forgot-password`} className="text-sm text-primary hover:underline">
-                  Forgot password?
-                </Link>
+          <Tabs defaultValue="email" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="email">Email/Password</TabsTrigger>
+              <TabsTrigger value="phone">Phone OTP</TabsTrigger>
+            </TabsList>
+            <TabsContent value="email">
+              <form onSubmit={handleEmailPasswordSubmit} className="space-y-6 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Password</Label>
+                    <Link href={`/${currentLocale}/forgot-password`} className="text-sm text-primary hover:underline">
+                      Forgot password?
+                    </Link>
+                  </div>
+                  <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+                </div>
+                <Button type="submit" className="w-full" size="lg">
+                  <LogIn className="mr-2 rtl:ml-2 h-5 w-5" /> Log In
+                </Button>
+              </form>
+            </TabsContent>
+            <TabsContent value="phone">
+              <div className="space-y-6 mt-4">
+                {!otpSent ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="phone-number">Phone Number</Label>
+                      <Input 
+                        id="phone-number" 
+                        type="tel" 
+                        placeholder="+12345678900" 
+                        value={phoneNumber} 
+                        onChange={e => setPhoneNumber(e.target.value)} 
+                        required 
+                      />
+                       <p className="text-xs text-muted-foreground">Include country code (e.g., +1 for USA).</p>
+                    </div>
+                    <Button onClick={handleSendOtp} className="w-full" size="lg" disabled={loadingOtp}>
+                      {loadingOtp ? 'Sending OTP...' : <><Phone className="mr-2 rtl:ml-2 h-5 w-5" /> Send OTP</>}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                     <div className="space-y-2">
+                      <Label htmlFor="otp">Enter OTP</Label>
+                      <Input 
+                        id="otp" 
+                        type="text" 
+                        placeholder="Enter 6-digit OTP" 
+                        value={otp} 
+                        onChange={e => setOtp(e.target.value)} 
+                        maxLength={6}
+                        required 
+                      />
+                    </div>
+                    <Button onClick={handleVerifyOtp} className="w-full" size="lg" disabled={loadingVerifyOtp}>
+                      {loadingVerifyOtp ? 'Verifying...' : <><MessageSquare className="mr-2 rtl:ml-2 h-5 w-5" /> Verify OTP & Login</>}
+                    </Button>
+                    <Button variant="link" onClick={() => {setOtpSent(false); setConfirmationResult(null); setOtp('');}} className="w-full">
+                        Use a different phone number?
+                    </Button>
+                  </div>
+                )}
               </div>
-              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-            </div>
-            <Button type="submit" className="w-full" size="lg">
-              <LogIn className="mr-2 rtl:ml-2 h-5 w-5" /> Log In
-            </Button>
-          </form>
-          <div className="my-4 flex items-center before:flex-1 before:border-t before:border-border after:flex-1 after:border-t after:border-border">
+            </TabsContent>
+          </Tabs>
+          
+          <div id="recaptcha-container"></div>
+
+          <div className="my-6 flex items-center before:flex-1 before:border-t before:border-border after:flex-1 after:border-t after:border-border">
             <p className="mx-4 text-center text-sm text-muted-foreground">OR</p>
           </div>
           <Button variant="outline" className="w-full" size="lg" onClick={handleGoogleSignIn}>
             <GoogleIcon /> Sign in with Google
           </Button>
         </CardContent>
-        <CardFooter className="text-center text-sm">
+        <CardFooter className="text-center text-sm flex-col gap-2">
           <p>
             Don't have an account?{" "}
             <Link href={`/${currentLocale}/signup`} className="text-primary hover:underline font-medium">
               Sign up
             </Link>
           </p>
+          <Link href={`/${currentLocale}/info-help`} className="text-xs text-muted-foreground hover:underline">
+            Need help or information?
+          </Link>
         </CardFooter>
       </Card>
        <p className="mt-8 text-xs text-muted-foreground">
@@ -200,4 +324,11 @@ export default function LoginPage() {
       </p>
     </div>
   );
+}
+
+declare global {
+  interface Window {
+    recaptchaVerifierInstance?: RecaptchaVerifier; // Changed to recaptchaVerifierInstance
+    grecaptcha?: any;
+  }
 }
