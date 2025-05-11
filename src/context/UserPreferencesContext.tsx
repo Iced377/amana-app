@@ -29,6 +29,7 @@ const defaultProfile: UserProfile = {
   subscriptionTier: 'free',
   is2FAEnabled: false,
   encryptionKey: undefined, 
+  sadaqahEnabled: false, // Default Sadaqah to false
 };
 
 export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -40,7 +41,8 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
     if (storedProfileString) {
       try {
         const storedProfile = JSON.parse(storedProfileString) as UserProfile;
-        setProfileState(storedProfile);
+        // Ensure new fields have defaults if not in storedProfile
+        setProfileState({ ...defaultProfile, ...storedProfile, id: storedProfile.id || 'guestUser' });
       } catch (e) {
         console.error("Failed to parse userProfile from localStorage", e);
         setProfileState({...defaultProfile, id: 'guestUser', displayName: 'Guest User'});
@@ -57,12 +59,14 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
       localStorage.setItem('userProfile', JSON.stringify(newProfile));
     } else {
       localStorage.removeItem('userProfile');
+      // When profile is null (e.g., logout), reset to a guest-like default state
       setProfileState({...defaultProfile, id: 'guestUser', displayName: 'Guest User'});
     }
   }, []);
   
   const updateProfileField = useCallback((updates: Partial<UserProfile>) => {
     setProfileState(prevProfile => {
+      // Ensure that even if prevProfile is null, we start from defaultProfile structure
       const baseProfile = prevProfile || defaultProfile;
       const updatedProfile = { ...baseProfile, ...updates, id: baseProfile.id || (updates.id || 'guestUser') };
       localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
@@ -93,11 +97,17 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
       console.warn("Using insecure fallback for crypto.getRandomValues. This should not happen in a browser environment.");
     }
     const key = Array.from(array, dec => ('0' + dec.toString(16)).slice(-2)).join('');
+    console.log("Generated encryption key (demo):", key); // Demo only
     return key;
   };
 
   const getEncryptionKey = (): string | null => {
-    return profile?.encryptionKey || null;
+    if (profile?.encryptionKey) {
+      return profile.encryptionKey;
+    }
+    // Fallback for older profiles or if key somehow missing, though this shouldn't happen with current signup/login logic
+    console.warn("Encryption key requested but not found in profile. This might indicate an issue.");
+    return null;
   };
 
 
@@ -138,3 +148,4 @@ export const useUserPreferences = (): UserPreferencesContextType => {
   }
   return context;
 };
+

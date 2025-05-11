@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, ShieldCheck, Star } from "lucide-react";
+import { CheckCircle, ShieldCheck, Star, Gift } from "lucide-react"; // Added Gift
 import Link from "next/link";
 import { AppLogo } from "@/components/AppLogo"; // AppLogo import
 import { usePathname } from "next/navigation"; // For currentLocale
@@ -137,6 +137,23 @@ export default function PricingPage() {
                 </Card>
               ))}
             </div>
+
+            <Card className="mt-12 shadow-md bg-primary/5 dark:bg-primary/10 border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Gift className="h-6 w-6 text-primary"/> Support a Cause with Your Subscription</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Guardian Angel offers a Sadaqah (charitable giving) option for users in Islamic Mode. If you enable this feature in your account settings, a portion of your subscription fee will be automatically donated to support reputable charitable causes, such as those assisting orphans and widows.
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  This is an optional way to make your subscription even more meaningful. You can manage this preference at any time in your account settings after signing up.
+                </p>
+                 <Button variant="link" asChild className="p-0 h-auto mt-2">
+                    <Link href={`/${currentLocale}/info-help#islamic-mode`}>Learn more about Islamic Mode</Link>
+                 </Button>
+              </CardContent>
+            </Card>
             
             <div className="mt-16 text-center">
               <h2 className="text-2xl font-semibold">Already have an account?</h2>
@@ -198,3 +215,4 @@ export default function PricingPage() {
     </div>
   );
 }
+

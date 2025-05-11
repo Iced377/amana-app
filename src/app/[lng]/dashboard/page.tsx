@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Users, ShieldCheck, UploadCloud, Clock, HardDrive, Landmark, Info, Unlock } from "lucide-react";
+import { FileText, Users, ShieldCheck, UploadCloud, Clock, HardDrive, Landmark, Info, Unlock, Star, Gift } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
@@ -82,14 +82,24 @@ export default function DashboardPage() {
             <CardTitle className="flex items-center gap-2"><Landmark className="h-6 w-6 text-primary" /> Islamic Legacy Planning</CardTitle>
             <CardDescription>Access tools for Wasiyyah and Faraid considerations in line with Islamic principles.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3"> {/* Increased space-y for better separation */}
             <p className="text-sm text-muted-foreground">
               You are currently in Islamic Mode. This enables features tailored for Islamic inheritance.
             </p>
-            <Button variant="outline" asChild>
-                <Link href={`/${currentLocale}/dashboard/islamic-inheritance`}>Go to Islamic Inheritance</Link>
-            </Button>
-             <Button variant="link" asChild className="text-xs"><Link href={`/${currentLocale}/dashboard/settings`}>Switch to Conventional Mode</Link></Button>
+            {profile.sadaqahEnabled && (
+              <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 p-3 rounded-md">
+                <Gift className="h-5 w-5" /> {/* Using Gift icon */}
+                <p>Your subscription supports Sadaqah for those in need. JazakAllah Khair! 🌟</p>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2"> {/* Added flex-wrap for smaller screens */}
+                <Button variant="outline" asChild>
+                    <Link href={`/${currentLocale}/dashboard/islamic-inheritance`}>Go to Islamic Inheritance</Link>
+                </Button>
+                 <Button variant="link" asChild className="text-xs p-0 h-auto"> {/* Ensure link button styling */}
+                    <Link href={`/${currentLocale}/dashboard/settings`}>Manage Settings & Sadaqah</Link>
+                 </Button>
+            </div>
           </CardContent>
         </Card>
       )}

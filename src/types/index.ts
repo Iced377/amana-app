@@ -45,6 +45,7 @@ export interface UserProfile {
   // e.g., derived from password or managed by a KMS.
   // Storing directly in profile/localStorage is for demo purposes.
   encryptionKey?: string; 
+  sadaqahEnabled?: boolean; // For Sadaqah Subscription feature
 }
 
 export interface ActiveSession {
@@ -54,3 +55,4 @@ export interface ActiveSession {
   lastAccessed: string; // ISO string
   location?: string; // e.g., "City, Country"
 }
+

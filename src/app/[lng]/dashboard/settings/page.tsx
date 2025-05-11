@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserCircle, Lock, Bell, Globe, Trash2, Download, ShieldAlert, LogOut, ListChecks, CreditCard, MoonStar } from "lucide-react";
+import { UserCircle, Lock, Bell, Globe, Trash2, Download, ShieldAlert, LogOut, ListChecks, CreditCard, MoonStar, Gift } from "lucide-react";
 import { ModeToggle } from "@/components/mode-toggle";
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import type { Language, UserPreferenceMode, ActiveSession } from '@/types';
@@ -76,6 +76,14 @@ export default function SettingsPage() {
     toast({
       title: "Mode Changed",
       description: `Application mode set to ${newMode === 'islamic' ? 'Islamic' : 'Conventional'}.`,
+    });
+  };
+
+  const handleSadaqahToggle = (checked: boolean) => {
+    updateProfileField({ sadaqahEnabled: checked });
+    toast({
+      title: `Sadaqah Contribution ${checked ? 'Enabled' : 'Disabled'}`,
+      description: `Your Sadaqah contribution preference has been ${checked ? 'activated' : 'deactivated'}.`,
     });
   };
 
@@ -217,13 +225,40 @@ export default function SettingsPage() {
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><CreditCard className="h-6 w-6 text-primary" /> Subscription & Billing</CardTitle>
-          <CardDescription>Manage your Guardian Angel subscription plan.</CardDescription>
+          <CardDescription>Manage your Guardian Angel subscription plan and charitable contributions.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
             <div>
                 <p className="text-sm">Current Plan: <span className="font-semibold capitalize">{profile.subscriptionTier}</span></p>
                 {profile.subscriptionEndDate && <p className="text-sm">Renews/Expires on: {new Date(profile.subscriptionEndDate).toLocaleDateString()}</p>}
             </div>
+            
+            {profile.mode === 'islamic' && (
+              <>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="sadaqahEnabled" className="flex flex-col space-y-1">
+                    <span>Sadaqah Contribution</span>
+                    <span className="font-normal leading-snug text-muted-foreground">
+                      Enable to automatically donate a portion of your subscription fee to charity (e.g., for orphans and widows).
+                    </span>
+                  </Label>
+                  <Switch 
+                    id="sadaqahEnabled" 
+                    checked={profile.sadaqahEnabled || false} 
+                    onCheckedChange={handleSadaqahToggle}
+                  />
+                </div>
+                 {profile.sadaqahEnabled && (
+                  <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 p-3 rounded-md">
+                    <Gift className="h-5 w-5" />
+                    <p>Thank you! A portion of your subscription supports sadaqah. JazakAllah Khair!</p>
+                  </div>
+                )}
+              </>
+            )}
+
+            <Separator />
             <div className="flex gap-2">
                  <Button asChild variant="default">
                     <Link href={`/${currentLocale}/pricing`}>Upgrade Plan</Link>
@@ -312,3 +347,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+
