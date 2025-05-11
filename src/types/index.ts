@@ -1,4 +1,3 @@
-
 import type { LucideIcon } from 'lucide-react';
 
 export type FileType = 'document' | 'image' | 'video' | 'other';
@@ -81,8 +80,7 @@ export interface RegisteredAsset {
   fileName?: string; 
   fileType?: string; 
   fileSize?: number; // in bytes
-  // filePath?: string; // Path in Firebase Storage - assuming dataUri is used for now like VaultFile
-  fileDataUri?: string; // If a file is directly uploaded with the asset
+  fileDataUri?: string; 
   beneficiaryIds?: string[];
   visibility: FileVisibility;
   registrationDate: string; // ISO string of when the asset was registered
@@ -105,4 +103,37 @@ export interface DiscoveredAccount {
   linkedFileId?: string; 
   discoveryMethod: DigitalAccountDiscoveryMethod;
   dateAdded: string; // ISO string
+}
+
+// Insurance Policy Types
+export const insuranceTypes = ['Life', 'Health', 'Vehicle', 'Home', 'Travel', 'Other'] as const;
+export type InsuranceType = typeof insuranceTypes[number];
+
+export const currencies = ['USD', 'EUR', 'AED', 'SAR', 'GBP', 'JPY', 'CAD', 'AUD', 'Other'] as const;
+export type Currency = typeof currencies[number];
+
+
+export interface InsurancePolicy {
+  id: string;
+  userId: string;
+  insuranceType: InsuranceType;
+  companyName: string;
+  policyNumber: string;
+  insuredAmount: number | null;
+  currency: Currency | string; // Allow 'Other' as string
+  startDate?: string; // ISO string
+  endDate?: string; // ISO string
+  policyBeneficiariesText?: string; // Text list of beneficiaries for the policy itself
+  additionalCoverage?: string;
+  
+  // File-related fields (optional attachment)
+  fileDataUri?: string; // Base64 data URI of the uploaded policy document
+  fileName?: string;
+  fileType?: string; // Mime type
+  fileSize?: number; // in bytes
+  
+  visibility: FileVisibility; // Re-use FileVisibility type
+  specificSharedBeneficiaryIds?: string[]; // For 'sharedImmediately' or 'releaseOnDeath' if specific to this policy
+
+  registrationDate: string; // ISO string
 }

@@ -20,7 +20,8 @@ import {
   BookOpen, 
   DollarSign, 
   FolderPlus, 
-  Fingerprint, // Added for Digital Footprint
+  Fingerprint, 
+  ShieldAlert as InsuranceIcon, // Added for Insurance Policies
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -43,12 +44,11 @@ export default function DashboardLayout({
   params, 
 }: {
   children: React.ReactNode;
-  params: { lng: LocaleTypes }; // params might be a Promise initially
+  params: { lng: LocaleTypes }; 
 }) {
   const { profile } = useUserPreferences();
   const pathname = usePathname();
   
-  // Unwrap params using React.use() if it's a Promise
   const resolvedParams = use(params);
   const currentLocale = resolvedParams.lng;
   
@@ -59,7 +59,8 @@ export default function DashboardLayout({
     { href: `/${currentLocale}/dashboard`, labelKey: 'dashboardTitle', icon: Home },
     { href: `/${currentLocale}/dashboard/my-files`, labelKey: 'myFilesTitle', icon: FileText },
     { href: `/${currentLocale}/dashboard/register-assets`, labelKey: 'registerAssetsTitle', icon: FolderPlus }, 
-    { href: `/${currentLocale}/dashboard/digital-footprint`, labelKey: 'digitalFootprintTitle', icon: Fingerprint }, // New Nav Item
+    { href: `/${currentLocale}/dashboard/insurance-policies`, labelKey: 'insurancePoliciesTitle', icon: InsuranceIcon }, // New Nav Item
+    { href: `/${currentLocale}/dashboard/digital-footprint`, labelKey: 'digitalFootprintTitle', icon: Fingerprint }, 
     { href: `/${currentLocale}/dashboard/beneficiaries`, labelKey: 'beneficiariesTitle', icon: Users },
     { href: `/${currentLocale}/dashboard/shared-upon-death`, labelKey: 'sharedUponDeathTitle', icon: Share2 },
     ...(profile?.mode === 'islamic' ? [{ href: `/${currentLocale}/dashboard/islamic-inheritance`, labelKey: 'islamicInheritancePlanning', icon: Landmark }] : []),
@@ -70,12 +71,12 @@ export default function DashboardLayout({
   
   const getLabel = (key: string) => {
     const translated = t(key);
-    // Fallback for keys not yet in translation files
     if (translated === key || translated === '') { 
         switch (key) {
             case 'dashboardTitle': return 'Dashboard';
             case 'myFilesTitle': return 'My Files';
             case 'registerAssetsTitle': return 'Register Assets';
+            case 'insurancePoliciesTitle': return 'Insurance Policies';
             case 'digitalFootprintTitle': return 'Digital Footprint';
             case 'beneficiariesTitle': return 'Beneficiaries';
             case 'sharedUponDeathTitle': return 'Shared Upon Death';
