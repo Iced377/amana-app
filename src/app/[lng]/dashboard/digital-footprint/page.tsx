@@ -36,24 +36,23 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox'; // Added Checkbox
 import { useToast } from '@/hooks/use-toast';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { useTranslation } from '@/locales/client';
 import type { LocaleTypes } from '@/locales/settings';
-import type { DiscoveredAccount, DigitalAccountAction, DigitalAccountCategory, VaultFile, Beneficiary } from '@/types';
+import type { DiscoveredAccount, DigitalAccountAction, DigitalAccountCategory, VaultFile, Beneficiary, DigitalAccountDiscoveryMethod } from '@/types';
 import { Fingerprint, Mail, Search, CheckSquare, Edit3, Trash2, LinkIcon, PlusCircle, Info } from 'lucide-react';
 
 // Mock data - replace with actual data fetching
 const MOCK_VAULT_FILES: VaultFile[] = [
-  { id: 'file1', name: 'Passwords.docx', type: 'document', size: 12345, uploadDate: new Date().toISOString(), dataUri: '', aiTags: [], visibility: 'private', icon: FileText },
-  { id: 'file2', name: 'SocialMediaLogins.pdf', type: 'document', size: 67890, uploadDate: new Date().toISOString(), dataUri: '', aiTags: [], visibility: 'private', icon: FileText },
+  { id: 'file1', name: 'Passwords.docx', type: 'document', size: 12345, uploadDate: new Date().toISOString(), dataUri: '', aiTags: [], visibility: 'private', icon: Fingerprint },
+  { id: 'file2', name: 'SocialMediaLogins.pdf', type: 'document', size: 67890, uploadDate: new Date().toISOString(), dataUri: '', aiTags: [], visibility: 'private', icon: Fingerprint },
 ];
 const MOCK_BENEFICIARIES: Beneficiary[] = [
   { id: 'ben1', name: 'Alice Wonderland', email: 'alice@example.com' },
   { id: 'ben2', name: 'Bob The Builder', email: 'bob@example.com' },
 ];
-// Dummy Icon for FileText (not actually imported if not used, but for type consistency)
-const FileText = Fingerprint; 
 
 
 const initialAccountFormState: Omit<DiscoveredAccount, 'id' | 'userId' | 'dateAdded' | 'discoveryMethod'> = {
