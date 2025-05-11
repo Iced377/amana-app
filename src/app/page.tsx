@@ -1,3 +1,4 @@
+
 // Make this a client component to use usePathname or pass locale as prop if server-side
 "use client"; 
 import { Button } from "@/components/ui/button";
@@ -6,13 +7,27 @@ import Link from "next/link";
 import { ShieldCheck, Lock, Users, UploadCloud, BrainCircuit } from "lucide-react";
 import Image from "next/image";
 import { ModeToggle } from "@/components/mode-toggle";
+import { usePathname } from 'next/navigation'; // Import usePathname
+import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings'; // Import for fallback and locales type
 
 export default function HomePage() {
+  const pathname = usePathname();
+  let currentLocale: LocaleTypes = fallbackLng; // Default to fallbackLng
+
+  if (pathname) {
+    const segments = pathname.split('/');
+    // segments[0] is an empty string from the leading '/'
+    // segments[1] is the potential locale
+    if (segments.length > 1 && locales.includes(segments[1] as LocaleTypes)) {
+      currentLocale = segments[1] as LocaleTypes;
+    }
+  }
+  
   return (
     <div className="flex flex-col min-h-screen">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href={`/${currentLocale}/`} className="flex items-center gap-2"> {/* Ensure link to localized root */}
             <ShieldCheck className="h-8 w-8 text-primary" />
             <span className="text-xl font-bold">Guardian Angel</span>
           </Link>
@@ -46,7 +61,7 @@ export default function HomePage() {
                     <Link href={`/${currentLocale}/signup`}>Get Started for Free</Link>
                   </Button>
                   <Button asChild variant="outline" size="lg">
-                    <Link href="#features">Learn More</Link>
+                    <Link href={`/${currentLocale}/#features`}>Learn More</Link> {/* Ensure anchor links are also localized if page is /lng/ */}
                   </Button>
                 </div>
               </div>
@@ -194,7 +209,9 @@ export default function HomePage() {
       <footer className="border-t">
         <div className="container flex flex-col items-center justify-between gap-4 py-10 md:h-24 md:flex-row md:py-0">
           <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
-            <ShieldCheck className="h-6 w-6 text-primary" />
+             <Link href={`/${currentLocale}/`} className="flex items-center gap-2"> {/* Ensure link to localized root */}
+                <ShieldCheck className="h-6 w-6 text-primary" />
+             </Link>
             <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
               &copy; {new Date().getFullYear()} Guardian Angel. All rights reserved.
             </p>
@@ -202,11 +219,13 @@ export default function HomePage() {
           <nav className="flex gap-4 sm:gap-6">
             <Link href={`/${currentLocale}/security-info`} className="text-sm hover:underline underline-offset-4">Security</Link>
             <Link href={`/${currentLocale}/info-help`} className="text-sm hover:underline underline-offset-4">Help</Link>
-            <Link href="#" className="text-sm hover:underline underline-offset-4">Terms of Service</Link>
-            <Link href="#" className="text-sm hover:underline underline-offset-4">Privacy Policy</Link>
+            <Link href={`/${currentLocale}/terms`} className="text-sm hover:underline underline-offset-4">Terms of Service</Link>
+            <Link href={`/${currentLocale}/privacy`} className="text-sm hover:underline underline-offset-4">Privacy Policy</Link>
           </nav>
         </div>
       </footer>
     </div>
   );
 }
+
+    
