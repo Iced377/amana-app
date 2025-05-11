@@ -18,6 +18,7 @@ import {
   Landmark, 
   BookOpen, 
   DollarSign, 
+  FolderPlus, // Added for Register Assets
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -37,29 +38,21 @@ import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings';
 
 export default function DashboardLayout({
   children,
-  params, // params is part of Next.js layout signature, kept for convention
+  params, 
 }: {
   children: React.ReactNode;
-  params: { lng: LocaleTypes }; // Define params type
+  params: { lng: LocaleTypes }; 
 }) {
   const { profile } = useUserPreferences();
   const pathname = usePathname();
-
-  let derivedLocale: LocaleTypes = fallbackLng;
-  if (pathname) {
-    const segments = pathname.split('/');
-    if (segments.length > 1 && locales.includes(segments[1] as LocaleTypes)) {
-      derivedLocale = segments[1] as LocaleTypes;
-    }
-  }
-  const currentLocale = derivedLocale; // Use the derived locale
-
+  const currentLocale = params.lng;
   const { t } = useTranslation(currentLocale); 
 
 
   const navItems = [
     { href: `/${currentLocale}/dashboard`, labelKey: 'dashboardTitle', icon: Home },
     { href: `/${currentLocale}/dashboard/my-files`, labelKey: 'myFilesTitle', icon: FileText },
+    { href: `/${currentLocale}/dashboard/register-assets`, labelKey: 'registerAssetsTitle', icon: FolderPlus }, // New Nav Item
     { href: `/${currentLocale}/dashboard/beneficiaries`, labelKey: 'beneficiariesTitle', icon: Users },
     { href: `/${currentLocale}/dashboard/shared-upon-death`, labelKey: 'sharedUponDeathTitle', icon: Share2 },
     ...(profile?.mode === 'islamic' ? [{ href: `/${currentLocale}/dashboard/islamic-inheritance`, labelKey: 'islamicInheritancePlanning', icon: Landmark }] : []),
@@ -70,18 +63,18 @@ export default function DashboardLayout({
   
   const getLabel = (key: string) => {
     const translated = t(key);
-    // Fallback logic for keys not found in translation files
     if (translated === key) { 
         switch (key) {
             case 'dashboardTitle': return 'Dashboard';
             case 'myFilesTitle': return 'My Files';
+            case 'registerAssetsTitle': return 'Register Assets';
             case 'beneficiariesTitle': return 'Beneficiaries';
             case 'sharedUponDeathTitle': return 'Shared Upon Death';
             case 'settingsTitle': return 'Settings';
             case 'islamicInheritancePlanning': return 'Islamic Inheritance';
             case 'pricingTitle': return 'Pricing';
             case 'infoHelpTitle': return 'Info & Help';
-            default: return key.replace(/([A-Z])/g, ' $1').trim(); // Format camelCase to Title Case
+            default: return key.replace(/([A-Z])/g, ' $1').trim(); 
         }
     }
     return translated;
@@ -93,7 +86,7 @@ export default function DashboardLayout({
       <div className="hidden border-r bg-sidebar md:block dark:bg-sidebar-dark">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-16 items-center border-b px-4 lg:px-6">
-            <AppLogo /> {/* AppLogo now determines locale internally */}
+            <AppLogo /> 
           </div>
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">

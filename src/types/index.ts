@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from 'lucide-react';
 
 export type FileType = 'document' | 'image' | 'video' | 'other';
@@ -9,9 +10,7 @@ export interface VaultFile {
   type: FileType;
   size: number; // in bytes
   uploadDate: string; // ISO string
-  // dataUri?: string; // Unencrypted data, primarily for upload and AI processing
-  // encryptedDataUri: string; // Encrypted data for storage // Removed as per user request to remove encryption on upload
-  dataUri: string; // Store unencrypted data URI directly as per user request
+  dataUri: string; 
   aiTags: string[];
   shariahCompliance?: {
     isCompliant: boolean;
@@ -21,11 +20,9 @@ export interface VaultFile {
     checkedAt: string;
   };
   visibility: FileVisibility;
-  // Used when visibility is 'sharedImmediately'
-  // If 'releaseOnDeath', it's assumed to be shared with ALL beneficiaries from the Beneficiary Management page.
   specificSharedBeneficiaryIds?: string[]; 
   icon: LucideIcon;
-  fileObject?: File; // The actual file object, temporary during upload
+  fileObject?: File; 
 }
 
 export interface Beneficiary {
@@ -42,7 +39,7 @@ export type Language = 'en' | 'ar';
 export type SubscriptionTier = 'free' | 'monthly' | 'quarterly' | 'yearly' | 'biyearly' | 'lifetime';
 
 export interface UserProfile {
-  id: string; // Firebase UID
+  id: string; 
   email: string | null;
   displayName: string | null;
   countryCode?: string;
@@ -50,7 +47,7 @@ export interface UserProfile {
   mode: UserPreferenceMode;
   language: Language;
   subscriptionTier: SubscriptionTier;
-  subscriptionEndDate?: string; // ISO string
+  subscriptionEndDate?: string; 
   is2FAEnabled: boolean;
   encryptionKey?: string; 
   sadaqahEnabled?: boolean; 
@@ -61,6 +58,32 @@ export interface ActiveSession {
   id: string;
   ipAddress: string;
   userAgent: string;
-  lastAccessed: string; // ISO string
-  location?: string; // e.g., "City, Country"
+  lastAccessed: string; 
+  location?: string; 
+}
+
+export const assetCategoryKeys = [
+  'financial', 
+  'property_vehicles', 
+  'insurance', 
+  'legal', 
+  'digital', 
+  'personal_items'
+] as const;
+
+export type AssetCategoryKey = typeof assetCategoryKeys[number];
+
+export interface RegisteredAsset {
+  id: string; 
+  userId: string; 
+  categoryKey: AssetCategoryKey; 
+  assetDescription: string;
+  fileName?: string; 
+  fileType?: string; 
+  fileSize?: number; // in bytes
+  // filePath?: string; // Path in Firebase Storage - assuming dataUri is used for now like VaultFile
+  fileDataUri?: string; // If a file is directly uploaded with the asset
+  beneficiaryIds?: string[];
+  visibility: FileVisibility;
+  registrationDate: string; // ISO string of when the asset was registered
 }
