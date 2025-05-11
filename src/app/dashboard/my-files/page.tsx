@@ -1,7 +1,8 @@
 "use client";
 
 import type React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image'; // Ensure Image is imported from next/image
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -28,7 +29,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
 } from "@/components/ui/dialog"
 
 const getFileIcon = (type: FileType) => {
@@ -43,18 +43,33 @@ const getFileIcon = (type: FileType) => {
 export default function MyFilesPage() {
   const [files, setFiles] = useState<VaultFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading, setIsUploading] = useState(isUploading);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingFile, setEditingFile] = useState<VaultFile | null>(null);
   const [beneficiaryName, setBeneficiaryName] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setPreviewDataUrl(null);
     if (event.target.files && event.target.files[0]) {
-      setSelectedFile(event.target.files[0]);
+      const file = event.target.files[0];
+      setSelectedFile(file);
+
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPreviewDataUrl(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
+    } else {
+      setSelectedFile(null);
     }
   };
 
@@ -67,26 +82,28 @@ export default function MyFilesPage() {
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Simulate upload progress
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      if (progress <= 100) {
-        setUploadProgress(progress);
-      } else {
-        clearInterval(interval);
-      }
-    }, 100);
-    
+    let progressInterval: NodeJS.Timeout | null = null;
     try {
+      // Simulate upload progress
+      let progress = 0;
+      progressInterval = setInterval(() => {
+        progress += 10;
+        if (progress <= 100) {
+          setUploadProgress(progress);
+        } else {
+          if (progressInterval) clearInterval(progressInterval);
+        }
+      }, 100);
+      
       const reader = new FileReader();
       reader.readAsDataURL(selectedFile);
+
       reader.onload = async (e) => {
         const fileDataUri = e.target?.result as string;
         if (!fileDataUri) {
             toast({ title: "File Read Error", description: "Could not read file data.", variant: "destructive" });
+            if (progressInterval) clearInterval(progressInterval);
             setIsUploading(false);
-            clearInterval(interval);
             setUploadProgress(0);
             return;
         }
@@ -99,7 +116,7 @@ export default function MyFilesPage() {
 
         const aiResult = await performAiTagging({ fileDataUri, filename: name, fileType });
         
-        clearInterval(interval); // Ensure interval is cleared once AI tagging is done
+        if (progressInterval) clearInterval(progressInterval);
         setUploadProgress(100);
 
         const newFile: VaultFile = {
@@ -110,27 +127,29 @@ export default function MyFilesPage() {
           uploadDate: new Date().toISOString(),
           aiTags: aiResult.tags || ['untagged'],
           icon: getFileIcon(fileType),
-          fileObject: selectedFile, // Store for potential future use, not for display typically
+          // fileObject: selectedFile, // Avoid storing large File objects in state if not strictly needed long-term
         };
         setFiles(prevFiles => [newFile, ...prevFiles]);
         toast({ title: "File Uploaded", description: `${name} has been uploaded and tagged.` });
-        setSelectedFile(null); // Reset file input
+        setIsUploadDialogOpen(false); // This will trigger onOpenChange(false) and reset form
       };
+
       reader.onerror = () => {
         toast({ title: "File Read Error", description: "Error reading file.", variant: "destructive" });
+        if (progressInterval) clearInterval(progressInterval);
         setIsUploading(false);
-        clearInterval(interval);
         setUploadProgress(0);
       }
     } catch (error) {
       console.error("Upload error:", error);
       toast({ title: "Upload Failed", description: "An error occurred during upload.", variant: "destructive" });
-      clearInterval(interval);
+      if (progressInterval) clearInterval(progressInterval);
     } finally {
-      setTimeout(() => { // Allow progress bar to show 100% briefly
-        setIsUploading(false);
-        setUploadProgress(0);
-      }, 500);
+      // Ensure uploading state is reset after a short delay to show 100%
+       setTimeout(() => {
+         setIsUploading(false);
+         setUploadProgress(0);
+       }, 500);
     }
   };
 
@@ -154,16 +173,28 @@ export default function MyFilesPage() {
   
   const filteredFiles = files.filter(file => 
     file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    file.aiTags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+    (file.aiTags && file.aiTags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
   );
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold md:text-3xl">My Files</h1>
-        <Dialog>
+        <Dialog open={isUploadDialogOpen} onOpenChange={(isOpen) => {
+          setIsUploadDialogOpen(isOpen);
+          if (!isOpen) {
+            setSelectedFile(null);
+            setPreviewDataUrl(null);
+            if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
+            // Reset upload-specific states when dialog closes
+            setIsUploading(false);
+            setUploadProgress(0);
+          }
+        }}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={() => setIsUploadDialogOpen(true)}>
               <UploadCloud className="mr-2 h-4 w-4" /> Upload File
             </Button>
           </DialogTrigger>
@@ -179,20 +210,34 @@ export default function MyFilesPage() {
                 <Label htmlFor="file-upload" className="text-right col-span-1">
                   File
                 </Label>
-                <Input id="file-upload" type="file" onChange={handleFileChange} className="col-span-3" />
+                <Input ref={fileInputRef} id="file-upload" type="file" onChange={handleFileChange} className="col-span-3" />
               </div>
-              {selectedFile && <p className="text-sm text-muted-foreground col-span-4 text-center">Selected: {selectedFile.name}</p>}
+              {selectedFile && (
+                <div className="col-span-4 text-center">
+                  <p className="text-sm text-muted-foreground">Selected: {selectedFile.name}</p>
+                  {previewDataUrl && selectedFile.type.startsWith('image/') && (
+                    <div className="mt-2 flex justify-center">
+                      <Image
+                        src={previewDataUrl}
+                        alt="Selected file preview"
+                        width={200}
+                        height={200}
+                        className="rounded-md object-contain max-h-48"
+                        data-ai-hint="file preview"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
               {isUploading && (
                 <div className="col-span-4">
                   <Progress value={uploadProgress} className="w-full" />
-                  <p className="text-sm text-center mt-1">{uploadProgress}%</p>
+                  <p className="text-sm text-center mt-1">{uploadProgress > 0 ? `${uploadProgress}%` : "Initializing upload..."}</p>
                 </div>
               )}
             </div>
             <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
-              </DialogClose>
+                <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>Cancel</Button>
               <Button onClick={handleUpload} disabled={isUploading || !selectedFile}>
                 {isUploading ? 'Uploading...' : 'Upload'}
               </Button>
@@ -219,10 +264,10 @@ export default function MyFilesPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')}>
+              <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} aria-label="List view">
                 <List className="h-4 w-4" />
               </Button>
-              <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')}>
+              <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} aria-label="Grid view">
                 <GripVertical className="h-4 w-4" />
               </Button>
             </div>
@@ -258,13 +303,13 @@ export default function MyFilesPage() {
                     <TableCell>{(file.size / (1024 * 1024)).toFixed(2)} MB</TableCell>
                     <TableCell>{new Date(file.uploadDate).toLocaleDateString()}</TableCell>
                     <TableCell>
-                      {file.aiTags.map(tag => <Badge key={tag} variant="secondary" className="mr-1 mb-1">{tag}</Badge>)}
+                      {file.aiTags && file.aiTags.map(tag => <Badge key={tag} variant="secondary" className="mr-1 mb-1">{tag}</Badge>)}
                     </TableCell>
                     <TableCell>{file.beneficiary || 'N/A'}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon"><Edit3 className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon"><Edit3 className="h-4 w-4" /><span className="sr-only">Edit file options</span></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                            <DropdownMenuItem onClick={() => handleEditFile(file)}>
@@ -289,7 +334,7 @@ export default function MyFilesPage() {
                       <file.icon className="h-8 w-8 text-muted-foreground" />
                        <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon"><Edit3 className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon"><Edit3 className="h-4 w-4" /><span className="sr-only">Edit file options</span></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                            <DropdownMenuItem onClick={() => handleEditFile(file)}>
@@ -307,8 +352,8 @@ export default function MyFilesPage() {
                       <p className="text-xs text-muted-foreground">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
                       <p className="text-xs text-muted-foreground">{new Date(file.uploadDate).toLocaleDateString()}</p>
                       <div className="mt-2">
-                        {file.aiTags.slice(0,2).map(tag => <Badge key={tag} variant="secondary" className="mr-1 mb-1 text-xs">{tag}</Badge>)}
-                        {file.aiTags.length > 2 && <Badge variant="secondary" className="text-xs">+{file.aiTags.length-2}</Badge>}
+                        {file.aiTags && file.aiTags.slice(0,2).map(tag => <Badge key={tag} variant="secondary" className="mr-1 mb-1 text-xs">{tag}</Badge>)}
+                        {file.aiTags && file.aiTags.length > 2 && <Badge variant="secondary" className="text-xs">+{file.aiTags.length-2}</Badge>}
                       </div>
                        <p className="text-xs text-muted-foreground mt-1">Beneficiary: {file.beneficiary || 'N/A'}</p>
                     </CardContent>
@@ -320,7 +365,7 @@ export default function MyFilesPage() {
       </Card>
 
       {editingFile && (
-        <Dialog open={!!editingFile} onOpenChange={() => setEditingFile(null)}>
+        <Dialog open={!!editingFile} onOpenChange={(isOpen) => { if(!isOpen) setEditingFile(null)}}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Edit Beneficiary for {editingFile.name}</DialogTitle>
