@@ -1,4 +1,3 @@
-
 // Make this a client component to use usePathname or pass locale as prop if server-side
 "use client"; 
 import { Button } from "@/components/ui/button";
