@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import type { VaultFile, FileType } from '@/types';
-import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole, Unlock } from 'lucide-react';
+import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole, Unlock, Eye } from 'lucide-react';
 import { performAiTagging, performShariahComplianceCheck } from './actions';
 import {
   DropdownMenu,
@@ -30,10 +30,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog"
 import { useUserPreferences } from '@/context/UserPreferencesContext';
-// Encryption related imports are no longer needed for upload
-// import { encryptDataUri, decryptDataUri } from '@/lib/encryption'; 
 
 const getFileIcon = (type: FileType) => {
   switch (type) {
@@ -56,6 +55,11 @@ export default function MyFilesPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [fileToPreview, setFileToPreview] = useState<VaultFile | null>(null);
+  const [previewContentUrl, setPreviewContentUrl] = useState<string | null>(null);
+
 
   const { toast } = useToast();
   const { profile, mode: userMode } = useUserPreferences();
@@ -82,17 +86,6 @@ export default function MyFilesPage() {
       return;
     }
 
-    // Encryption key is no longer checked or used for upload
-    // const encryptionKey = profile?.encryptionKey;
-    // console.log("Current profile in MyFilesPage for upload:", JSON.stringify(profile, null, 2));
-    // console.log("Retrieved encryption key for upload directly from profile:", encryptionKey);
-
-    // if (!encryptionKey) {
-    //   toast({ title: "Encryption Key Missing", description: "Cannot upload file without an encryption key. Please check your profile.", variant: "destructive" });
-    //   setIsUploading(false); // Reset uploading state
-    //   return;
-    // }
-
     setIsUploading(true);
     setUploadProgress(0);
     let progressInterval: NodeJS.Timeout | null = null;
@@ -114,13 +107,8 @@ export default function MyFilesPage() {
       if (userMode === 'islamic') {
         shariahComplianceResult = await performShariahComplianceCheck({ fileDataUri: previewDataUrl, filename: name, fileType });
       }
-
-      // Encryption is removed. Store the previewDataUrl directly.
-      // const encryptedDataUri = await encryptDataUri(previewDataUrl, encryptionKey);
-      // if (!encryptedDataUri) {
-      //   throw new Error("File encryption failed.");
-      // }
-      const storedDataUri = previewDataUrl; // Storing the unencrypted data URI
+      
+      const storedDataUri = previewDataUrl; 
 
       if (progressInterval) clearInterval(progressInterval);
       setUploadProgress(100);
@@ -131,13 +119,13 @@ export default function MyFilesPage() {
         type: fileType,
         size, 
         uploadDate: new Date().toISOString(),
-        encryptedDataUri: storedDataUri, // Store the unencrypted Data URI
+        encryptedDataUri: storedDataUri, 
         aiTags: aiTaggingResult.tags || ['untagged'],
         shariahCompliance: shariahComplianceResult ? { ...shariahComplianceResult, checkedAt: new Date().toISOString() } : undefined,
         icon: getFileIcon(fileType),
       };
       setFiles(prevFiles => [newFile, ...prevFiles]);
-      toast({ title: "File Uploaded", description: `${name} has been uploaded.` }); // Updated message
+      toast({ title: "File Uploaded", description: `${name} has been uploaded without encryption.` }); 
       setIsUploadDialogOpen(false);
 
     } catch (error) {
@@ -172,6 +160,17 @@ export default function MyFilesPage() {
       setEditingFile(null);
     }
   };
+
+  const handlePreviewFile = async (file: VaultFile) => {
+    if (!file.encryptedDataUri) { // This field now holds the unencrypted data URI
+      toast({ title: "Preview Error", description: "File data is missing.", variant: "destructive" });
+      return;
+    }
+    
+    setPreviewContentUrl(file.encryptedDataUri); // Use directly as it's unencrypted
+    setFileToPreview(file);
+    setIsPreviewOpen(true);
+  };
   
   const filteredFiles = files.filter(file => 
     file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -201,7 +200,7 @@ export default function MyFilesPage() {
             <DialogHeader>
               <DialogTitle>Upload a New File</DialogTitle>
               <DialogDescription>
-                Choose a file. It will be AI-tagged and stored.
+                Choose a file. It will be AI-tagged and stored (unencrypted).
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -255,7 +254,7 @@ export default function MyFilesPage() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-2">
             <div>
               <CardTitle className="flex items-center gap-2"><Unlock className="h-5 w-5 text-primary"/> Your Vault</CardTitle> 
-              <CardDescription>Manage your documents, images, and videos.</CardDescription>
+              <CardDescription>Manage your documents, images, and videos. Files are stored unencrypted.</CardDescription>
             </div>
             <div className="flex items-center gap-2 w-full md:w-auto">
               <div className="relative flex-grow md:flex-grow-0">
@@ -303,8 +302,18 @@ export default function MyFilesPage() {
               <TableBody>
                 {filteredFiles.map((file) => (
                   <TableRow key={file.id}>
-                    <TableCell><file.icon className="h-5 w-5 text-muted-foreground" /></TableCell>
-                    <TableCell className="font-medium">{file.name}</TableCell>
+                    <TableCell>
+                        <file.icon 
+                          className="h-5 w-5 text-muted-foreground cursor-pointer hover:text-primary" 
+                          onClick={() => handlePreviewFile(file)}
+                        />
+                    </TableCell>
+                    <TableCell 
+                        className="font-medium cursor-pointer hover:text-primary hover:underline"
+                        onClick={() => handlePreviewFile(file)}
+                    >
+                        {file.name}
+                    </TableCell>
                     <TableCell>{(file.size / (1024 * 1024)).toFixed(2)} MB</TableCell>
                     <TableCell>{new Date(file.uploadDate).toLocaleDateString()}</TableCell>
                     <TableCell>
@@ -323,6 +332,10 @@ export default function MyFilesPage() {
                       )}
                     <TableCell>{file.beneficiary || 'N/A'}</TableCell>
                     <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => handlePreviewFile(file)} title="Preview file">
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">Preview</span>
+                        </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon"><Edit3 className="h-4 w-4" /><span className="sr-only">Edit file options</span></Button>
@@ -347,12 +360,15 @@ export default function MyFilesPage() {
                 {filteredFiles.map((file) => (
                   <Card key={file.id} className="flex flex-col">
                     <CardHeader className="flex flex-row items-center justify-between p-4">
-                      <file.icon className="h-8 w-8 text-muted-foreground" />
+                      <file.icon className="h-8 w-8 text-muted-foreground cursor-pointer hover:text-primary" onClick={() => handlePreviewFile(file)} />
                        <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon"><Edit3 className="h-4 w-4" /><span className="sr-only">Edit file options</span></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                           <DropdownMenuItem onClick={() => handlePreviewFile(file)}>
+                            <Eye className="mr-2 h-4 w-4" /> Preview
+                          </DropdownMenuItem>
                            <DropdownMenuItem onClick={() => handleEditFile(file)}>
                             <Edit3 className="mr-2 h-4 w-4" /> Edit Beneficiary
                           </DropdownMenuItem>
@@ -363,7 +379,10 @@ export default function MyFilesPage() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </CardHeader>
-                    <CardContent className="p-4 flex-grow">
+                    <CardContent 
+                        className="p-4 flex-grow cursor-pointer"
+                        onClick={() => handlePreviewFile(file)}
+                    >
                       <h3 className="font-medium truncate" title={file.name}>{file.name}</h3>
                       <p className="text-xs text-muted-foreground">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
                       <p className="text-xs text-muted-foreground">{new Date(file.uploadDate).toLocaleDateString()}</p>
@@ -412,6 +431,59 @@ export default function MyFilesPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      <Dialog open={isPreviewOpen} onOpenChange={(isOpen) => {
+        setIsPreviewOpen(isOpen);
+        if (!isOpen) {
+          setFileToPreview(null);
+          setPreviewContentUrl(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-[90vw] md:max-w-[70vw] lg:max-w-[60vw] xl:max-w-[50vw] h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Preview: {fileToPreview?.name}</DialogTitle>
+            <DialogClose onClick={() => { setIsPreviewOpen(false); setFileToPreview(null); setPreviewContentUrl(null); }} />
+          </DialogHeader>
+          <div className="py-2 flex-grow overflow-auto">
+            {previewContentUrl && fileToPreview ? (
+              <>
+                {fileToPreview.type === 'image' && (
+                  <div className="relative w-full h-full">
+                    <Image 
+                        src={previewContentUrl} 
+                        alt={`Preview of ${fileToPreview.name}`} 
+                        layout="fill" 
+                        objectFit="contain" 
+                        data-ai-hint="file preview content"
+                    />
+                  </div>
+                )}
+                {fileToPreview.type === 'video' && (
+                  <video src={previewContentUrl} controls className="w-full h-full max-h-[calc(85vh-100px)]">Your browser does not support the video tag.</video>
+                )}
+                {fileToPreview.type === 'document' && fileToPreview.name.toLowerCase().endsWith('.pdf') && (
+                   <iframe src={previewContentUrl} title={`Preview of ${fileToPreview.name}`} className="w-full h-full border-0" />
+                )}
+                {fileToPreview.type === 'document' && !fileToPreview.name.toLowerCase().endsWith('.pdf') && (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">Preview not available for this document type. You can download it to view.</p>
+                  </div>
+                )}
+                {fileToPreview.type === 'other' && (
+                   <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">Preview not available for this file type.</p>
+                   </div>
+                )}
+              </>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground">Loading preview...</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
