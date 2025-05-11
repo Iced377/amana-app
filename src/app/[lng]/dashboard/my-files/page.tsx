@@ -13,7 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import type { VaultFile, FileType } from '@/types';
 import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole } from 'lucide-react';
-import { performAiTagging } from './actions';
+import { performAiTagging, performShariahComplianceCheck } from './actions';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,8 +31,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useUserPreferences } from '@/context/UserPreferencesContext';
-import { encryptDataUri, decryptDataUri } from '@/lib/encryption'; // Import encryption utilities
-import { performShariahComplianceCheck } from './actions'; // For AI Shariah check
+import { encryptDataUri, decryptDataUri } from '@/lib/encryption'; 
 
 const getFileIcon = (type: FileType) => {
   switch (type) {
@@ -46,7 +45,7 @@ const getFileIcon = (type: FileType) => {
 export default function MyFilesPage() {
   const [files, setFiles] = useState<VaultFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null); // Unencrypted preview
+  const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null); 
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -67,17 +66,16 @@ export default function MyFilesPage() {
 
       const reader = new FileReader();
       reader.onloadend = () => {
-        // This previewDataUrl is for display and AI tagging, will be unencrypted.
         setPreviewDataUrl(reader.result as string);
       };
-      reader.readAsDataURL(file); // Read as Data URI for preview/AI
+      reader.readAsDataURL(file); 
     } else {
       setSelectedFile(null);
     }
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !previewDataUrl) { // previewDataUrl will hold the unencrypted data for AI
+    if (!selectedFile || !previewDataUrl) { 
       toast({ title: "No file selected or data missing", description: "Please select a file to upload.", variant: "destructive" });
       return;
     }
@@ -85,7 +83,6 @@ export default function MyFilesPage() {
     const encryptionKey = getEncryptionKey();
     if (!encryptionKey) {
       toast({ title: "Encryption Key Missing", description: "Cannot upload file without an encryption key. Please check your profile.", variant: "destructive" });
-      // Potentially prompt to generate key or re-login
       return;
     }
 
@@ -95,7 +92,7 @@ export default function MyFilesPage() {
 
     try {
       progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90)); // Stop at 90% before final ops
+        setUploadProgress(prev => Math.min(prev + 10, 90)); 
       }, 100);
 
       const { name, type: mimeType, size } = selectedFile;
@@ -104,16 +101,13 @@ export default function MyFilesPage() {
                                   mimeType === 'application/pdf' || mimeType.startsWith('text/') || mimeType.includes('document') ? 'document' : 
                                   'other';
       
-      // 1. Perform AI Tagging on unencrypted data
       const aiTaggingResult = await performAiTagging({ fileDataUri: previewDataUrl, filename: name, fileType });
       
-      // 2. (Optional) Perform Shariah Compliance Check if in Islamic mode
       let shariahComplianceResult;
       if (userMode === 'islamic') {
         shariahComplianceResult = await performShariahComplianceCheck({ fileDataUri: previewDataUrl, filename: name, fileType });
       }
 
-      // 3. Encrypt the file data (previewDataUrl is the unencrypted Data URI)
       const encryptedDataUri = await encryptDataUri(previewDataUrl, encryptionKey);
       if (!encryptedDataUri) {
         throw new Error("File encryption failed.");
@@ -126,9 +120,9 @@ export default function MyFilesPage() {
         id: crypto.randomUUID(),
         name,
         type: fileType,
-        size, // Store original size, encrypted size might differ slightly due to encoding/metadata
+        size, 
         uploadDate: new Date().toISOString(),
-        encryptedDataUri: encryptedDataUri, // Store encrypted data
+        encryptedDataUri: encryptedDataUri, 
         aiTags: aiTaggingResult.tags || ['untagged'],
         shariahCompliance: shariahComplianceResult ? { ...shariahComplianceResult, checkedAt: new Date().toISOString() } : undefined,
         icon: getFileIcon(fileType),
@@ -145,39 +139,12 @@ export default function MyFilesPage() {
        setTimeout(() => {
          setIsUploading(false);
          setUploadProgress(0);
-         // Reset selected file and preview for next upload
          setSelectedFile(null);
          setPreviewDataUrl(null);
          if (fileInputRef.current) fileInputRef.current.value = '';
        }, 500);
     }
   };
-
-  // Placeholder for handleDecryptAndPreview
-  // In a real app, this would be triggered when user wants to view a file.
-  // const handleDecryptAndPreview = async (file: VaultFile) => {
-  //   if (!file.encryptedDataUri) {
-  //     toast({ title: "No encrypted data", description: "This file does not have encrypted content.", variant: "warning" });
-  //     return;
-  //   }
-  //   const encryptionKey = getEncryptionKey();
-  //   if (!encryptionKey) {
-  //     toast({ title: "Encryption Key Missing", description: "Cannot decrypt file.", variant: "destructive" });
-  //     return;
-  //   }
-  //   const decryptedUri = await decryptDataUri(file.encryptedDataUri, encryptionKey);
-  //   if (decryptedUri) {
-  //     // Display the decrypted content (e.g., in a modal or new tab)
-  //     // For images: set an <img> src
-  //     // For PDFs: use an <embed> or a library like PDF.js
-  //     // For videos: set a <video> src
-  //     console.log("Decrypted URI:", decryptedUri.substring(0,100) + "..."); // For brevity
-  //     toast({title: "File Decrypted", description: "File content is available (logged to console for demo)."});
-  //   } else {
-  //     toast({ title: "Decryption Failed", variant: "destructive" });
-  //   }
-  // };
-
 
   const handleDeleteFile = (fileId: string) => {
     setFiles(files.filter(file => file.id !== fileId));
@@ -241,7 +208,7 @@ export default function MyFilesPage() {
                   {previewDataUrl && selectedFile.type.startsWith('image/') && (
                     <div className="mt-2 flex justify-center">
                       <Image
-                        src={previewDataUrl} // Show unencrypted preview
+                        src={previewDataUrl} 
                         alt="Selected file preview"
                         width={200}
                         height={200}
@@ -347,9 +314,6 @@ export default function MyFilesPage() {
                       )}
                     <TableCell>{file.beneficiary || 'N/A'}</TableCell>
                     <TableCell className="text-right">
-                      {/* <Button variant="ghost" size="icon" onClick={() => handleDecryptAndPreview(file)} className="mr-1" title="Decrypt & Preview (Demo)">
-                        <Eye className="h-4 w-4" /> <span className="sr-only">Decrypt and Preview</span>
-                      </Button> */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon"><Edit3 className="h-4 w-4" /><span className="sr-only">Edit file options</span></Button>
@@ -369,7 +333,7 @@ export default function MyFilesPage() {
                 ))}
               </TableBody>
             </Table>
-          ) : ( // Grid View
+          ) : ( 
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {filteredFiles.map((file) => (
                   <Card key={file.id} className="flex flex-col">
@@ -383,9 +347,6 @@ export default function MyFilesPage() {
                            <DropdownMenuItem onClick={() => handleEditFile(file)}>
                             <Edit3 className="mr-2 h-4 w-4" /> Edit Beneficiary
                           </DropdownMenuItem>
-                          {/* <DropdownMenuItem onClick={() => handleDecryptAndPreview(file)}>
-                            <Eye className="mr-2 h-4 w-4" /> Decrypt & Preview (Demo)
-                          </DropdownMenuItem> */}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => handleDeleteFile(file.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                             <Trash2 className="mr-2 h-4 w-4" /> Delete

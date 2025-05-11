@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -9,11 +10,12 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { UserCheck, AlertTriangle, Info, Users, Mail } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link'; // Added import for Link
 
 export default function SharedUponDeathPage() {
   const [trustedContactEmail, setTrustedContactEmail] = useState('');
   const [confirmEmail, setConfirmEmail] = useState('');
-  const [inactivityDays, setInactivityDays] = useState(180); // Default 180 days
+  const [inactivityDays, setInactivityDays] = useState(180); 
   const { toast } = useToast();
 
   const handleSaveTrustedContact = () => {
@@ -25,13 +27,11 @@ export default function SharedUponDeathPage() {
       toast({ title: "Emails Do Not Match", description: "The entered emails do not match.", variant: "destructive" });
       return;
     }
-    // Validate email format (basic)
     if (!/^\S+@\S+\.\S+$/.test(trustedContactEmail)) {
        toast({ title: "Invalid Email", description: "Please enter a valid email address.", variant: "destructive" });
       return;
     }
 
-    // Mock save
     console.log("Trusted contact email saved:", trustedContactEmail);
     toast({ title: "Trusted Contact Saved", description: `Email ${trustedContactEmail} has been set as your trusted contact.` });
   };
@@ -41,7 +41,6 @@ export default function SharedUponDeathPage() {
        toast({ title: "Invalid Duration", description: "Inactivity period must be between 30 and 365 days.", variant: "destructive" });
       return;
     }
-     // Mock save
     console.log("Inactivity detection days saved:", inactivityDays);
     toast({ title: "Inactivity Settings Saved", description: `Inactivity detection set to ${inactivityDays} days.` });
   }
@@ -166,7 +165,9 @@ export default function SharedUponDeathPage() {
                     <li>Secure verification protocols are followed.</li>
                     <li>Beneficiaries receive access to their designated assets.</li>
                 </ul>
-                 <Button variant="link" className="p-0 h-auto">Learn more about the verification process</Button>
+                 <Button variant="link" className="p-0 h-auto" asChild>
+                   <Link href="#">Learn more about the verification process</Link>
+                 </Button>
             </div>
         </CardContent>
       </Card>

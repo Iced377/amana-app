@@ -1,23 +1,38 @@
 
+"use client"; // Required for usePathname
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ShieldCheck, Lock, KeyRound, DatabaseZap, Users, ShieldAlert } from "lucide-react";
 import Image from "next/image";
 import { AppLogo } from "@/components/AppLogo";
+import { usePathname } from "next/navigation"; // For currentLocale
+import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings'; // For currentLocale
+
 
 export default function SecurityInfoPage() {
+  const pathname = usePathname();
+  let currentLocale: LocaleTypes = fallbackLng;
+
+  if (pathname) {
+    const segments = pathname.split('/');
+    if (segments.length > 1 && locales.includes(segments[1] as LocaleTypes)) {
+      currentLocale = segments[1] as LocaleTypes;
+    }
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <AppLogo />
+          <AppLogo /> {/* AppLogo now determines locale internally */}
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost">
-              <Link href="/login">Login</Link>
+              <Link href={`/${currentLocale}/login`}>Login</Link>
             </Button>
             <Button asChild>
-              <Link href="/signup">Sign Up</Link>
+              <Link href={`/${currentLocale}/signup`}>Sign Up</Link>
             </Button>
           </div>
         </div>
@@ -109,10 +124,10 @@ export default function SecurityInfoPage() {
               While we provide robust security measures, account security is a shared responsibility. Use a strong, unique password for Guardian Angel, enable 2FA, and be cautious about phishing attempts.
             </p>
             <Button asChild className="mt-6" size="lg">
-              <Link href="/signup">Create Your Secure Account</Link>
+              <Link href={`/${currentLocale}/signup`}>Create Your Secure Account</Link>
             </Button>
              <p className="mt-4">
-                <Link href="/dashboard/settings" className="text-sm text-primary hover:underline">
+                <Link href={`/${currentLocale}/dashboard/settings`} className="text-sm text-primary hover:underline">
                     Review your security settings
                 </Link>
              </p>
@@ -125,7 +140,7 @@ export default function SecurityInfoPage() {
                     <div>
                         <h3 className="text-xl font-semibold mb-2">Continuous Improvement</h3>
                         <p className="text-muted-foreground text-sm">
-                            The digital security landscape is always evolving. We are committed to continuously monitoring threats, updating our security practices, and incorporating new technologies to ensure Guardian Angel remains a safe haven for your digital legacy. If you have any security concerns or suggestions, please don't hesitate to <Link href="/info-help#contact" className="text-primary hover:underline">contact us</Link>.
+                            The digital security landscape is always evolving. We are committed to continuously monitoring threats, updating our security practices, and incorporating new technologies to ensure Guardian Angel remains a safe haven for your digital legacy. If you have any security concerns or suggestions, please don't hesitate to <Link href={`/${currentLocale}/info-help#contact`} className="text-primary hover:underline">contact us</Link>.
                         </p>
                     </div>
                 </CardContent>
@@ -144,8 +159,8 @@ export default function SecurityInfoPage() {
             </p>
           </div>
           <nav className="flex gap-4 sm:gap-6">
-            <Link href="/info-help" className="text-sm hover:underline underline-offset-4">Help Center</Link>
-            <Link href="/pricing" className="text-sm hover:underline underline-offset-4">Pricing</Link>
+            <Link href={`/${currentLocale}/info-help`} className="text-sm hover:underline underline-offset-4">Help Center</Link>
+            <Link href={`/${currentLocale}/pricing`} className="text-sm hover:underline underline-offset-4">Pricing</Link>
           </nav>
         </div>
       </footer>

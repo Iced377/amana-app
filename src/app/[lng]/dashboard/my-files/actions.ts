@@ -1,10 +1,10 @@
 
 "use server";
 
-import { autoTagFiles } from "@/ai/flows/auto-tag-files.ts";
-import type { AutoTagFilesInput, AutoTagFilesOutput } from "@/ai/flows/auto-tag-files.ts";
-import { shariahComplianceCheck } from "@/ai/flows/shariah-compliance-flow"; // New import
-import type { ShariahComplianceInput, ShariahComplianceOutput } from "@/ai/flows/shariah-compliance-flow"; // New import
+import { autoTagFiles } from "@/ai/flows/auto-tag-files";
+import type { AutoTagFilesInput, AutoTagFilesOutput } from "@/ai/flows/auto-tag-files";
+import { shariahComplianceCheck } from "@/ai/flows/shariah-compliance-flow";
+import type { ShariahComplianceInput, ShariahComplianceOutput } from "@/ai/flows/shariah-compliance-flow";
 
 export async function performAiTagging(input: AutoTagFilesInput): Promise<AutoTagFilesOutput> {
   try {

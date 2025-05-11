@@ -12,6 +12,7 @@ import React, { useState } from 'react';
 import { ModeToggle } from "@/components/mode-toggle";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
 import type { UserProfile } from "@/types";
+import type { LocaleTypes } from "@/locales/settings";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const currentLocale = pathname.split('/')[1] || 'en';
+  const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes;
 
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -28,29 +29,25 @@ export default function LoginPage() {
     // Mock login logic
     console.log("Login submitted for:", email);
 
-    // In a real app, you'd fetch user profile from Firebase Auth/Firestore
-    // For demo, if no profile exists, create a mock one or use the one from signup.
-    // If a profile exists, we'd use that. For now, we create/update.
-    const mockUserId = `user_${email.split('@')[0] || Date.now()}`; // Simplistic ID
+    const mockUserId = `user_${email.split('@')[0] || Date.now()}`; 
     
-    let userProfile = profile; // Use existing profile from context if available
+    let userProfile = profile; 
 
-    if (!userProfile || userProfile.id === 'guestUser') { // If it's a guest or no profile
+    if (!userProfile || userProfile.id === 'guestUser') { 
         userProfile = {
             id: mockUserId,
             email: email,
-            displayName: email.split('@')[0], // Simple display name
-            mode: 'conventional', // Default mode
-            language: currentLocale as 'en' | 'ar', // Use current locale or default
+            displayName: email.split('@')[0], 
+            mode: 'conventional', 
+            language: currentLocale, 
             subscriptionTier: 'free',
             is2FAEnabled: false,
         };
-        setProfile(userProfile); // Set the new/mock profile in context
+        setProfile(userProfile); 
 
-        // Attempt to generate encryption key if not present (e.g. first login after clearing storage)
         if (!userProfile.encryptionKey) {
             try {
-                const key = await generateAndStoreEncryptionKey(); // This will update the profile in context
+                const key = await generateAndStoreEncryptionKey(); 
                 if (!key) console.error("Failed to generate encryption key on login.");
                 else console.log("Encryption key generated/ensured on login.");
             } catch (error) {
@@ -59,9 +56,8 @@ export default function LoginPage() {
         }
 
     } else {
-        // If profile exists, ensure its language matches current route, and key exists
         if (userProfile.language !== currentLocale) {
-            setProfile({...userProfile, language: currentLocale as 'en' | 'ar'});
+            setProfile({...userProfile, language: currentLocale});
         }
         if (!userProfile.encryptionKey) {
              try {

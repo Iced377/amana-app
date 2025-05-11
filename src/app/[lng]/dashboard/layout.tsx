@@ -15,9 +15,9 @@ import {
   UserCircle,
   Bell,
   ShieldCheck,
-  Landmark, // Example for Islamic Mode specific item
-  BookOpen, // For Info & Help
-  DollarSign, // For Pricing
+  Landmark, 
+  BookOpen, 
+  DollarSign, 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,22 +28,25 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-// import { Input } from '@/components/ui/input'; // Search bar commented out
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { AppLogo } from '@/components/AppLogo';
 import { ModeToggle } from '@/components/mode-toggle';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { useTranslation } from '@/locales/client'; 
+import type { LocaleTypes } from '@/locales/settings';
 
 export default function DashboardLayout({
   children,
+  params, // Add params to receive route parameters
 }: {
   children: React.ReactNode;
+  params: { lng: LocaleTypes }; // Define params type
 }) {
   const { profile, language } = useUserPreferences();
-  const { t } = useTranslation(language);
+  // Use params.lng as the current locale, as it's guaranteed by the route structure
+  const currentLocale = params.lng;
+  const { t } = useTranslation(currentLocale); // Pass currentLocale to useTranslation
   const pathname = usePathname();
-  const currentLocale = pathname.split('/')[1] || 'en';
 
 
   const navItems = [
@@ -51,17 +54,15 @@ export default function DashboardLayout({
     { href: `/${currentLocale}/dashboard/my-files`, labelKey: 'myFilesTitle', icon: FileText },
     { href: `/${currentLocale}/dashboard/beneficiaries`, labelKey: 'beneficiariesTitle', icon: Users },
     { href: `/${currentLocale}/dashboard/shared-upon-death`, labelKey: 'sharedUponDeathTitle', icon: Share2 },
-    // Example: Conditional item for Islamic Mode
     ...(profile?.mode === 'islamic' ? [{ href: `/${currentLocale}/dashboard/islamic-inheritance`, labelKey: 'islamicInheritancePlanning', icon: Landmark }] : []),
     { href: `/${currentLocale}/dashboard/settings`, labelKey: 'settingsTitle', icon: Settings },
     { href: `/${currentLocale}/pricing`, labelKey: 'pricingTitle', icon: DollarSign },
     { href: `/${currentLocale}/info-help`, labelKey: 'infoHelpTitle', icon: BookOpen },
   ];
   
-  // Fallback labels for keys not yet in translation files
   const getLabel = (key: string) => {
     const translated = t(key);
-    if (translated === key) { // i18next returns key if not found
+    if (translated === key) { 
         switch (key) {
             case 'dashboardTitle': return 'Dashboard';
             case 'myFilesTitle': return 'My Files';
@@ -71,7 +72,7 @@ export default function DashboardLayout({
             case 'islamicInheritancePlanning': return 'Islamic Inheritance';
             case 'pricingTitle': return 'Pricing';
             case 'infoHelpTitle': return 'Info & Help';
-            default: return key.replace(/([A-Z])/g, ' $1').trim(); // Basic fallback
+            default: return key.replace(/([A-Z])/g, ' $1').trim(); 
         }
     }
     return translated;
@@ -83,7 +84,7 @@ export default function DashboardLayout({
       <div className="hidden border-r bg-sidebar md:block dark:bg-sidebar-dark">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-16 items-center border-b px-4 lg:px-6">
-            <AppLogo />
+            <AppLogo /> {/* AppLogo now determines locale internally */}
           </div>
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
@@ -99,7 +100,6 @@ export default function DashboardLayout({
               ))}
             </nav>
           </div>
-          {/* Future: Account/Logout button */}
         </div>
       </div>
       <div className="flex flex-col">
@@ -134,7 +134,6 @@ export default function DashboardLayout({
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
-            {/* Optional: Search bar */}
           </div>
           <ModeToggle />
           <Button variant="ghost" size="icon" className="rounded-full">

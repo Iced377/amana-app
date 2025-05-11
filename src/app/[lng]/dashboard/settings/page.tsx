@@ -14,6 +14,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import type { Language, UserPreferenceMode, ActiveSession } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link'; // Added import for Link
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +26,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { usePathname } from 'next/navigation'; // Added import for usePathname
+import type { LocaleTypes } from '@/locales/settings'; // Added import for LocaleTypes
 
 const initialActiveSessions: ActiveSession[] = [
   { id: '1', ipAddress: '192.168.1.101', userAgent: 'Chrome on Windows', lastAccessed: new Date().toISOString(), location: 'New York, USA' },
@@ -38,11 +41,13 @@ export default function SettingsPage() {
   const [activeSessions, setActiveSessions] = useState<ActiveSession[]>(initialActiveSessions);
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const pathname = usePathname(); // Added usePathname
+  const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes; // Added currentLocale
+
 
   const handle2FAToggle = (checked: boolean) => {
     updateProfileField({ is2FAEnabled: checked });
     toast({ title: `Two-Factor Authentication ${checked ? 'Enabled' : 'Disabled'}`, description: `2FA has been ${checked ? 'activated' : 'deactivated'}.`});
-    // In a real app, this would trigger Firebase 2FA setup flow
   };
 
   const handleChangePassword = () => {
@@ -54,12 +59,10 @@ export default function SettingsPage() {
        toast({ title: "Password Too Short", description: "Password must be at least 6 characters.", variant: "destructive" });
       return;
     }
-    // Mock password change
     console.log("Password change attempt for:", profile?.email);
     toast({ title: "Password Change Requested", description: "If your email is valid, you'll receive a link to reset your password (simulated)." });
     setNewPassword('');
     setConfirmNewPassword('');
-    // In a real app, this would call Firebase Auth's updatePassword or sendPasswordResetEmail
   };
   
   const handleRevokeSession = (sessionId: string) => {
@@ -68,7 +71,7 @@ export default function SettingsPage() {
   }
 
   if (isProfileLoading || !profile) {
-    return <div>Loading settings...</div>; // Or a skeleton loader
+    return <div>Loading settings...</div>; 
   }
 
   return (
@@ -78,7 +81,6 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">Manage your account, security, application preferences, and subscription.</p>
       </div>
 
-      {/* Profile & Account Settings */}
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><UserCircle className="h-6 w-6 text-primary" /> Profile & Account</CardTitle>
@@ -133,7 +135,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Security Center */}
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><ShieldAlert className="h-6 w-6 text-primary" /> Security Center</CardTitle>
@@ -161,7 +162,7 @@ export default function SettingsPage() {
              <h4 className="font-medium mb-2">Trusted Contacts</h4>
              <p className="text-sm text-muted-foreground mb-3">Manage individuals who can initiate the death trigger process. This is configured on the "Shared Upon Death" page.</p>
              <Button variant="outline" asChild>
-                <Link href="/dashboard/shared-upon-death">Manage Trusted Contacts</Link>
+                <Link href={`/${currentLocale}/dashboard/shared-upon-death`}>Manage Trusted Contacts</Link>
              </Button>
            </div>
           <Separator />
@@ -204,7 +205,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
       
-      {/* Subscription Management */}
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><CreditCard className="h-6 w-6 text-primary" /> Subscription & Billing</CardTitle>
@@ -217,7 +217,7 @@ export default function SettingsPage() {
             </div>
             <div className="flex gap-2">
                  <Button asChild variant="default">
-                    <Link href="/pricing">Upgrade Plan</Link>
+                    <Link href={`/${currentLocale}/pricing`}>Upgrade Plan</Link>
                  </Button>
                  <Button variant="outline">Manage Billing (External)</Button>
             </div>
@@ -227,7 +227,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Notification Settings */}
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Bell className="h-6 w-6 text-primary" /> Notifications</CardTitle>
@@ -255,7 +254,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Data Management Settings */}
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Download className="h-6 w-6 text-primary" /> Data Management</CardTitle>
@@ -271,7 +269,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Delete Account */}
        <Card className="shadow-md border-destructive">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-destructive"><Trash2 className="h-6 w-6" /> Delete Account</CardTitle>

@@ -1,4 +1,6 @@
 
+"use client"; // Required for usePathname
+
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +8,8 @@ import Link from "next/link";
 import { AppLogo } from "@/components/AppLogo";
 import { BookOpen, ShieldQuestion, MessageSquare, FileText, LifeBuoy, HelpCircle } from "lucide-react";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings';
 
 const faqs = [
   {
@@ -35,17 +39,27 @@ const faqs = [
 ];
 
 export default function InfoHelpPage() {
+  const pathname = usePathname();
+  let currentLocale: LocaleTypes = fallbackLng;
+
+  if (pathname) {
+    const segments = pathname.split('/');
+    if (segments.length > 1 && locales.includes(segments[1] as LocaleTypes)) {
+      currentLocale = segments[1] as LocaleTypes;
+    }
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <AppLogo />
+          <AppLogo /> {/* AppLogo now determines locale internally */}
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost">
-              <Link href="/login">Login</Link>
+              <Link href={`/${currentLocale}/login`}>Login</Link>
             </Button>
             <Button asChild>
-              <Link href="/signup">Sign Up</Link>
+              <Link href={`/${currentLocale}/signup`}>Sign Up</Link>
             </Button>
           </div>
         </div>
@@ -64,7 +78,6 @@ export default function InfoHelpPage() {
           </div>
 
           <div className="grid gap-12 lg:grid-cols-3">
-            {/* Educational Materials Section */}
             <div className="lg:col-span-2 space-y-8">
               <Card className="shadow-md">
                 <CardHeader>
@@ -78,7 +91,7 @@ export default function InfoHelpPage() {
                       Learn about client-side encryption, 2FA, and best practices for keeping your digital information safe. We use AES-256, a globally recognized strong encryption standard.
                     </p>
                     <Image src="https://picsum.photos/seed/datasecurity/600/200" alt="Data security concept" width={600} height={200} className="rounded-lg object-cover aspect-[3/1]" data-ai-hint="cyber security lock" />
-                     <Button variant="link" asChild className="mt-2"><Link href="/security-info">Read more on our security</Link></Button>
+                     <Button variant="link" asChild className="mt-2"><Link href={`/${currentLocale}/security-info`}>Read more on our security</Link></Button>
                   </div>
                   <hr/>
                   <div>
@@ -87,7 +100,6 @@ export default function InfoHelpPage() {
                       An overview of key differences and considerations. For Islamic mode, we aim to align with principles like Wasiyyah (bequest) and Faraid (obligatory shares).
                       <em className="block mt-1 text-xs">Note: Guardian Angel provides tools, not legal or religious advice. Always consult qualified professionals.</em>
                     </p>
-                    {/* Placeholder for infographic or video */}
                      <div className="aspect-video bg-muted rounded-lg flex items-center justify-center my-2" data-ai-hint="inheritance infographic">
                         <p className="text-muted-foreground">Islamic Inheritance Info [Video/Infographic Placeholder]</p>
                     </div>
@@ -128,16 +140,15 @@ export default function InfoHelpPage() {
               </Card>
             </div>
 
-            {/* FAQs Section */}
             <div className="lg:col-span-1 space-y-6">
                <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2"><HelpCircle className="h-6 w-6 text-primary" /> Quick Links</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col space-y-2">
-                    <Button variant="outline" asChild><Link href="/pricing">View Pricing Plans</Link></Button>
-                    <Button variant="outline" asChild><Link href="/security-info">Our Security Measures</Link></Button>
-                    <Button variant="outline" asChild><Link href="/dashboard/settings">Account Settings</Link></Button>
+                    <Button variant="outline" asChild><Link href={`/${currentLocale}/pricing`}>View Pricing Plans</Link></Button>
+                    <Button variant="outline" asChild><Link href={`/${currentLocale}/security-info`}>Our Security Measures</Link></Button>
+                    <Button variant="outline" asChild><Link href={`/${currentLocale}/dashboard/settings`}>Account Settings</Link></Button>
                 </CardContent>
               </Card>
               <Card className="shadow-md">
@@ -171,8 +182,8 @@ export default function InfoHelpPage() {
             </p>
           </div>
           <nav className="flex gap-4 sm:gap-6">
-            <Link href="/security-info" className="text-sm hover:underline underline-offset-4">Security</Link>
-            <Link href="/pricing" className="text-sm hover:underline underline-offset-4">Pricing</Link>
+            <Link href={`/${currentLocale}/security-info`} className="text-sm hover:underline underline-offset-4">Security</Link>
+            <Link href={`/${currentLocale}/pricing`} className="text-sm hover:underline underline-offset-4">Pricing</Link>
           </nav>
         </div>
       </footer>

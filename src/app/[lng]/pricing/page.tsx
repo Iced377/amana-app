@@ -1,8 +1,13 @@
 
+"use client"; // Required for usePathname
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, ShieldCheck, Star } from "lucide-react";
 import Link from "next/link";
+import { AppLogo } from "@/components/AppLogo"; // AppLogo import
+import { usePathname } from "next/navigation"; // For currentLocale
+import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings'; // For currentLocale
 
 const plans = [
   {
@@ -27,8 +32,8 @@ const plans = [
     name: "Yearly",
     price: "$199.99",
     billingCycle: "/year",
-    originalPrice: "$239.88", // Based on $19.99 * 12, if quarterly was base
-    savings: "Save ~17% vs Quarterly", // or vs monthly
+    originalPrice: "$239.88", 
+    savings: "Save ~17% vs Quarterly", 
     features: ["Secure 100 GB Storage", "All Quarterly Features", "Phone & Chat Support", "Advanced Security Options"],
     cta: "Choose Yearly",
     popular: false,
@@ -54,20 +59,27 @@ const plans = [
 ];
 
 export default function PricingPage() {
+  const pathname = usePathname();
+  let currentLocale: LocaleTypes = fallbackLng;
+
+  if (pathname) {
+    const segments = pathname.split('/');
+    if (segments.length > 1 && locales.includes(segments[1] as LocaleTypes)) {
+      currentLocale = segments[1] as LocaleTypes;
+    }
+  }
+  
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <ShieldCheck className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold">Guardian Angel</span>
-          </Link>
+           <AppLogo /> {/* AppLogo now determines locale internally */}
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost">
-              <Link href="/login">Login</Link>
+              <Link href={`/${currentLocale}/login`}>Login</Link>
             </Button>
             <Button asChild>
-              <Link href="/signup">Sign Up</Link>
+              <Link href={`/${currentLocale}/signup`}>Sign Up</Link>
             </Button>
           </div>
         </div>
@@ -132,7 +144,7 @@ export default function PricingPage() {
                 You can upgrade your plan anytime from your dashboard settings.
               </p>
               <Button asChild className="mt-4">
-                <Link href="/dashboard/settings">Go to Settings</Link>
+                <Link href={`/${currentLocale}/dashboard/settings`}>Go to Settings</Link>
               </Button>
             </div>
 
@@ -153,7 +165,7 @@ export default function PricingPage() {
                     <p className="mt-2 text-muted-foreground text-sm">Client-side encryption, 2FA, and robust infrastructure to protect your sensitive data.</p>
                 </div>
                 <div className="flex flex-col items-center text-center">
-                    <Star className="h-12 w-12 text-primary mb-4" /> {/* Replace with a more relevant icon like Users or Globe */}
+                    <Star className="h-12 w-12 text-primary mb-4" /> 
                     <h3 className="text-xl font-semibold">Inclusive by Design</h3>
                     <p className="mt-2 text-muted-foreground text-sm">Optional Islamic Mode for Wasiyyah and Faraid considerations, plus multi-language support including Arabic.</p>
                 </div>
@@ -170,16 +182,16 @@ export default function PricingPage() {
       <footer className="border-t">
         <div className="container flex flex-col items-center justify-between gap-4 py-10 md:h-24 md:flex-row md:py-0">
           <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
-            <ShieldCheck className="h-6 w-6 text-primary" />
+            <AppLogo iconSize={6} textSize="text-base" />
             <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
               &copy; {new Date().getFullYear()} Guardian Angel. All rights reserved.
             </p>
           </div>
           <nav className="flex gap-4 sm:gap-6">
-            <Link href="/security-info" className="text-sm hover:underline underline-offset-4">Security</Link>
-            <Link href="/info-help" className="text-sm hover:underline underline-offset-4">Help</Link>
-            <Link href="#" className="text-sm hover:underline underline-offset-4">Terms</Link>
-            <Link href="#" className="text-sm hover:underline underline-offset-4">Privacy</Link>
+            <Link href={`/${currentLocale}/security-info`} className="text-sm hover:underline underline-offset-4">Security</Link>
+            <Link href={`/${currentLocale}/info-help`} className="text-sm hover:underline underline-offset-4">Help</Link>
+            <Link href="#" className="text-sm hover:underline underline-offset-4">Terms</Link> {/* Update to /${currentLocale}/terms when page exists */}
+            <Link href="#" className="text-sm hover:underline underline-offset-4">Privacy</Link> {/* Update to /${currentLocale}/privacy when page exists */}
           </nav>
         </div>
       </footer>

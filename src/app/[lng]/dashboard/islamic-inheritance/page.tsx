@@ -6,26 +6,27 @@ import { Button } from "@/components/ui/button";
 import { Landmark, BookOpen, Info, Users } from "lucide-react";
 import Link from "next/link";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation"; // Added usePathname
 import { useEffect } from "react";
 import Image from "next/image";
+import type { LocaleTypes } from "@/locales/settings"; // Added import for LocaleTypes
 
 
 export default function IslamicInheritancePage() {
   const { profile, isLoading } = useUserPreferences();
   const router = useRouter();
+  const pathname = usePathname(); // Added usePathname
+  const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes; // Added currentLocale
+
 
   useEffect(() => {
     if (!isLoading && profile?.mode !== 'islamic') {
-      // Redirect if not in Islamic mode, or handle as per app logic
-      // For now, just log and let page render with a note, or redirect to dashboard
       console.warn("Accessing Islamic Inheritance page without Islamic mode enabled.");
-      // router.push('/dashboard'); 
+      // router.push(`/${currentLocale}/dashboard`); 
     }
-  }, [profile, isLoading, router]);
+  }, [profile, isLoading, router, currentLocale]);
 
   if (isLoading) return <p>Loading Islamic inheritance settings...</p>;
-  // if (profile?.mode !== 'islamic') return <p>This page is intended for users in Islamic Mode.</p>;
 
 
   return (
@@ -90,7 +91,6 @@ export default function IslamicInheritancePage() {
             <p className="text-sm text-muted-foreground mb-4">
                 Use this section to list individuals who may be considered your Islamic heirs (warathah). This information can be used with Faraid calculation tools and for your legal advisor.
             </p>
-            {/* Placeholder for a dynamic list or form */}
             <div className="p-4 border rounded-md bg-secondary/30">
                 <p className="text-muted-foreground">Heir management tools coming soon. (e.g., Add Spouse, Add Son, Add Daughter, Add Father, Add Mother, etc.)</p>
             </div>
@@ -106,7 +106,7 @@ export default function IslamicInheritancePage() {
           <p className="text-sm text-muted-foreground">
             It's highly recommended to educate yourself on these important matters.
           </p>
-          <Button variant="link" asChild><Link href="/info-help#islamic-inheritance">Read Our Guide on Islamic Inheritance</Link></Button>
+          <Button variant="link" asChild><Link href={`/${currentLocale}/info-help#islamic-inheritance`}>Read Our Guide on Islamic Inheritance</Link></Button>
           <p className="text-xs text-muted-foreground">
             (This will link to relevant sections in the Info & Help page.)
           </p>

@@ -8,14 +8,16 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ShieldCheck, UserPlus } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import React, { useState } from 'react';
 import { ModeToggle } from "@/components/mode-toggle";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
 import type { UserPreferenceMode, UserProfile } from "@/types";
+import type { LocaleTypes } from "@/locales/settings";
 
 export default function SignupPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { setProfile, generateAndStoreEncryptionKey } = useUserPreferences();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -23,18 +25,18 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [selectedMode, setSelectedMode] = useState<UserPreferenceMode>('conventional');
 
+  const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes;
+
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (password !== confirmPassword) {
-      // In a real app, use toast for error messages
       alert("Passwords do not match!");
       return;
     }
     
-    // Mock signup logic
     console.log("Signup submitted for:", email, "Mode:", selectedMode);
     
-    // In a real app, this would come from Firebase Auth successful signup
     const mockUserId = `user_${Date.now()}`; 
     
     const newUserProfile: UserProfile = {
@@ -42,20 +44,17 @@ export default function SignupPage() {
       email: email,
       displayName: fullName,
       mode: selectedMode,
-      language: 'en', // Default language
+      language: currentLocale, 
       subscriptionTier: 'free',
       is2FAEnabled: false,
     };
 
     setProfile(newUserProfile);
 
-    // Generate and store encryption key upon signup
-    // This is a simplified approach for demo. Key management is crucial.
     try {
       const key = await generateAndStoreEncryptionKey();
       if (!key) {
         console.error("Failed to generate encryption key on signup.");
-        // Handle error - perhaps prevent signup or notify user
       } else {
         console.log("Encryption key generated and associated with profile.");
       }
@@ -63,18 +62,17 @@ export default function SignupPage() {
        console.error("Error generating encryption key:", error);
     }
 
-    // In a real app, you'd handle Firebase auth here
-    router.push("/dashboard"); 
+    router.push(`/${currentLocale}/dashboard`); 
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-secondary/30 p-4">
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 rtl:left-4 rtl:right-auto">
         <ModeToggle />
       </div>
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
-           <Link href="/" className="inline-block mb-4">
+           <Link href={`/${currentLocale}/`} className="inline-block mb-4">
             <ShieldCheck className="h-16 w-16 text-primary mx-auto" />
           </Link>
           <CardTitle className="text-3xl font-bold">Create Your Account</CardTitle>
@@ -128,7 +126,7 @@ export default function SignupPage() {
         <CardFooter className="text-center text-sm">
           <p>
             Already have an account?{" "}
-            <Link href="/login" className="text-primary hover:underline font-medium">
+            <Link href={`/${currentLocale}/login`} className="text-primary hover:underline font-medium">
               Log in
             </Link>
           </p>

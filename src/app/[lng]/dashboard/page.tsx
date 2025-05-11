@@ -1,5 +1,5 @@
 
-"use client"; // Required for hooks
+"use client"; 
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,18 +8,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
 import { usePathname } from "next/navigation";
+import type { LocaleTypes } from "@/locales/settings";
 
 export default function DashboardPage() {
   const { profile } = useUserPreferences();
   const pathname = usePathname();
-  const currentLocale = pathname.split('/')[1] || 'en';
+  const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes;
 
-  // Mock data - replace with actual data fetching
   const vaultSummary = {
-    totalFiles: 125, // This would come from files.length in a real scenario
+    totalFiles: 125, 
     storageUsed: "2.5 GB", 
     lastUpdate: new Date().toLocaleDateString(profile?.language || 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-    beneficiariesCount: 5, // This would come from beneficiaries.length
+    beneficiariesCount: 5, 
   };
 
   return (
