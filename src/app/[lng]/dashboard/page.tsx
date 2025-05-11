@@ -1,3 +1,4 @@
+
 "use client"; 
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -88,7 +89,9 @@ export default function DashboardPage() {
             {profile.sadaqahEnabled && (
               <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 p-3 rounded-md">
                 <Gift className="h-5 w-5" /> {/* Using Gift icon */}
-                <p>Your subscription supports Sadaqah for those in need. JazakAllah Khair! 🌟</p>
+                <p>
+                  Your subscription supports Sadaqah ({profile.sadaqahPercentage || 1}% contribution) for those in need. JazakAllah Khair! 🌟
+                </p>
               </div>
             )}
             <div className="flex flex-wrap gap-2"> {/* Added flex-wrap for smaller screens */}
@@ -190,4 +193,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

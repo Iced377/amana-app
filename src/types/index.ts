@@ -14,6 +14,8 @@ export interface VaultFile {
   shariahCompliance?: {
     isCompliant: boolean;
     reason?: string;
+    confidenceScore: number;
+    categoriesConcerned?: string[];
     checkedAt: string;
   };
   beneficiary?: string; // Name of beneficiary
@@ -46,6 +48,7 @@ export interface UserProfile {
   // Storing directly in profile/localStorage is for demo purposes.
   encryptionKey?: string; 
   sadaqahEnabled?: boolean; // For Sadaqah Subscription feature
+  sadaqahPercentage?: 1 | 5 | 10; // Percentage for Sadaqah
 }
 
 export interface ActiveSession {
@@ -56,3 +59,4 @@ export interface ActiveSession {
   location?: string; // e.g., "City, Country"
 }
 
+```

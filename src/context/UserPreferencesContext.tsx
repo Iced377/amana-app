@@ -29,7 +29,8 @@ const defaultProfile: UserProfile = {
   subscriptionTier: 'free',
   is2FAEnabled: false,
   encryptionKey: undefined, 
-  sadaqahEnabled: false, // Default Sadaqah to false
+  sadaqahEnabled: false,
+  sadaqahPercentage: undefined, // Default Sadaqah percentage
 };
 
 export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -148,4 +149,3 @@ export const useUserPreferences = (): UserPreferencesContextType => {
   }
   return context;
 };
-

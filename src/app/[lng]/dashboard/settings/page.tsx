@@ -9,10 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserCircle, Lock, Bell, Globe, Trash2, Download, ShieldAlert, LogOut, ListChecks, CreditCard, MoonStar, Gift } from "lucide-react";
+import { UserCircle, Lock, Bell, Globe, Trash2, Download, ShieldAlert, LogOut, ListChecks, CreditCard, MoonStar, Gift, Percent } from "lucide-react";
 import { ModeToggle } from "@/components/mode-toggle";
 import { useUserPreferences } from '@/context/UserPreferencesContext';
-import type { Language, UserPreferenceMode, ActiveSession } from '@/types';
+import type { Language, UserPreferenceMode, ActiveSession, UserProfile } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import {
@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { usePathname } from 'next/navigation';
 import type { LocaleTypes } from '@/locales/settings';
 
@@ -80,12 +81,24 @@ export default function SettingsPage() {
   };
 
   const handleSadaqahToggle = (checked: boolean) => {
-    updateProfileField({ sadaqahEnabled: checked });
+    updateProfileField({ sadaqahEnabled: checked, sadaqahPercentage: checked ? (profile?.sadaqahPercentage || 1) : undefined });
     toast({
       title: `Sadaqah Contribution ${checked ? 'Enabled' : 'Disabled'}`,
       description: `Your Sadaqah contribution preference has been ${checked ? 'activated' : 'deactivated'}.`,
     });
   };
+
+  const handleSadaqahPercentageChange = (value: string) => {
+    const percentage = parseInt(value, 10) as UserProfile['sadaqahPercentage'];
+    if (percentage && [1, 5, 10].includes(percentage)) {
+        updateProfileField({ sadaqahPercentage: percentage });
+        toast({
+            title: "Sadaqah Percentage Updated",
+            description: `Sadaqah contribution set to ${percentage}%. This will be applied to your next subscription payment.`
+        });
+    }
+  };
+
 
   if (isProfileLoading || !profile) {
     return <div>Loading settings...</div>; 
@@ -250,9 +263,33 @@ export default function SettingsPage() {
                   />
                 </div>
                  {profile.sadaqahEnabled && (
-                  <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 p-3 rounded-md">
-                    <Gift className="h-5 w-5" />
-                    <p>Thank you! A portion of your subscription supports sadaqah. JazakAllah Khair!</p>
+                  <div className="space-y-3 mt-3 p-4 border rounded-md bg-secondary/30">
+                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                      <Gift className="h-5 w-5" />
+                      <p>Sadaqah contribution is active. JazakAllah Khair!</p>
+                    </div>
+                    <div>
+                        <Label htmlFor="sadaqahPercentage" className="flex items-center gap-1 mb-2">
+                            <Percent className="h-4 w-4 text-muted-foreground"/>
+                            Select Contribution Percentage:
+                        </Label>
+                        <RadioGroup
+                            id="sadaqahPercentage"
+                            value={profile.sadaqahPercentage?.toString() || "1"}
+                            onValueChange={handleSadaqahPercentageChange}
+                            className="flex space-x-2 rtl:space-x-reverse"
+                        >
+                            {[1, 5, 10].map((percentage) => (
+                            <div key={percentage} className="flex items-center space-x-1 rtl:space-x-reverse">
+                                <RadioGroupItem value={percentage.toString()} id={`sadaqah-${percentage}`} />
+                                <Label htmlFor={`sadaqah-${percentage}`} className="font-normal">{percentage}%</Label>
+                            </div>
+                            ))}
+                        </RadioGroup>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            {profile.sadaqahPercentage || 1}% of your next subscription fee will be donated.
+                        </p>
+                    </div>
                   </div>
                 )}
               </>
@@ -331,7 +368,7 @@ export default function SettingsPage() {
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
                   This action cannot be undone. This will permanently delete your
-                  account and remove your data from our servers. Your encrypted files will become inaccessible.
+                  account and remove your data from our servers. Your files will become inaccessible.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -347,4 +384,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
