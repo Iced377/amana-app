@@ -3,58 +3,58 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, ShieldCheck, Star, Gift } from "lucide-react"; // Added Gift
+import { CheckCircle, ShieldCheck, Star, Gift } from "lucide-react";
 import Link from "next/link";
-import { AppLogo } from "@/components/AppLogo"; // AppLogo import
-import { usePathname } from "next/navigation"; // For currentLocale
-import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings'; // For currentLocale
+import { AppLogo } from "@/components/AppLogo";
+import { usePathname } from "next/navigation";
+import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings';
 
 const plans = [
   {
-    name: "Monthly",
-    price: "$9.99", // Monthly price
-    billingCycle: "/month", // Displayed billing cycle
+    name: "Standard Monthly",
+    price: "$9.99",
+    billingCycle: "/month",
     features: ["Secure 10 GB Storage", "AI File Tagging", "Beneficiary Management", "Death Trigger", "Email Support"],
-    cta: "Choose Monthly",
+    cta: "Choose Plan",
     popular: false,
-    billedAsText: "Billed $9.99 monthly" 
+    billedAsText: "Billed $9.99 monthly"
   },
   {
-    name: "Quarterly",
+    name: "Standard Quarterly",
     price: `$${(19.99 / 3).toFixed(2)}`, // Approx $6.66
     billingCycle: "/month",
-    billedAsText: "Billed as $19.99 every 3 months",
-    savingsText: "Save ~33% compared to monthly plan", 
-    features: ["Secure 25 GB Storage", "All Monthly Features", "Priority Email Support", "Early Access to New Features"],
-    cta: "Choose Quarterly",
+    billedAsText: "Billed $19.99 every 3 months",
+    savingsText: "Save ~33% vs Monthly",
+    features: ["Secure 25 GB Storage", "All Standard Monthly Features", "Priority Email Support"],
+    cta: "Choose Plan",
     popular: true,
   },
   {
-    name: "Yearly",
+    name: "Premium Yearly",
     price: `$${(199.99 / 12).toFixed(2)}`, // Approx $16.67
     billingCycle: "/month",
-    billedAsText: "Billed as $199.99 per year",
-    // No savingsText as it's a premium tier with different features and higher per-month cost than base.
-    features: ["Secure 100 GB Storage", "All Quarterly Features", "Phone & Chat Support", "Advanced Security Options"],
-    cta: "Choose Yearly",
+    billedAsText: "Billed $199.99 annually",
+    savingsText: "Includes advanced features",
+    features: ["Secure 100 GB Storage", "All Standard Features", "Advanced AI Features", "Early Access to New Features", "Phone & Chat Support"],
+    cta: "Choose Plan",
     popular: false,
   },
   {
-    name: "Bi-Yearly",
+    name: "Premium Bi-Yearly",
     price: `$${(299.99 / 24).toFixed(2)}`, // Approx $12.50
     billingCycle: "/month",
-    billedAsText: "Billed as $299.99 every 2 years",
-    savingsText: "Save ~25% compared to yearly plan features", 
-    features: ["Secure 250 GB Storage", "All Yearly Features", "Dedicated Account Manager", "Customizable Reporting"],
-    cta: "Choose Bi-Yearly",
+    billedAsText: "Billed $299.99 every 2 years",
+    savingsText: "Best value for Premium features",
+    features: ["Secure 250 GB Storage", "All Premium Yearly Features", "Dedicated Account Manager (Limited)", "Customizable Reporting"],
+    cta: "Choose Plan",
     popular: false,
   },
   {
-    name: "Lifetime",
+    name: "Lifetime Access",
     price: "$499.99",
     billingCycle: "one-time payment",
-    savingsText: "Ultimate value for lifetime access",
-    features: ["Unlimited Storage (fair use)", "All Bi-Yearly Features", "Lifetime Updates & Support", "Exclusive Community Access"],
+    savingsText: "Ultimate value & peace of mind",
+    features: ["Unlimited Storage (fair use)", "All Premium Bi-Yearly Features", "Lifetime Updates & Support", "Exclusive Community Access"],
     cta: "Get Lifetime Access",
     popular: false,
     limited: "Limited to first 500 users!",
@@ -108,9 +108,14 @@ export default function PricingPage() {
                       Popular
                     </div>
                   )}
+                   {plan.limited && (
+                    <div className="absolute -top-3 right-3 bg-destructive text-destructive-foreground px-2 py-0.5 text-xs font-semibold rounded-full shadow-md transform rotate-[15deg]">
+                      LIMITED
+                    </div>
+                  )}
                   <CardHeader className="pb-4 text-center">
                     <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                    {plan.limited && <p className="text-sm text-destructive font-semibold">{plan.limited}</p>}
+                    {plan.limited && <p className="text-sm text-destructive font-semibold mt-1">{plan.limited}</p>}
                     <div className="mt-2">
                       <span className="text-4xl font-bold">{plan.price}</span>
                       <span className="text-muted-foreground">{plan.billingCycle}</span>
@@ -140,6 +145,13 @@ export default function PricingPage() {
                 </Card>
               ))}
             </div>
+            
+            <div className="text-center mt-8">
+                <p className="text-xs text-muted-foreground">
+                    Prices are exclusive of VAT. VAT at 10% will be applied for customers in Bahrain where applicable.
+                </p>
+            </div>
+
 
             <Card className="mt-12 shadow-md bg-primary/5 dark:bg-primary/10 border-primary/20">
               <CardHeader>

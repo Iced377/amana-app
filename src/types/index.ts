@@ -35,7 +35,8 @@ export interface Beneficiary {
 
 export type UserPreferenceMode = 'islamic' | 'conventional';
 export type Language = 'en' | 'ar';
-export type SubscriptionTier = 'free' | 'monthly' | 'quarterly' | 'yearly' | 'biyearly' | 'lifetime';
+export type SubscriptionTier = 'free' | 'standard_monthly' | 'standard_quarterly' | 'premium_yearly' | 'premium_bi_yearly' | 'lifetime_access';
+
 
 export interface UserProfile {
   id: string; 
@@ -137,3 +138,4 @@ export interface InsurancePolicy {
 
   registrationDate: string; // ISO string
 }
+
