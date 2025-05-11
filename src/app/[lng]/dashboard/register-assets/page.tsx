@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from "@/components/ui/badge"; // Added Badge import
 import { useToast } from '@/hooks/use-toast';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { useTranslation } from '@/locales/client';
