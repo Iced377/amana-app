@@ -29,23 +29,11 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { usePathname } from 'next/navigation';
 import type { LocaleTypes } from '@/locales/settings';
+import { countryCodes } from '@/lib/countryCodes'; // Import the extensive list
 
 const initialActiveSessions: ActiveSession[] = [
   { id: '1', ipAddress: '192.168.1.101', userAgent: 'Chrome on Windows', lastAccessed: new Date().toISOString(), location: 'New York, USA' },
   { id: '2', ipAddress: '10.0.0.5', userAgent: 'Safari on macOS', lastAccessed: new Date(Date.now() - 3600000 * 2).toISOString(), location: 'London, UK' },
-];
-
-const countryCodes = [
-  { code: "+1", name: "USA/Canada", flag: "🇺🇸🇨🇦" },
-  { code: "+44", name: "UK", flag: "🇬🇧" },
-  { code: "+91", name: "India", flag: "🇮🇳" },
-  { code: "+966", name: "Saudi Arabia", flag: "🇸🇦" },
-  { code: "+971", name: "UAE", flag: "🇦🇪" },
-  { code: "+20", name: "Egypt", flag: "🇪🇬" },
-  { code: "+33", name: "France", flag: "🇫🇷" },
-  { code: "+49", name: "Germany", flag: "🇩🇪" },
-  { code: "+81", name: "Japan", flag: "🇯🇵" },
-  { code: "+86", name: "China", flag: "🇨🇳" },
 ];
 
 

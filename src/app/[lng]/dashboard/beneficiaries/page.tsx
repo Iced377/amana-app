@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -11,19 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from '@/hooks/use-toast';
 import type { Beneficiary } from '@/types';
 import { UserPlus, Users, Trash2, Edit3, Search, Phone } from 'lucide-react';
-
-const countryCodes = [
-  { code: "+1", name: "USA/Canada", flag: "🇺🇸🇨🇦" },
-  { code: "+44", name: "UK", flag: "🇬🇧" },
-  { code: "+91", name: "India", flag: "🇮🇳" },
-  { code: "+966", name: "Saudi Arabia", flag: "🇸🇦" },
-  { code: "+971", name: "UAE", flag: "🇦🇪" },
-  { code: "+20", name: "Egypt", flag: "🇪🇬" },
-  { code: "+33", name: "France", flag: "🇫🇷" },
-  { code: "+49", name: "Germany", flag: "🇩🇪" },
-  { code: "+81", name: "Japan", flag: "🇯🇵" },
-  { code: "+86", name: "China", flag: "🇨🇳" },
-];
+import { countryCodes } from '@/lib/countryCodes'; // Import the extensive list
 
 interface CurrentBeneficiaryState extends Omit<Beneficiary, 'id'> {
   // Omit id as it's generated, ensure other fields are present
