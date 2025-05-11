@@ -1,3 +1,4 @@
+
 "use client";
 
 import type React from 'react';
@@ -45,7 +46,7 @@ export default function MyFilesPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(isUploading);
+  const [isUploading, setIsUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingFile, setEditingFile] = useState<VaultFile | null>(null);
   const [beneficiaryName, setBeneficiaryName] = useState('');
@@ -392,3 +393,4 @@ export default function MyFilesPage() {
     </div>
   );
 }
+
