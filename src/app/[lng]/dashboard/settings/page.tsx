@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserCircle, Lock, Bell, Globe, Trash2, Download, ShieldAlert, LogOut, ListChecks, CreditCard, MoonStar, Gift, Percent } from "lucide-react";
+import { UserCircle, Lock, Bell, Globe, Trash2, Download, ShieldAlert, LogOut, ListChecks, CreditCard, MoonStar, Gift, Percent, Phone } from "lucide-react";
 import { ModeToggle } from "@/components/mode-toggle";
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import type { Language, UserPreferenceMode, ActiveSession, UserProfile } from '@/types';
@@ -35,6 +35,19 @@ const initialActiveSessions: ActiveSession[] = [
   { id: '2', ipAddress: '10.0.0.5', userAgent: 'Safari on macOS', lastAccessed: new Date(Date.now() - 3600000 * 2).toISOString(), location: 'London, UK' },
 ];
 
+const countryCodes = [
+  { code: "+1", name: "USA/Canada", flag: "🇺🇸🇨🇦" },
+  { code: "+44", name: "UK", flag: "🇬🇧" },
+  { code: "+91", name: "India", flag: "🇮🇳" },
+  { code: "+966", name: "Saudi Arabia", flag: "🇸🇦" },
+  { code: "+971", name: "UAE", flag: "🇦🇪" },
+  { code: "+20", name: "Egypt", flag: "🇪🇬" },
+  { code: "+33", name: "France", flag: "🇫🇷" },
+  { code: "+49", name: "Germany", flag: "🇩🇪" },
+  { code: "+81", name: "Japan", flag: "🇯🇵" },
+  { code: "+86", name: "China", flag: "🇨🇳" },
+];
+
 
 export default function SettingsPage() {
   const { profile, updateProfileField, language, setLanguage, mode, setMode, isLoading: isProfileLoading } = useUserPreferences();
@@ -42,8 +55,22 @@ export default function SettingsPage() {
   const [activeSessions, setActiveSessions] = useState<ActiveSession[]>(initialActiveSessions);
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  
+  // State for profile form fields
+  const [displayName, setDisplayName] = useState(profile?.displayName || '');
+  const [userCountryCode, setUserCountryCode] = useState(profile?.countryCode || '');
+  const [userPhoneNumber, setUserPhoneNumber] = useState(profile?.phoneNumber || '');
+
   const pathname = usePathname(); 
   const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes;
+
+  useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.displayName || '');
+      setUserCountryCode(profile.countryCode || '');
+      setUserPhoneNumber(profile.phoneNumber || '');
+    }
+  }, [profile]);
 
 
   const handle2FAToggle = (checked: boolean) => {
@@ -60,6 +87,7 @@ export default function SettingsPage() {
        toast({ title: "Password Too Short", description: "Password must be at least 6 characters.", variant: "destructive" });
       return;
     }
+    // Firebase password change logic would go here
     console.log("Password change attempt for:", profile?.email);
     toast({ title: "Password Change Requested", description: "If your email is valid, you'll receive a link to reset your password (simulated)." });
     setNewPassword('');
@@ -73,7 +101,7 @@ export default function SettingsPage() {
 
   const handleModeChange = (checked: boolean) => {
     const newMode = checked ? 'islamic' : 'conventional';
-    setMode(newMode);
+    setMode(newMode); // This internally calls updateProfileField
     toast({
       title: "Mode Changed",
       description: `Application mode set to ${newMode === 'islamic' ? 'Islamic' : 'Conventional'}.`,
@@ -99,6 +127,15 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveProfileChanges = () => {
+    updateProfileField({ 
+      displayName: displayName,
+      countryCode: userCountryCode,
+      phoneNumber: userPhoneNumber
+    });
+    toast({ title: "Profile Updated", description: "Your profile settings have been saved." });
+  };
+
 
   if (isProfileLoading || !profile) {
     return <div>Loading settings...</div>; 
@@ -120,13 +157,33 @@ export default function SettingsPage() {
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-1.5">
               <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" defaultValue={profile.displayName || ''} placeholder="Your full name" 
-                onBlur={(e) => updateProfileField({ displayName: e.target.value })}
-              />
+              <Input id="fullName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your full name" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="email">Email Address</Label>
-              <Input id="email" type="email" defaultValue={profile.email || ''} disabled />
+              <Input id="email" type="email" value={profile.email || ''} disabled />
+            </div>
+             <div className="space-y-1.5">
+              <Label htmlFor="countryCode">Country Code</Label>
+              <Select value={userCountryCode} onValueChange={setUserCountryCode}>
+                <SelectTrigger id="countryCode">
+                  <SelectValue placeholder="Select country code" />
+                </SelectTrigger>
+                <SelectContent>
+                  {countryCodes.map(country => (
+                    <SelectItem key={country.code} value={country.code}>
+                      <span className="mr-2">{country.flag}</span>{country.name} ({country.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="phoneNumber">Phone Number</Label>
+              <div className="relative">
+                <Phone className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input id="phoneNumber" type="tel" value={userPhoneNumber} onChange={(e) => setUserPhoneNumber(e.target.value)} placeholder="Your phone number" className="pl-8" />
+              </div>
             </div>
           </div>
            <Separator />
@@ -161,7 +218,7 @@ export default function SettingsPage() {
               onCheckedChange={handleModeChange}
             />
           </div>
-          <Button onClick={() => toast({ title: "Profile Updated", description: "Your profile settings have been saved."})}>Save Profile Changes</Button>
+          <Button onClick={handleSaveProfileChanges}>Save Profile Changes</Button>
         </CardContent>
       </Card>
 

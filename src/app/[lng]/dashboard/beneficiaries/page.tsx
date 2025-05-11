@@ -8,15 +8,42 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
 import type { Beneficiary } from '@/types';
-import { UserPlus, Users, Trash2, Edit3, Search } from 'lucide-react';
+import { UserPlus, Users, Trash2, Edit3, Search, Phone } from 'lucide-react';
+
+const countryCodes = [
+  { code: "+1", name: "USA/Canada", flag: "🇺🇸🇨🇦" },
+  { code: "+44", name: "UK", flag: "🇬🇧" },
+  { code: "+91", name: "India", flag: "🇮🇳" },
+  { code: "+966", name: "Saudi Arabia", flag: "🇸🇦" },
+  { code: "+971", name: "UAE", flag: "🇦🇪" },
+  { code: "+20", name: "Egypt", flag: "🇪🇬" },
+  { code: "+33", name: "France", flag: "🇫🇷" },
+  { code: "+49", name: "Germany", flag: "🇩🇪" },
+  { code: "+81", name: "Japan", flag: "🇯🇵" },
+  { code: "+86", name: "China", flag: "🇨🇳" },
+];
+
+interface CurrentBeneficiaryState extends Omit<Beneficiary, 'id'> {
+  // Omit id as it's generated, ensure other fields are present
+}
+
+const initialBeneficiaryState: CurrentBeneficiaryState = {
+  name: '',
+  email: '',
+  countryCode: '',
+  phoneNumber: '',
+  notes: ''
+};
+
 
 export default function BeneficiariesPage() {
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBeneficiary, setEditingBeneficiary] = useState<Beneficiary | null>(null);
-  const [currentBeneficiary, setCurrentBeneficiary] = useState<{ name: string, email: string, notes?: string }>({ name: '', email: '', notes: '' });
+  const [currentBeneficiary, setCurrentBeneficiary] = useState<CurrentBeneficiaryState>(initialBeneficiaryState);
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
@@ -25,11 +52,16 @@ export default function BeneficiariesPage() {
     setCurrentBeneficiary(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleCountryCodeChange = (value: string) => {
+    setCurrentBeneficiary(prev => ({...prev, countryCode: value}));
+  };
+
   const handleSubmit = () => {
     if (!currentBeneficiary.name || !currentBeneficiary.email) {
       toast({ title: "Missing Information", description: "Please fill in name and email.", variant: "destructive" });
       return;
     }
+    // Optional: Add validation for phone number format if country code is present
 
     if (editingBeneficiary) {
       setBeneficiaries(beneficiaries.map(b => b.id === editingBeneficiary.id ? { ...editingBeneficiary, ...currentBeneficiary } : b));
@@ -43,7 +75,13 @@ export default function BeneficiariesPage() {
 
   const handleEdit = (beneficiary: Beneficiary) => {
     setEditingBeneficiary(beneficiary);
-    setCurrentBeneficiary({ name: beneficiary.name, email: beneficiary.email, notes: beneficiary.notes || '' });
+    setCurrentBeneficiary({ 
+      name: beneficiary.name, 
+      email: beneficiary.email, 
+      countryCode: beneficiary.countryCode || '', 
+      phoneNumber: beneficiary.phoneNumber || '', 
+      notes: beneficiary.notes || '' 
+    });
     setIsDialogOpen(true);
   };
 
@@ -54,19 +92,20 @@ export default function BeneficiariesPage() {
 
   const openNewBeneficiaryDialog = () => {
     setEditingBeneficiary(null);
-    setCurrentBeneficiary({ name: '', email: '', notes: '' });
+    setCurrentBeneficiary(initialBeneficiaryState);
     setIsDialogOpen(true);
   };
   
   const resetFormAndCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingBeneficiary(null);
-    setCurrentBeneficiary({ name: '', email: '', notes: ''});
+    setCurrentBeneficiary(initialBeneficiaryState);
   }
 
   const filteredBeneficiaries = beneficiaries.filter(b =>
     b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.email.toLowerCase().includes(searchTerm.toLowerCase())
+    b.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (b.phoneNumber && b.phoneNumber.includes(searchTerm))
   );
 
   return (
@@ -112,6 +151,7 @@ export default function BeneficiariesPage() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
                   <TableHead>Notes</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -121,6 +161,7 @@ export default function BeneficiariesPage() {
                   <TableRow key={b.id}>
                     <TableCell className="font-medium">{b.name}</TableCell>
                     <TableCell>{b.email}</TableCell>
+                    <TableCell>{b.countryCode || ''} {b.phoneNumber || 'N/A'}</TableCell>
                     <TableCell className="text-sm text-muted-foreground truncate max-w-xs">{b.notes || 'N/A'}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button variant="ghost" size="icon" onClick={() => handleEdit(b)}>
@@ -157,12 +198,36 @@ export default function BeneficiariesPage() {
               <Label htmlFor="email">Email Address</Label>
               <Input id="email" name="email" type="email" value={currentBeneficiary.email} onChange={handleInputChange} placeholder="john.doe@example.com" />
             </div>
+            <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-1 space-y-1.5">
+                    <Label htmlFor="countryCode">Country</Label>
+                    <Select value={currentBeneficiary.countryCode} onValueChange={handleCountryCodeChange}>
+                        <SelectTrigger id="countryCode">
+                            <SelectValue placeholder="Code" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {countryCodes.map(country => (
+                                <SelectItem key={country.code} value={country.code}>
+                                   <span className="mr-1 rtl:ml-1">{country.flag}</span> {country.code}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                    <Label htmlFor="phoneNumber">Phone Number</Label>
+                     <div className="relative">
+                        <Phone className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input id="phoneNumber" name="phoneNumber" type="tel" value={currentBeneficiary.phoneNumber} onChange={handleInputChange} placeholder="Phone number" className="pl-8" />
+                     </div>
+                </div>
+            </div>
              <div className="space-y-1.5">
               <Label htmlFor="notes">Notes (Optional)</Label>
               <textarea 
                 id="notes" 
                 name="notes" 
-                value={currentBeneficiary.notes} 
+                value={currentBeneficiary.notes || ''} 
                 onChange={handleInputChange} 
                 placeholder="Relationship, specific instructions, etc." 
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"

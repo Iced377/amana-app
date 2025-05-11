@@ -10,7 +10,8 @@ export interface VaultFile {
   size: number; // in bytes
   uploadDate: string; // ISO string
   // dataUri?: string; // Unencrypted data, primarily for upload and AI processing
-  encryptedDataUri: string; // Encrypted data for storage
+  // encryptedDataUri: string; // Encrypted data for storage // Removed as per user request to remove encryption on upload
+  dataUri: string; // Store unencrypted data URI directly as per user request
   aiTags: string[];
   shariahCompliance?: {
     isCompliant: boolean;
@@ -31,6 +32,8 @@ export interface Beneficiary {
   id: string;
   name: string;
   email: string;
+  countryCode?: string;
+  phoneNumber?: string;
   notes?: string;
 }
 
@@ -42,6 +45,8 @@ export interface UserProfile {
   id: string; // Firebase UID
   email: string | null;
   displayName: string | null;
+  countryCode?: string;
+  phoneNumber?: string;
   mode: UserPreferenceMode;
   language: Language;
   subscriptionTier: SubscriptionTier;
