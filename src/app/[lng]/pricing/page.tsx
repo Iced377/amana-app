@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, ShieldCheck, Star, Gift, Percent } from "lucide-react";
+import { CheckCircle, ShieldCheck, Star, Gift, Percent, Info } from "lucide-react"; // Added Info
 import Link from "next/link";
 import { AppLogo } from "@/components/AppLogo";
 import { usePathname } from "next/navigation";
@@ -25,7 +25,7 @@ const planDetails = {
       "Visibility control (private, upon death, share immediately)",
       "10 GB storage"
     ],
-    annualSavingsPercent: 17, // ((9.99*12 - 99.99) / (9.99*12)) * 100 = ~16.59%
+    annualSavingsPercent: 17, 
   },
   premium: {
     name: "Premium",
@@ -41,7 +41,7 @@ const planDetails = {
       "Islamic inheritance calculator",
       "Priority support"
     ],
-    annualSavingsPercent: 37, // ((19.99*12 - 149.99) / (19.99*12)) * 100 = ~37.47%
+    annualSavingsPercent: 37, 
     popular: true,
   },
   lifetime: {
@@ -235,6 +235,11 @@ export default function PricingPage() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                     30-day money-back guarantee on all paid plans.
+                </p>
+                <p className="text-sm text-muted-foreground mt-4">
+                    <Link href={`/${currentLocale}/features`} className="text-primary hover:underline">
+                        Compare all features in detail
+                    </Link>
                 </p>
             </div>
 
