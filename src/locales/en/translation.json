@@ -14,5 +14,17 @@
   "language": "Language",
   "english": "English",
   "arabic": "العربية (Arabic)",
-  "theme": "Theme"
+  "theme": "Theme",
+  "visibility": "Visibility",
+  "keepPrivate": "Keep Private",
+  "releaseUponDeath": "Release Upon Death",
+  "shareWithSpecificBeneficiaries": "Share with Specific Beneficiaries",
+  "selectBeneficiariesToShareWith": "Select beneficiaries to share with:",
+  "visibilityStatusPrivate": "Private",
+  "visibilityStatusOnDeath": "On Death",
+  "visibilityStatusShared": "Shared",
+  "manageSharing": "Manage Sharing",
+  "editVisibilityFor": "Edit Visibility for {fileName}",
+  "saveVisibility": "Save Visibility Changes",
+  "noBeneficiariesToSelect": "No beneficiaries available to select. Please add beneficiaries first."
 }

@@ -14,5 +14,17 @@
   "language": "اللغة",
   "english": "English (الإنجليزية)",
   "arabic": "العربية",
-  "theme": "المظهر"
+  "theme": "المظهر",
+  "visibility": "الرؤية",
+  "keepPrivate": "الحفاظ على الخصوصية",
+  "releaseUponDeath": "الإتاحة بعد الوفاة",
+  "shareWithSpecificBeneficiaries": "المشاركة مع مستفيدين محددين",
+  "selectBeneficiariesToShareWith": "اختر المستفيدين للمشاركة معهم:",
+  "visibilityStatusPrivate": "خاص",
+  "visibilityStatusOnDeath": "بعد الوفاة",
+  "visibilityStatusShared": "مُشارك",
+  "manageSharing": "إدارة المشاركة",
+  "editVisibilityFor": "تعديل الرؤية للملف {fileName}",
+  "saveVisibility": "حفظ تغييرات الرؤية",
+  "noBeneficiariesToSelect": "لا يوجد مستفيدون للاختيار. يرجى إضافة المستفيدين أولاً."
 }

@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 
 export type FileType = 'document' | 'image' | 'video' | 'other';
+export type FileVisibility = 'private' | 'releaseOnDeath' | 'sharedImmediately';
 
 export interface VaultFile {
   id: string;
@@ -8,8 +9,8 @@ export interface VaultFile {
   type: FileType;
   size: number; // in bytes
   uploadDate: string; // ISO string
-  dataUri?: string; // For sending to AI, temporary, unencrypted
-  encryptedDataUri?: string; // For storage, encrypted
+  // dataUri?: string; // Unencrypted data, primarily for upload and AI processing
+  encryptedDataUri: string; // Encrypted data for storage
   aiTags: string[];
   shariahCompliance?: {
     isCompliant: boolean;
@@ -18,9 +19,12 @@ export interface VaultFile {
     categoriesConcerned?: string[];
     checkedAt: string;
   };
-  beneficiary?: string; // Name of beneficiary
+  visibility: FileVisibility;
+  // Used when visibility is 'sharedImmediately'
+  // If 'releaseOnDeath', it's assumed to be shared with ALL beneficiaries from the Beneficiary Management page.
+  specificSharedBeneficiaryIds?: string[]; 
   icon: LucideIcon;
-  fileObject?: File; // The actual file object, temporary
+  fileObject?: File; // The actual file object, temporary during upload
 }
 
 export interface Beneficiary {
@@ -43,12 +47,9 @@ export interface UserProfile {
   subscriptionTier: SubscriptionTier;
   subscriptionEndDate?: string; // ISO string
   is2FAEnabled: boolean;
-  // In a real app, encryptionKey would be handled more securely,
-  // e.g., derived from password or managed by a KMS.
-  // Storing directly in profile/localStorage is for demo purposes.
   encryptionKey?: string; 
-  sadaqahEnabled?: boolean; // For Sadaqah Subscription feature
-  sadaqahPercentage?: 1 | 5 | 10; // Percentage for Sadaqah
+  sadaqahEnabled?: boolean; 
+  sadaqahPercentage?: 1 | 5 | 10; 
 }
 
 export interface ActiveSession {
@@ -58,5 +59,3 @@ export interface ActiveSession {
   lastAccessed: string; // ISO string
   location?: string; // e.g., "City, Country"
 }
-
-```
