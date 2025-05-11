@@ -13,7 +13,7 @@ interface UserPreferencesContextType {
   setLanguage: (language: Language) => void;
   isLoading: boolean;
   updateProfileField: (updates: Partial<UserProfile>) => void;
-  generateEncryptionKey: () => string; // Changed name and signature
+  generateEncryptionKey: () => string;
   getEncryptionKey: () => string | null;
 }
 
@@ -27,6 +27,7 @@ const defaultProfile: UserProfile = {
   language: 'en',
   subscriptionTier: 'free',
   is2FAEnabled: false,
+  encryptionKey: undefined, // Explicitly undefined
 };
 
 export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -34,13 +35,17 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading profile (e.g., from Firebase Auth/Firestore or localStorage for demo)
-    const storedProfile = localStorage.getItem('userProfile');
-    if (storedProfile) {
-      setProfileState(JSON.parse(storedProfile));
+    const storedProfileString = localStorage.getItem('userProfile');
+    if (storedProfileString) {
+      try {
+        const storedProfile = JSON.parse(storedProfileString) as UserProfile;
+        setProfileState(storedProfile);
+      } catch (e) {
+        console.error("Failed to parse userProfile from localStorage", e);
+        // Fallback to a guest profile if parsing fails
+        setProfileState({...defaultProfile, id: 'guestUser', displayName: 'Guest User'});
+      }
     } else {
-      // For demo, initialize with default if no user is "logged in"
-      // In a real app, this would be driven by auth state
       setProfileState({...defaultProfile, id: 'guestUser', displayName: 'Guest User'});
     }
     setIsLoading(false);
@@ -52,6 +57,8 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
       localStorage.setItem('userProfile', JSON.stringify(newProfile));
     } else {
       localStorage.removeItem('userProfile');
+      // When logging out or clearing profile, ensure we revert to a clean guest state
+      setProfileState({...defaultProfile, id: 'guestUser', displayName: 'Guest User'});
     }
   }, []);
   
@@ -70,27 +77,35 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
 
   const setLanguage = useCallback((newLanguage: Language) => {
     updateProfileField({ language: newLanguage });
-    document.documentElement.lang = newLanguage;
-    document.documentElement.dir = newLanguage === 'ar' ? 'rtl' : 'ltr';
+    if (typeof window !== 'undefined') {
+      document.documentElement.lang = newLanguage;
+      document.documentElement.dir = newLanguage === 'ar' ? 'rtl' : 'ltr';
+    }
   }, [updateProfileField]);
 
-  // Generates a new encryption key string. Does not store it or update profile.
   const generateEncryptionKey = (): string => {
-    // Basic key generation for demo. In a real app, use a strong KDF or more robust generation.
     const array = new Uint32Array(8);
-    window.crypto.getRandomValues(array);
-    const key = Array.from(array, dec => ('0' + dec.toString(16)).slice(-2)).join(''); // Ensure two hex characters per segment
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+      window.crypto.getRandomValues(array);
+    } else {
+      // Fallback for environments where window.crypto is not available (e.g., some SSR scenarios if not careful)
+      // This is NOT cryptographically secure for production, for demo/SSR safety only.
+      for (let i = 0; i < array.length; i++) {
+        array[i] = Math.floor(Math.random() * Math.pow(2,32));
+      }
+      console.warn("Using insecure fallback for crypto.getRandomValues. This should not happen in a browser environment.");
+    }
+    const key = Array.from(array, dec => ('0' + dec.toString(16)).slice(-2)).join('');
     return key;
   };
 
-  // Retrieves the encryption key from the current user profile.
   const getEncryptionKey = (): string | null => {
     return profile?.encryptionKey || null;
   };
 
 
   useEffect(() => {
-    if (profile?.language) {
+    if (profile?.language && typeof window !== 'undefined') {
       document.documentElement.lang = profile.language;
       document.documentElement.dir = profile.language === 'ar' ? 'rtl' : 'ltr';
     }
@@ -98,7 +113,6 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
 
 
   if (isLoading) {
-    // You might want a loading spinner or null render here
     return null; 
   }
 
@@ -112,7 +126,7 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
       setLanguage,
       isLoading,
       updateProfileField,
-      generateEncryptionKey, // Updated function name
+      generateEncryptionKey,
       getEncryptionKey,
     }}>
       {children}
@@ -127,4 +141,3 @@ export const useUserPreferences = (): UserPreferencesContextType => {
   }
   return context;
 };
-

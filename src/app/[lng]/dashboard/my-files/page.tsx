@@ -1,4 +1,3 @@
-
 "use client";
 
 import type React from 'react';
@@ -29,7 +28,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger, // Added DialogTrigger
+  DialogTrigger,
 } from "@/components/ui/dialog"
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { encryptDataUri, decryptDataUri } from '@/lib/encryption'; 
@@ -57,7 +56,7 @@ export default function MyFilesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { toast } = useToast();
-  const { profile, getEncryptionKey, mode: userMode } = useUserPreferences();
+  const { profile, mode: userMode } = useUserPreferences();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setPreviewDataUrl(null);
@@ -81,9 +80,13 @@ export default function MyFilesPage() {
       return;
     }
 
-    const encryptionKey = getEncryptionKey();
+    const encryptionKey = profile?.encryptionKey;
+    console.log("Current profile in MyFilesPage for upload:", JSON.stringify(profile, null, 2));
+    console.log("Retrieved encryption key for upload directly from profile:", encryptionKey);
+
     if (!encryptionKey) {
       toast({ title: "Encryption Key Missing", description: "Cannot upload file without an encryption key. Please check your profile.", variant: "destructive" });
+      setIsUploading(false); // Reset uploading state
       return;
     }
 

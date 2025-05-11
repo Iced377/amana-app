@@ -13,6 +13,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
 import type { UserPreferenceMode, UserProfile } from "@/types";
 import type { LocaleTypes } from "@/locales/settings";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -23,14 +24,19 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [selectedMode, setSelectedMode] = useState<UserPreferenceMode>('conventional');
+  const { toast } = useToast();
 
   const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes;
 
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => { // Removed async
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (password !== confirmPassword) {
-      alert("Passwords do not match!");
+      toast({ title: "Password Mismatch", description: "Passwords do not match.", variant: "destructive" });
+      return;
+    }
+     if (password.length < 6) {
+       toast({ title: "Password Too Short", description: "Password must be at least 6 characters long.", variant: "destructive" });
       return;
     }
     
@@ -46,25 +52,29 @@ export default function SignupPage() {
       language: currentLocale, 
       subscriptionTier: 'free',
       is2FAEnabled: false,
-      encryptionKey: undefined, // Ensure encryptionKey is part of the type
+      encryptionKey: undefined,
     };
 
     try {
       const key = generateEncryptionKey(); 
       if (!key) {
         console.error("Failed to generate encryption key on signup.");
-        // Optionally, prevent signup or inform user
+        toast({ title: "Signup Error", description: "Could not initialize security settings. Please try again.", variant: "destructive" });
+        return;
       } else {
         console.log("Encryption key generated and will be associated with profile.");
         newUserProfile.encryptionKey = key;
       }
     } catch (error) {
        console.error("Error generating encryption key:", error);
-       // Optionally, prevent signup or inform user
+       toast({ title: "Signup Error", description: "An unexpected error occurred with security setup. Please try again.", variant: "destructive" });
+       return;
     }
 
-    setProfile(newUserProfile); // Set the profile with the key included
+    console.log("Profile being set in SignupPage:", JSON.stringify(newUserProfile, null, 2));
+    setProfile(newUserProfile); 
 
+    toast({ title: "Account Created!", description: "Welcome to Guardian Angel. Redirecting to your dashboard..." });
     router.push(`/${currentLocale}/dashboard`); 
   };
 
@@ -92,7 +102,7 @@ export default function SignupPage() {
               <Input id="email" type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Password (min. 6 characters)</Label>
               <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
              <div className="space-y-2">
@@ -103,7 +113,7 @@ export default function SignupPage() {
             <div className="space-y-3">
               <Label>Choose Your Experience Mode</Label>
               <RadioGroup 
-                defaultValue="conventional" 
+                value={selectedMode}
                 onValueChange={(value: UserPreferenceMode) => setSelectedMode(value)}
                 className="flex flex-col space-y-1"
               >
@@ -141,4 +151,3 @@ export default function SignupPage() {
     </div>
   );
 }
-

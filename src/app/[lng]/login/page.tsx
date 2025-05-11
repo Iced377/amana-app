@@ -16,14 +16,14 @@ import type { LocaleTypes } from "@/locales/settings";
 export default function LoginPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const { profile: currentGlobalProfile, setProfile, generateEncryptionKey } = useUserPreferences(); // Renamed profile to currentGlobalProfile to avoid conflict
+  const { profile: currentGlobalProfile, setProfile, generateEncryptionKey } = useUserPreferences();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes;
 
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => { // Removed async as generateEncryptionKey is sync now
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     console.log("Login submitted for:", email);
 
@@ -40,14 +40,14 @@ export default function LoginPage() {
             language: currentLocale, 
             subscriptionTier: 'free',
             is2FAEnabled: false,
-            encryptionKey: undefined, // Ensure encryptionKey is part of the type
+            encryptionKey: undefined,
         };
     } else {
         userProfile = { 
           ...currentGlobalProfile, 
-          email: email, // Update email if necessary, or keep existing
-          id: currentGlobalProfile.id || mockUserId, // Ensure ID is consistent
-          language: currentLocale, // Update language
+          email: email, 
+          id: currentGlobalProfile.id || mockUserId, 
+          language: currentLocale, 
         };
     }
     
@@ -65,7 +65,8 @@ export default function LoginPage() {
         }
     }
     
-    setProfile(userProfile); // Set the profile with the key included
+    console.log("Profile being set in LoginPage:", JSON.stringify(userProfile, null, 2));
+    setProfile(userProfile); 
     router.push(`/${currentLocale}/dashboard`);
   };
 
@@ -91,7 +92,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link href="#" className="text-sm text-primary hover:underline">
+                <Link href={`/${currentLocale}/forgot-password`} className="text-sm text-primary hover:underline">
                   Forgot password?
                 </Link>
               </div>
@@ -117,4 +118,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
