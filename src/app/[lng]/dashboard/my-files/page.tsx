@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import type { VaultFile, FileType } from '@/types';
-import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole, Unlock, Eye } from 'lucide-react';
+import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole, Unlock, Eye, Download } from 'lucide-react';
 import { performAiTagging, performShariahComplianceCheck } from './actions';
 import {
   DropdownMenu,
@@ -162,14 +162,42 @@ export default function MyFilesPage() {
   };
 
   const handlePreviewFile = async (file: VaultFile) => {
-    if (!file.encryptedDataUri) { // This field now holds the unencrypted data URI
+    if (!file.encryptedDataUri) { 
       toast({ title: "Preview Error", description: "File data is missing.", variant: "destructive" });
       return;
     }
     
-    setPreviewContentUrl(file.encryptedDataUri); // Use directly as it's unencrypted
+    setPreviewContentUrl(file.encryptedDataUri); 
     setFileToPreview(file);
     setIsPreviewOpen(true);
+  };
+
+  const handleDownloadFile = (file: VaultFile) => {
+    if (!file.encryptedDataUri) {
+      toast({ title: "Download Error", description: "File data is missing.", variant: "destructive" });
+      return;
+    }
+    const link = document.createElement('a');
+    link.href = file.encryptedDataUri;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({ title: "Download Started", description: `${file.name} is downloading.` });
+  };
+
+  const handleDownloadAllFiles = () => {
+    if (filteredFiles.length === 0) {
+      toast({ title: "No Files", description: "There are no files to download.", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Downloading All Files", description: `Preparing to download ${filteredFiles.length} files.`});
+    filteredFiles.forEach((file, index) => {
+      // Add a small delay between downloads to prevent browser blocking
+      setTimeout(() => {
+        handleDownloadFile(file);
+      }, index * 500); 
+    });
   };
   
   const filteredFiles = files.filter(file => 
@@ -181,72 +209,77 @@ export default function MyFilesPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold md:text-3xl">My Files</h1>
-        <Dialog open={isUploadDialogOpen} onOpenChange={(isOpen) => {
-          setIsUploadDialogOpen(isOpen);
-          if (!isOpen) {
-            setSelectedFile(null);
-            setPreviewDataUrl(null);
-            if (fileInputRef.current) fileInputRef.current.value = '';
-            setIsUploading(false);
-            setUploadProgress(0);
-          }
-        }}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setIsUploadDialogOpen(true)}>
-              <UploadCloud className="mr-2 h-4 w-4" /> Upload File
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Upload a New File</DialogTitle>
-              <DialogDescription>
-                Choose a file. It will be AI-tagged and stored (unencrypted).
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="file-upload" className="text-right col-span-1">
-                  File
-                </Label>
-                <Input ref={fileInputRef} id="file-upload" type="file" onChange={handleFileChange} className="col-span-3" />
-              </div>
-              {selectedFile && (
-                <div className="col-span-4 text-center">
-                  <p className="text-sm text-muted-foreground">Selected: {selectedFile.name}</p>
-                  {previewDataUrl && selectedFile.type.startsWith('image/') && (
-                    <div className="mt-2 flex justify-center">
-                      <Image
-                        src={previewDataUrl} 
-                        alt="Selected file preview"
-                        width={200}
-                        height={200}
-                        className="rounded-md object-contain max-h-48"
-                        data-ai-hint="file preview"
-                      />
-                    </div>
-                  )}
-                   {!selectedFile.type.startsWith('image/') && previewDataUrl && (
-                     <p className="text-xs text-muted-foreground mt-1">Preview not available for this file type.</p>
-                   )}
-                </div>
-              )}
-              {isUploading && (
-                <div className="col-span-4">
-                  <Progress value={uploadProgress} className="w-full" />
-                  <p className="text-sm text-center mt-1">
-                    {uploadProgress < 45 ? "Preparing..." : uploadProgress < 90 ? "AI Tagging..." : "Finalizing..."} ({uploadProgress}%)
-                  </p>
-                </div>
-              )}
-            </div>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleUpload} disabled={isUploading || !selectedFile || !previewDataUrl}>
-                {isUploading ? 'Processing...' : 'Upload File'}
+        <div className="flex gap-2">
+          <Button onClick={handleDownloadAllFiles} variant="outline" disabled={filteredFiles.length === 0}>
+            <Download className="mr-2 h-4 w-4" /> Download All
+          </Button>
+          <Dialog open={isUploadDialogOpen} onOpenChange={(isOpen) => {
+            setIsUploadDialogOpen(isOpen);
+            if (!isOpen) {
+              setSelectedFile(null);
+              setPreviewDataUrl(null);
+              if (fileInputRef.current) fileInputRef.current.value = '';
+              setIsUploading(false);
+              setUploadProgress(0);
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setIsUploadDialogOpen(true)}>
+                <UploadCloud className="mr-2 h-4 w-4" /> Upload File
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Upload a New File</DialogTitle>
+                <DialogDescription>
+                  Choose a file. It will be AI-tagged and stored (unencrypted).
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="file-upload" className="text-right col-span-1">
+                    File
+                  </Label>
+                  <Input ref={fileInputRef} id="file-upload" type="file" onChange={handleFileChange} className="col-span-3" />
+                </div>
+                {selectedFile && (
+                  <div className="col-span-4 text-center">
+                    <p className="text-sm text-muted-foreground">Selected: {selectedFile.name}</p>
+                    {previewDataUrl && selectedFile.type.startsWith('image/') && (
+                      <div className="mt-2 flex justify-center">
+                        <Image
+                          src={previewDataUrl} 
+                          alt="Selected file preview"
+                          width={200}
+                          height={200}
+                          className="rounded-md object-contain max-h-48"
+                          data-ai-hint="file preview"
+                        />
+                      </div>
+                    )}
+                     {!selectedFile.type.startsWith('image/') && previewDataUrl && (
+                       <p className="text-xs text-muted-foreground mt-1">Preview not available for this file type.</p>
+                     )}
+                  </div>
+                )}
+                {isUploading && (
+                  <div className="col-span-4">
+                    <Progress value={uploadProgress} className="w-full" />
+                    <p className="text-sm text-center mt-1">
+                      {uploadProgress < 45 ? "Preparing..." : uploadProgress < 90 ? "AI Tagging..." : "Finalizing..."} ({uploadProgress}%)
+                    </p>
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleUpload} disabled={isUploading || !selectedFile || !previewDataUrl}>
+                  {isUploading ? 'Processing...' : 'Upload File'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card className="shadow-md">
@@ -341,6 +374,12 @@ export default function MyFilesPage() {
                           <Button variant="ghost" size="icon"><Edit3 className="h-4 w-4" /><span className="sr-only">Edit file options</span></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                           <DropdownMenuItem onClick={() => handlePreviewFile(file)}>
+                            <Eye className="mr-2 h-4 w-4" /> Preview
+                          </DropdownMenuItem>
+                           <DropdownMenuItem onClick={() => handleDownloadFile(file)}>
+                            <Download className="mr-2 h-4 w-4" /> Download
+                          </DropdownMenuItem>
                            <DropdownMenuItem onClick={() => handleEditFile(file)}>
                             <Edit3 className="mr-2 h-4 w-4" /> Edit Beneficiary
                           </DropdownMenuItem>
@@ -368,6 +407,9 @@ export default function MyFilesPage() {
                         <DropdownMenuContent align="end">
                            <DropdownMenuItem onClick={() => handlePreviewFile(file)}>
                             <Eye className="mr-2 h-4 w-4" /> Preview
+                          </DropdownMenuItem>
+                           <DropdownMenuItem onClick={() => handleDownloadFile(file)}>
+                            <Download className="mr-2 h-4 w-4" /> Download
                           </DropdownMenuItem>
                            <DropdownMenuItem onClick={() => handleEditFile(file)}>
                             <Edit3 className="mr-2 h-4 w-4" /> Edit Beneficiary
@@ -442,7 +484,12 @@ export default function MyFilesPage() {
         <DialogContent className="sm:max-w-[90vw] md:max-w-[70vw] lg:max-w-[60vw] xl:max-w-[50vw] h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Preview: {fileToPreview?.name}</DialogTitle>
-            <DialogClose onClick={() => { setIsPreviewOpen(false); setFileToPreview(null); setPreviewContentUrl(null); }} />
+            <DialogClose asChild>
+                <Button variant="ghost" size="icon" onClick={() => { setIsPreviewOpen(false); setFileToPreview(null); setPreviewContentUrl(null); }}>
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Close</span>
+                </Button>
+            </DialogClose>
           </DialogHeader>
           <div className="py-2 flex-grow overflow-auto">
             {previewContentUrl && fileToPreview ? (
@@ -465,13 +512,21 @@ export default function MyFilesPage() {
                    <iframe src={previewContentUrl} title={`Preview of ${fileToPreview.name}`} className="w-full h-full border-0" />
                 )}
                 {fileToPreview.type === 'document' && !fileToPreview.name.toLowerCase().endsWith('.pdf') && (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-muted-foreground">Preview not available for this document type. You can download it to view.</p>
+                  <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                    <FileText className="h-16 w-16 text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground mb-2">Preview not available for this document type.</p>
+                    <Button onClick={() => handleDownloadFile(fileToPreview)}>
+                        <Download className="mr-2 h-4 w-4" /> Download Document
+                    </Button>
                   </div>
                 )}
                 {fileToPreview.type === 'other' && (
-                   <div className="flex items-center justify-center h-full">
-                    <p className="text-muted-foreground">Preview not available for this file type.</p>
+                   <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                    <FileQuestion className="h-16 w-16 text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground mb-2">Preview not available for this file type.</p>
+                     <Button onClick={() => handleDownloadFile(fileToPreview)}>
+                        <Download className="mr-2 h-4 w-4" /> Download File
+                    </Button>
                    </div>
                 )}
               </>
@@ -481,6 +536,14 @@ export default function MyFilesPage() {
               </div>
             )}
           </div>
+           <DialogFooter className="mt-auto pt-2 border-t">
+             {fileToPreview && (
+                <Button onClick={() => handleDownloadFile(fileToPreview)}>
+                    <Download className="mr-2 h-4 w-4" /> Download
+                </Button>
+             )}
+            <Button variant="outline" onClick={() => { setIsPreviewOpen(false); setFileToPreview(null); setPreviewContentUrl(null); }}>Close Preview</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
