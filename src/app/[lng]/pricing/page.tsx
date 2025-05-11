@@ -1,65 +1,62 @@
 
-"use client"; // Required for usePathname
+"use client";
 
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, ShieldCheck, Star, Gift } from "lucide-react";
+import { CheckCircle, ShieldCheck, Star, Gift, Percent } from "lucide-react";
 import Link from "next/link";
 import { AppLogo } from "@/components/AppLogo";
 import { usePathname } from "next/navigation";
 import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings';
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { cn } from '@/lib/utils';
 
-const plans = [
-  {
-    name: "Standard Monthly",
-    price: "$9.99",
-    billingCycle: "/month",
-    features: ["Secure 10 GB Storage", "AI File Tagging", "Beneficiary Management", "Death Trigger", "Email Support"],
-    cta: "Choose Plan",
-    popular: false,
-    billedAsText: "Billed $9.99 monthly"
+const planDetails = {
+  standard: {
+    name: "Standard",
+    monthlyPrice: 9.99,
+    annualPrice: 99.99,
+    features: [
+      "Document vault with encryption",
+      "Smart tagging (AI)",
+      "Assign beneficiaries",
+      "Visibility control (private, upon death, share immediately)",
+      "10 GB storage"
+    ],
+    annualSavingsPercent: 17, // ((9.99*12 - 99.99) / (9.99*12)) * 100 = ~16.59%
   },
-  {
-    name: "Standard Quarterly",
-    price: `$${(19.99 / 3).toFixed(2)}`, // Approx $6.66
-    billingCycle: "/month",
-    billedAsText: "Billed $19.99 every 3 months",
-    savingsText: "Save ~33% vs Monthly",
-    features: ["Secure 25 GB Storage", "All Standard Monthly Features", "Priority Email Support"],
-    cta: "Choose Plan",
+  premium: {
+    name: "Premium",
+    monthlyPrice: 19.99,
+    annualPrice: 149.99,
+    features: [
+      "All Standard features, plus:",
+      "Unlimited storage",
+      "Posthumous file release via inactivity or trusted contact",
+      "AI transcription of voice/video",
+      "Sentiment detection on legacy messages",
+      "Death trigger settings",
+      "Islamic inheritance calculator",
+      "Priority support"
+    ],
+    annualSavingsPercent: 37, // ((19.99*12 - 149.99) / (19.99*12)) * 100 = ~37.47%
     popular: true,
   },
-  {
-    name: "Premium Yearly",
-    price: `$${(199.99 / 12).toFixed(2)}`, // Approx $16.67
-    billingCycle: "/month",
-    billedAsText: "Billed $199.99 annually",
-    savingsText: "Includes advanced features",
-    features: ["Secure 100 GB Storage", "All Standard Features", "Advanced AI Features", "Early Access to New Features", "Phone & Chat Support"],
-    cta: "Choose Plan",
-    popular: false,
-  },
-  {
-    name: "Premium Bi-Yearly",
-    price: `$${(299.99 / 24).toFixed(2)}`, // Approx $12.50
-    billingCycle: "/month",
-    billedAsText: "Billed $299.99 every 2 years",
-    savingsText: "Best value for Premium features",
-    features: ["Secure 250 GB Storage", "All Premium Yearly Features", "Dedicated Account Manager (Limited)", "Customizable Reporting"],
-    cta: "Choose Plan",
-    popular: false,
-  },
-  {
-    name: "Lifetime Access",
-    price: "$499.99",
-    billingCycle: "one-time payment",
-    savingsText: "Ultimate value & peace of mind",
-    features: ["Unlimited Storage (fair use)", "All Premium Bi-Yearly Features", "Lifetime Updates & Support", "Exclusive Community Access"],
-    cta: "Get Lifetime Access",
-    popular: false,
-    limited: "Limited to first 500 users!",
-  },
-];
+  lifetime: {
+    name: "Lifetime Plan",
+    oneTimePrice: 399.00,
+    features: [
+      "All Premium features",
+      "One-time payment, lifetime access",
+      "Future updates included",
+    ],
+    badge: "Early Adopter — Lifetime Access",
+    limitText: "Limited to first 200 users!",
+  }
+};
+
 
 export default function PricingPage() {
   const pathname = usePathname();
@@ -71,7 +68,24 @@ export default function PricingPage() {
       currentLocale = segments[1] as LocaleTypes;
     }
   }
+
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('annually');
+
+  const getPrice = (plan: 'standard' | 'premium') => {
+    return billingCycle === 'annually' ? planDetails[plan].annualPrice : planDetails[plan].monthlyPrice;
+  };
+
+  const getBillingCycleText = () => {
+    return billingCycle === 'annually' ? "/year" : "/month";
+  };
   
+  const getBilledAsText = (plan: 'standard' | 'premium') => {
+     if (billingCycle === 'annually') {
+        return `Billed $${planDetails[plan].annualPrice.toFixed(2)} annually`;
+     }
+     return `Billed $${planDetails[plan].monthlyPrice.toFixed(2)} monthly`;
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -96,62 +110,133 @@ export default function PricingPage() {
                 Find the Perfect Plan for Your Peace of Mind
               </h1>
               <p className="mt-4 max-w-2xl mx-auto text-muted-foreground md:text-xl">
-                Choose a subscription that fits your needs and secure your digital legacy today. All paid plans come with a 30-day money-back guarantee.
+                Your legacy. Protected. Delivered when it matters most.
+                Choose a subscription that fits your needs and secure your digital legacy today.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 items-start">
-              {plans.map((plan) => (
-                <Card key={plan.name} className={`shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col ${plan.popular ? 'border-primary border-2 relative' : ''}`}>
-                  {plan.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 text-sm font-semibold rounded-full shadow-md">
-                      Popular
-                    </div>
-                  )}
-                   {plan.limited && (
-                    <div className="absolute -top-3 right-3 bg-destructive text-destructive-foreground px-2 py-0.5 text-xs font-semibold rounded-full shadow-md transform rotate-[15deg]">
-                      LIMITED
-                    </div>
-                  )}
-                  <CardHeader className="pb-4 text-center">
-                    <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                    {plan.limited && <p className="text-sm text-destructive font-semibold mt-1">{plan.limited}</p>}
-                    <div className="mt-2">
-                      <span className="text-4xl font-bold">{plan.price}</span>
-                      <span className="text-muted-foreground">{plan.billingCycle}</span>
-                    </div>
-                    {plan.billedAsText && (
-                      <p className="text-xs text-muted-foreground mt-1">{plan.billedAsText}</p>
-                    )}
-                    {plan.savingsText && (
-                      <p className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">{plan.savingsText}</p>
-                    )}
-                  </CardHeader>
-                  <CardContent className="flex-grow">
-                    <ul className="space-y-2">
-                      {plan.features.map((feature) => (
-                        <li key={feature} className="flex items-start">
-                          <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-0.5 shrink-0" />
-                          <span className="text-sm text-muted-foreground">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                  <CardFooter className="mt-auto">
-                    <Button className="w-full" size="lg" variant={plan.popular ? 'default' : 'outline'}>
-                      {plan.cta}
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-            
-            <div className="text-center mt-8">
-                <p className="text-xs text-muted-foreground">
-                    Prices are exclusive of VAT. VAT at 10% will be applied for customers in Bahrain where applicable.
-                </p>
+            <div className="flex justify-center items-center gap-4 mb-10">
+              <Label htmlFor="billing-cycle-toggle" className={cn(billingCycle === 'monthly' ? 'text-primary font-semibold' : 'text-muted-foreground')}>Monthly</Label>
+              <Switch
+                id="billing-cycle-toggle"
+                checked={billingCycle === 'annually'}
+                onCheckedChange={(checked) => setBillingCycle(checked ? 'annually' : 'monthly')}
+                aria-label="Toggle billing cycle"
+              />
+              <Label htmlFor="billing-cycle-toggle" className={cn(billingCycle === 'annually' ? 'text-primary font-semibold' : 'text-muted-foreground')}>
+                Annually <span className="text-sm text-green-600 dark:text-green-400 font-medium"> (Save up to {planDetails.premium.annualSavingsPercent}%)</span>
+              </Label>
             </div>
 
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-1 lg:grid-cols-3 items-stretch">
+              {/* Standard Plan */}
+              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col">
+                <CardHeader className="pb-4 text-center">
+                  <CardTitle className="text-2xl">{planDetails.standard.name}</CardTitle>
+                  <div className="mt-2">
+                    <span className="text-4xl font-bold">${getPrice('standard').toFixed(2)}</span>
+                    <span className="text-muted-foreground">{getBillingCycleText()}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{getBilledAsText('standard')}</p>
+                  {billingCycle === 'annually' && (
+                     <p className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">Save ~{planDetails.standard.annualSavingsPercent}%</p>
+                  )}
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <ul className="space-y-2">
+                    {planDetails.standard.features.map((feature) => (
+                      <li key={feature} className="flex items-start">
+                        <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-0.5 shrink-0" />
+                        <span className="text-sm text-muted-foreground">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+                <CardFooter className="mt-auto">
+                  <Button className="w-full" size="lg" variant="outline">
+                    Choose Plan
+                  </Button>
+                </CardFooter>
+              </Card>
+
+              {/* Premium Plan */}
+              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col border-primary border-2 relative">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 text-sm font-semibold rounded-full shadow-md">
+                  Most Popular
+                </div>
+                <CardHeader className="pb-4 text-center pt-8">
+                  <CardTitle className="text-2xl">{planDetails.premium.name}</CardTitle>
+                  <div className="mt-2">
+                    <span className="text-4xl font-bold">${getPrice('premium').toFixed(2)}</span>
+                    <span className="text-muted-foreground">{getBillingCycleText()}</span>
+                  </div>
+                   <p className="text-xs text-muted-foreground mt-1">{getBilledAsText('premium')}</p>
+                   {billingCycle === 'annually' && (
+                     <p className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">Save ~{planDetails.premium.annualSavingsPercent}%</p>
+                  )}
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <ul className="space-y-2">
+                    {planDetails.premium.features.map((feature, index) => (
+                      <li key={feature} className="flex items-start">
+                         {index === 0 ? <Star className="h-5 w-5 text-yellow-500 mr-2 mt-0.5 shrink-0" /> : <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-0.5 shrink-0" /> }
+                        <span className="text-sm text-muted-foreground">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+                <CardFooter className="mt-auto">
+                  <Button className="w-full" size="lg">
+                    Choose Plan
+                  </Button>
+                </CardFooter>
+              </Card>
+              
+              {/* Lifetime Plan */}
+              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col">
+                 <CardHeader className="pb-4 text-center">
+                   <div className="absolute -top-2.5 right-1.5 transform rotate-[15deg]">
+                     <span className="inline-block bg-destructive text-destructive-foreground px-2 py-0.5 text-xs font-semibold rounded-full shadow-md">
+                       {planDetails.lifetime.limitText}
+                     </span>
+                   </div>
+                  <CardTitle className="text-2xl mt-2">{planDetails.lifetime.name}</CardTitle>
+                   <p className="text-sm text-primary font-semibold mt-1">{planDetails.lifetime.badge}</p>
+                  <div className="mt-2">
+                    <span className="text-4xl font-bold">${planDetails.lifetime.oneTimePrice.toFixed(2)}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">One-time payment</p>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <ul className="space-y-2">
+                    {planDetails.lifetime.features.map((feature) => (
+                      <li key={feature} className="flex items-start">
+                        <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-0.5 shrink-0" />
+                        <span className="text-sm text-muted-foreground">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+                <CardFooter className="mt-auto">
+                  <Button className="w-full" size="lg" variant="outline">
+                    Get Lifetime Access
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
+            
+            <div className="text-center mt-12 space-y-2">
+                <p className="text-sm text-muted-foreground">
+                    All prices are in USD.
+                </p>
+                 <p className="text-xs text-muted-foreground">
+                    VAT at 10% may apply for customers in Bahrain.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                    30-day money-back guarantee on all paid plans.
+                </p>
+            </div>
 
             <Card className="mt-12 shadow-md bg-primary/5 dark:bg-primary/10 border-primary/20">
               <CardHeader>
@@ -159,13 +244,10 @@ export default function PricingPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Amana offers a Sadaqah (charitable giving) option for users in Islamic Mode. If you enable this feature in your account settings, a portion of your subscription fee will be automatically donated to support reputable charitable causes, such as those assisting orphans and widows.
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  This is an optional way to make your subscription even more meaningful. You can manage this preference at any time in your account settings after signing up.
+                  Amana offers a Sadaqah (charitable giving) option for users in Islamic Mode. If you enable this feature in your account settings, a portion of your subscription fee (1%, 5%, or 10%) will be automatically donated to support reputable charitable causes.
                 </p>
                  <Button variant="link" asChild className="p-0 h-auto mt-2">
-                    <Link href={`/${currentLocale}/info-help#islamic-mode`}>Learn more about Islamic Mode</Link>
+                    <Link href={`/${currentLocale}/dashboard/settings`}>Manage Sadaqah Settings</Link>
                  </Button>
               </CardContent>
             </Card>
@@ -173,7 +255,7 @@ export default function PricingPage() {
             <div className="mt-16 text-center">
               <h2 className="text-2xl font-semibold">Already have an account?</h2>
               <p className="text-muted-foreground mt-2">
-                You can upgrade your plan anytime from your dashboard settings.
+                You can manage your subscription anytime from your dashboard settings.
               </p>
               <Button asChild className="mt-4">
                 <Link href={`/${currentLocale}/dashboard/settings`}>Go to Settings</Link>
@@ -193,8 +275,8 @@ export default function PricingPage() {
             <div className="mt-10 grid grid-cols-1 gap-8 md:grid-cols-3">
                 <div className="flex flex-col items-center text-center">
                     <ShieldCheck className="h-12 w-12 text-primary mb-4" />
-                    <h3 className="text-xl font-semibold">Bank-Level Security</h3>
-                    <p className="mt-2 text-muted-foreground text-sm">Robust infrastructure, 2FA, and data protection measures to protect your sensitive data.</p>
+                    <h3 className="text-xl font-semibold">Robust Security</h3>
+                    <p className="mt-2 text-muted-foreground text-sm">Secure infrastructure, 2FA, and data protection measures to protect your sensitive data.</p>
                 </div>
                 <div className="flex flex-col items-center text-center">
                     <Star className="h-12 w-12 text-primary mb-4" /> 
@@ -202,7 +284,7 @@ export default function PricingPage() {
                     <p className="mt-2 text-muted-foreground text-sm">Optional Islamic Mode for Wasiyyah and Faraid considerations, plus multi-language support including Arabic.</p>
                 </div>
                 <div className="flex flex-col items-center text-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary mb-4"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><path d="M2 20h20"/><path d="M18 20a2 2 0 0 0 2-2V8l-4 4-4-4v10a2 2 0 0 0 2 2h4Z"/></svg>
+                     <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary mb-4"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><path d="M2 20h20"/><path d="M18 20a2 2 0 0 0 2-2V8l-4 4-4-4v10a2 2 0 0 0 2 2h4Z"/></svg>
                     <h3 className="text-xl font-semibold">Future-Proof Your Legacy</h3>
                     <p className="mt-2 text-muted-foreground text-sm">Comprehensive tools for beneficiary management, asset assignment, and secure post-humous distribution.</p>
                 </div>
@@ -222,8 +304,8 @@ export default function PricingPage() {
           <nav className="flex gap-4 sm:gap-6">
             <Link href={`/${currentLocale}/security-info`} className="text-sm hover:underline underline-offset-4">Security</Link>
             <Link href={`/${currentLocale}/info-help`} className="text-sm hover:underline underline-offset-4">Help</Link>
-            <Link href="#" className="text-sm hover:underline underline-offset-4">Terms</Link> {/* Update to /${currentLocale}/terms when page exists */}
-            <Link href="#" className="text-sm hover:underline underline-offset-4">Privacy</Link> {/* Update to /${currentLocale}/privacy when page exists */}
+            <Link href={`/${currentLocale}/terms`} className="text-sm hover:underline underline-offset-4">Terms</Link> 
+            <Link href={`/${currentLocale}/privacy`} className="text-sm hover:underline underline-offset-4">Privacy</Link>
           </nav>
         </div>
       </footer>
