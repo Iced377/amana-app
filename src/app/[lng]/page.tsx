@@ -21,11 +21,11 @@ const featureIcons = {
 };
 
 const carouselItems = [
-  { src: "https://picsum.photos/seed/letter/400/300", altKey: "altLetter", hint: "handwritten letter" },
-  { src: "https://picsum.photos/seed/familyphoto/400/300", altKey: "altFamilyPhoto", hint: "family portrait" },
-  { src: "https://picsum.photos/seed/videomsg/400/300", altKey: "altVideoMessage", hint: "video message" },
-  { src: "https://picsum.photos/seed/insurancedoc/400/300", altKey: "altInsuranceDoc", hint: "insurance document" },
-  { src: "https://picsum.photos/seed/quranverse/400/300", altKey: "altQuranVerse", hint: "Quran calligraphy" },
+  { src: "https://picsum.photos/seed/secureletter/400/300", altKey: "altLetter", hint: "secure message" },
+  { src: "https://picsum.photos/seed/protectedfamily/400/300", altKey: "altFamilyPhoto", hint: "protected memories" },
+  { src: "https://picsum.photos/seed/privatevideo/400/300", altKey: "altVideoMessage", hint: "private video" },
+  { src: "https://picsum.photos/seed/safedocs/400/300", altKey: "altInsuranceDoc", hint: "safe documents" },
+  { src: "https://picsum.photos/seed/spiritualpeace/400/300", altKey: "altQuranVerse", hint: "spiritual peace" },
 ];
 
 const differentiators = [
@@ -92,12 +92,12 @@ export default function HomePage() {
                 </div>
               </div>
               <Image
-                src="https://picsum.photos/seed/legacyhero/600/500"
+                src="https://picsum.photos/seed/securevault/600/500"
                 alt={t('altLegacyHero')}
                 width={600}
                 height={500}
                 className="mx-auto aspect-[6/5] overflow-hidden rounded-xl object-cover sm:w-full shadow-xl"
-                data-ai-hint="serene landscape sunrise"
+                data-ai-hint="secure vault digital protection"
               />
             </div>
           </div>
@@ -165,12 +165,12 @@ export default function HomePage() {
             <div className="grid gap-8 lg:grid-cols-2 lg:gap-16 items-center">
               <div className="order-2 lg:order-1">
                 <Image
-                  src="https://picsum.photos/seed/islamicfaith/500/400"
+                  src="https://picsum.photos/seed/serenelegacy/500/400"
                   alt={t('altIslamicFaith')}
                   width={500}
                   height={400}
                   className="rounded-xl object-cover shadow-xl"
-                  data-ai-hint="mosque silhouette calligraphy"
+                  data-ai-hint="serene guidance peaceful faith"
                 />
               </div>
               <div className="space-y-6 order-1 lg:order-2 text-center lg:text-left">
@@ -185,7 +185,6 @@ export default function HomePage() {
                         <MoonStar className="h-4 w-4" /> {t('landingFaithBasedBadgeCertified')}
                     </span>
                 </div>
-                {/* The language toggle is typically global in the header, but if a specific action is needed here: */}
                  <p className="text-sm text-muted-foreground text-center lg:text-left">
                   {t('landingFaithBasedLanguagePrompt')}{' '}
                   <Link href={`/${currentLocale === 'en' ? 'ar' : 'en'}${pathname.substring(3)}`} className="text-primary hover:underline">
@@ -226,9 +225,6 @@ export default function HomePage() {
              {t('landingStartFreeParagraph')}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row justify-center">
-              <Button asChild size="lg" className="shadow-md">
-                <Link href={`/${currentLocale}/signup`}>{t('landingStartFreeCTACreate')}</Link>
-              </Button>
               <Button asChild variant="outline" size="lg" className="shadow-sm">
                 <Link href={`/${currentLocale}/features`}>{t('landingStartFreeCTASample')}</Link>
               </Button>
@@ -245,9 +241,6 @@ export default function HomePage() {
             <div className="flex flex-col gap-3 sm:flex-row justify-center">
               <Button asChild size="lg" variant="secondary" className="shadow-md">
                 <Link href={`/${currentLocale}/signup`}>{t('landingFinalCalloutCTABegin')}</Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="border-primary-foreground/50 hover:bg-primary-foreground/10 text-primary-foreground shadow-sm">
-                <Link href="#features">{t('landingFinalCalloutCTAWhy')}</Link>
               </Button>
             </div>
           </div>
