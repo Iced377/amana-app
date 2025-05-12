@@ -8,11 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import type { VaultFile, FileType, FileVisibility, Beneficiary } from '@/types';
-import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole, Unlock, Eye, Download, X, Cloud, Info, Lock, Users, ArchiveRestore, Settings2, CopyWarning, CheckSquare } from 'lucide-react';
+import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole, Unlock, Eye, Download, X, Cloud, Info, Lock, Users, ArchiveRestore, Settings2, AlertTriangle, CheckSquare } from 'lucide-react';
 import { performAiTagging, performShariahComplianceCheck, performDuplicateCheck } from './actions';
 import {
   DropdownMenu,
@@ -20,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
@@ -31,11 +31,10 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useUserPreferences } from '@/context/UserPreferencesContext';
-// import { encryptDataUri, decryptDataUri } from '@/lib/encryption'; // Encryption removed
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -106,7 +105,7 @@ export default function MyFilesPage() {
 
 
   const { toast } = useToast();
-  const { profile, mode: userMode } = useUserPreferences(); // Removed getEncryptionKey
+  const { profile, mode: userMode } = useUserPreferences();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setPreviewDataUrl(null);
@@ -186,7 +185,7 @@ export default function MyFilesPage() {
         shariahCompliance: shariahComplianceResult ? { ...shariahComplianceResult, checkedAt: new Date().toISOString() } : undefined,
         icon: getFileIcon(fileType),
         visibility: currentFileVisibility,
-        specificSharedBeneficiaryIds: currentFileVisibility === 'sharedImmediately' ? [...currentSharedBeneficiaryIds] : undefined,
+        specificSharedBeneficiaryIds: currentFileVisibility === 'sharedImmediately' ? [...currentSharedBeneficiaryIds] : currentFileVisibility === 'releaseOnDeath' ? [...currentSharedBeneficiaryIds] : [],
         isPotentialDuplicate: duplicateCheckResult?.isDuplicate || false,
         duplicateInfo: duplicateCheckResult?.isDuplicate ? {
             note: `Potential duplicate of '${files.find(f => f.id === duplicateCheckResult.duplicateOfFileId)?.name || 'unknown file'}'. Reason: ${duplicateCheckResult.reason || 'Similar metadata/content'}. Confidence: ${duplicateCheckResult.confidenceScore.toFixed(2)}`,
@@ -257,14 +256,14 @@ export default function MyFilesPage() {
   const handleSaveVisibility = () => {
     if (!editingVisibilityFile) return;
 
-    if (tempVisibility === 'sharedImmediately' && tempSharedBeneficiaryIds.length === 0) {
-       toast({ title: "No Beneficiaries Selected", description: "Please select beneficiaries or change visibility.", variant: "destructive" });
+    if ((tempVisibility === 'sharedImmediately' || tempVisibility === 'releaseOnDeath') && tempSharedBeneficiaryIds.length === 0) {
+       toast({ title: "No Beneficiaries Selected", description: "Please select beneficiaries or change visibility to Private.", variant: "destructive" });
       return;
     }
 
     setFiles(files.map(f => 
       f.id === editingVisibilityFile.id 
-      ? { ...f, visibility: tempVisibility, specificSharedBeneficiaryIds: tempVisibility === 'sharedImmediately' ? [...tempSharedBeneficiaryIds] : undefined } 
+      ? { ...f, visibility: tempVisibility, specificSharedBeneficiaryIds: (tempVisibility === 'sharedImmediately' || tempVisibility === 'releaseOnDeath') ? [...tempSharedBeneficiaryIds] : [] } 
       : f
     ));
     toast({ title: "Visibility Updated", description: `Visibility for ${editingVisibilityFile.name} updated.` });
@@ -358,33 +357,6 @@ export default function MyFilesPage() {
 
   const handleMarkNotDuplicate = (fileId: string) => {
     setFiles(currentFiles => {
-        return currentFiles.map(f => {
-            if (f.id === fileId) {
-                // Unflag current file
-                const updatedFile = { ...f, isPotentialDuplicate: false, duplicateInfo: { ...(f.duplicateInfo || {note:'', checkedAt:''}), note: "Manually marked as not a duplicate.", duplicateOfFileId: undefined } };
-                
-                // Try to unflag the other file if it was directly linked
-                const otherFileId = f.duplicateInfo?.duplicateOfFileId;
-                if (otherFileId) {
-                    return currentFiles.map(cf => {
-                        if (cf.id === otherFileId && cf.duplicateInfo?.duplicateOfFileId === fileId) {
-                             // This condition might be too strict if duplicateInfo was overwritten.
-                             // A simpler approach: if fileX was duplicate of fileY, unflagging fileX clears its flag.
-                             // Unflagging fileY clears its flag. They are independent after the initial link.
-                            return { ...cf, isPotentialDuplicate: false, duplicateInfo: { ...(cf.duplicateInfo || {note:'', checkedAt:''}), note: (cf.duplicateInfo?.note || "") + " | Related file marked as not duplicate." } };
-                        }
-                        if (cf.id === fileId) return updatedFile;
-                        return cf;
-                    })[currentFiles.findIndex(fi => fi.id === fileId)]; // This logic is flawed for updating two files in a map
-                }
-                return updatedFile;
-            }
-            return f;
-        });
-    });
-
-    // Corrected logic:
-    setFiles(currentFiles => {
         const fileToUpdate = currentFiles.find(f => f.id === fileId);
         if (!fileToUpdate) return currentFiles;
 
@@ -394,7 +366,6 @@ export default function MyFilesPage() {
             if (f.id === fileId) {
                 return { ...f, isPotentialDuplicate: false, duplicateInfo: { ...(f.duplicateInfo || {note:'', checkedAt:''}), note: "Manually marked as not a duplicate by user.", duplicateOfFileId: undefined } };
             }
-            // If the other file was linked to this one, update its note too
             if (otherFileId && f.id === otherFileId && f.duplicateInfo?.duplicateOfFileId === fileId) {
                  return { ...f, isPotentialDuplicate: false, duplicateInfo: { ...(f.duplicateInfo || {note:'', checkedAt:''}), note: (f.duplicateInfo?.note || "") + " | Related file marked as not duplicate.", duplicateOfFileId: undefined } };
             }
@@ -474,7 +445,7 @@ export default function MyFilesPage() {
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="releaseOnDeath" id="vis-onDeath" />
-                      <Label htmlFor="vis-onDeath" className="font-normal">Release Upon Death (To all beneficiaries)</Label>
+                      <Label htmlFor="vis-onDeath" className="font-normal">Release Upon Death (To selected beneficiaries)</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="sharedImmediately" id="vis-specific" />
@@ -483,9 +454,9 @@ export default function MyFilesPage() {
                   </RadioGroup>
                 </div>
 
-                {currentFileVisibility === 'sharedImmediately' && (
+                {(currentFileVisibility === 'sharedImmediately' || currentFileVisibility === 'releaseOnDeath') && (
                   <div className="space-y-2 pl-2 border-l-2 ml-2">
-                    <Label>Select Beneficiaries to Share With:</Label>
+                    <Label>Select Beneficiaries:</Label>
                     {availableBeneficiaries.length > 0 ? (
                       <ScrollArea className="h-32">
                         {availableBeneficiaries.map(ben => (
@@ -633,7 +604,7 @@ export default function MyFilesPage() {
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Badge variant="destructive" className="cursor-help"><CopyWarning className="h-3 w-3 mr-1" /> Duplicate?</Badge>
+                                  <Badge variant="destructive" className="cursor-help"><AlertTriangle className="h-3 w-3 mr-1" /> Duplicate?</Badge>
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-xs">
                                   <p className="text-xs">{file.duplicateInfo?.note || "Potential duplicate detected."}</p>
@@ -692,7 +663,7 @@ export default function MyFilesPage() {
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <CopyWarning className="h-5 w-5 text-yellow-500 cursor-help" />
+                                    <AlertTriangle className="h-5 w-5 text-yellow-500 cursor-help" />
                                   </TooltipTrigger>
                                   <TooltipContent className="max-w-xs">
                                      <p className="text-xs">{file.duplicateInfo?.note || "Potential duplicate detected."}</p>
@@ -823,7 +794,7 @@ export default function MyFilesPage() {
                   </RadioGroup>
                 </div>
 
-                {tempVisibility === 'sharedImmediately' && (
+                {(tempVisibility === 'sharedImmediately' || tempVisibility === 'releaseOnDeath') && (
                   <div className="space-y-2 pl-2 border-l-2 ml-2">
                     <Label>Select Beneficiaries to Share With:</Label>
                      {availableBeneficiaries.length > 0 ? (
@@ -931,3 +902,4 @@ export default function MyFilesPage() {
     </div>
   );
 }
+
