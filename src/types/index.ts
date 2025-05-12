@@ -43,6 +43,11 @@ export type UserPreferenceMode = 'islamic' | 'conventional';
 export type Language = 'en' | 'ar';
 export type SubscriptionTier = 'free' | 'standard_monthly' | 'standard_quarterly' | 'premium_yearly' | 'premium_bi_yearly' | 'lifetime_access';
 
+export type Madhhab = 'hanafi' | 'maliki' | 'shafii' | 'hanbali' | '';
+
+export interface IslamicPreferences {
+  madhhab?: Madhhab;
+}
 
 export interface UserProfile {
   id: string; 
@@ -58,6 +63,7 @@ export interface UserProfile {
   encryptionKey?: string; 
   sadaqahEnabled?: boolean; 
   sadaqahPercentage?: 1 | 5 | 10; 
+  islamicPreferences?: IslamicPreferences;
 }
 
 export interface ActiveSession {
@@ -143,4 +149,61 @@ export interface InsurancePolicy {
   specificSharedBeneficiaryIds?: string[]; // For 'sharedImmediately' or 'releaseOnDeath' if specific to this policy
 
   registrationDate: string; // ISO string
+}
+
+// Islamic Inheritance Calculator Types
+export type MaritalStatus = 'married' | 'widowed' | 'divorced' | 'never_married';
+export type Gender = 'male' | 'female';
+export type SiblingType = 'full' | 'paternal_half' | 'maternal_half';
+
+export interface InheritanceInput {
+  userId: string;
+  madhhab: Madhhab;
+  maritalStatus: MaritalStatus;
+  // Spouse
+  hasSpouse: boolean;
+  spouseGender?: Gender; // 'male' for husband, 'female' for wife
+  // Children
+  sons: number; // Count of sons
+  daughters: number; // Count of daughters
+  // Parents
+  fatherAlive: boolean;
+  motherAlive: boolean;
+  // Grandparents
+  paternalGrandfatherAlive: boolean;
+  paternalGrandmotherAlive: boolean;
+  maternalGrandfatherAlive: boolean;
+  maternalGrandmotherAlive: boolean;
+  // Siblings
+  fullBrothers: number;
+  fullSisters: number;
+  paternalHalfBrothers: number;
+  paternalHalfSisters: number;
+  maternalHalfBrothers: number;
+  maternalHalfSisters: number;
+  // Obligations
+  wasiyyahAmount?: number; // Bequest amount
+  wasiyyahPercentage?: number; // Bequest percentage (e.g., 0.33 for 1/3)
+  debtsAmount?: number;
+  // For simplicity, we are not including more complex relations like uncles, aunts, nephews, nieces, grandchildren through daughters etc.
+  // These would be needed for a comprehensive calculator.
+}
+
+export interface HeirShare {
+  heirKey: string; // e.g., 'spouse', 'son', 'daughter_group', 'father', 'mother'
+  heirName: string; // Localized name, e.g., "Wife", "Sons (2)"
+  sharePercentage: number; // e.g., 12.5 for 1/8
+  shareFraction?: string; // e.g., "1/8"
+  reasonKey?: string; // Optional: key for localization of why they get this share or are blocked
+  isBlocked?: boolean;
+  count?: number; // if it's a group like sons/daughters
+}
+
+export interface InheritanceCalculationOutput {
+  netEstateAfterObligations: number;
+  wasiyyahAppliedAmount?: number;
+  heirs: HeirShare[];
+  calculationNotes?: string; // General notes, e.g. "Residue distributed via Radd"
+  unassignedResidue?: number; // Percentage if any
+  errors?: string[]; // Errors in calculation or input
 }

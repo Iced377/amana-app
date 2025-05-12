@@ -1,9 +1,8 @@
-
 "use client";
 
 import type React from 'react';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import type { UserPreferenceMode, Language, UserProfile } from '@/types';
+import type { UserPreferenceMode, Language, UserProfile, IslamicPreferences } from '@/types';
 
 interface UserPreferencesContextType {
   profile: UserProfile | null;
@@ -30,7 +29,8 @@ const defaultProfile: UserProfile = {
   is2FAEnabled: false,
   encryptionKey: undefined, 
   sadaqahEnabled: false,
-  sadaqahPercentage: undefined, // Default Sadaqah percentage
+  sadaqahPercentage: undefined, 
+  islamicPreferences: { madhhab: ''}, // Default Madhhab
 };
 
 export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -43,7 +43,16 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
       try {
         const storedProfile = JSON.parse(storedProfileString) as UserProfile;
         // Ensure new fields have defaults if not in storedProfile
-        setProfileState({ ...defaultProfile, ...storedProfile, id: storedProfile.id || 'guestUser' });
+        const mergedProfile = {
+          ...defaultProfile,
+          ...storedProfile,
+          id: storedProfile.id || 'guestUser',
+          islamicPreferences: { // Ensure islamicPreferences and madhhab have defaults
+            ...defaultProfile.islamicPreferences,
+            ...(storedProfile.islamicPreferences || {}),
+          },
+        };
+        setProfileState(mergedProfile);
       } catch (e) {
         console.error("Failed to parse userProfile from localStorage", e);
         setProfileState({...defaultProfile, id: 'guestUser', displayName: 'Guest User'});
@@ -67,9 +76,18 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
   
   const updateProfileField = useCallback((updates: Partial<UserProfile>) => {
     setProfileState(prevProfile => {
-      // Ensure that even if prevProfile is null, we start from defaultProfile structure
       const baseProfile = prevProfile || defaultProfile;
-      const updatedProfile = { ...baseProfile, ...updates, id: baseProfile.id || (updates.id || 'guestUser') };
+      // Deep merge for islamicPreferences
+      const updatedIslamicPreferences = updates.islamicPreferences 
+        ? { ...(baseProfile.islamicPreferences || {}), ...updates.islamicPreferences } 
+        : baseProfile.islamicPreferences;
+
+      const updatedProfile = { 
+        ...baseProfile, 
+        ...updates, 
+        islamicPreferences: updatedIslamicPreferences,
+        id: baseProfile.id || (updates.id || 'guestUser') 
+      };
       localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
       return updatedProfile;
     });
@@ -98,7 +116,7 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
       console.warn("Using insecure fallback for crypto.getRandomValues. This should not happen in a browser environment.");
     }
     const key = Array.from(array, dec => ('0' + dec.toString(16)).slice(-2)).join('');
-    console.log("Generated encryption key (demo):", key); // Demo only
+    // console.log("Generated encryption key (demo):", key); // Demo only
     return key;
   };
 
@@ -106,8 +124,7 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
     if (profile?.encryptionKey) {
       return profile.encryptionKey;
     }
-    // Fallback for older profiles or if key somehow missing, though this shouldn't happen with current signup/login logic
-    console.warn("Encryption key requested but not found in profile. This might indicate an issue.");
+    console.warn("Encryption key requested but not found in profile.");
     return null;
   };
 
