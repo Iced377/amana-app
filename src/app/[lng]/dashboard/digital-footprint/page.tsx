@@ -36,7 +36,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox'; // Added Checkbox
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { useTranslation } from '@/locales/client';
@@ -44,12 +44,12 @@ import type { LocaleTypes } from '@/locales/settings';
 import type { DiscoveredAccount, DigitalAccountAction, DigitalAccountCategory, VaultFile, Beneficiary, DigitalAccountDiscoveryMethod } from '@/types';
 import { Fingerprint, Mail, Search, CheckSquare, Edit3, Trash2, LinkIcon, PlusCircle, Info, FileText as VaultFileIcon, DollarSign } from 'lucide-react';
 
-// Mock data - replace with actual data fetching
-const MOCK_VAULT_FILES: VaultFile[] = [
+// Functions to get MOCK DATA - To be initialized in useEffect to avoid hydration issues with new Date()
+const getMockVaultFiles = (): VaultFile[] => [
   { id: 'file1', name: 'Passwords.docx', type: 'document', size: 12345, uploadDate: new Date().toISOString(), dataUri: '', aiTags: [], visibility: 'private', icon: VaultFileIcon },
   { id: 'file2', name: 'SocialMediaLogins.pdf', type: 'document', size: 67890, uploadDate: new Date().toISOString(), dataUri: '', aiTags: [], visibility: 'private', icon: VaultFileIcon },
 ];
-const MOCK_BENEFICIARIES: Beneficiary[] = [
+const getMockBeneficiaries = (): Beneficiary[] => [
   { id: 'ben1', name: 'Alice Wonderland', email: 'alice@example.com' },
   { id: 'ben2', name: 'Bob The Builder', email: 'bob@example.com' },
 ];
@@ -96,11 +96,17 @@ export default function DigitalFootprintPage({ params }: { params: { lng: Locale
   const [editingAccount, setEditingAccount] = useState<DiscoveredAccount | null>(null);
   const [formData, setFormData] = useState(initialAccountFormState);
 
-  const [availableVaultFiles, setAvailableVaultFiles] = useState<VaultFile[]>(MOCK_VAULT_FILES);
-  const [availableBeneficiaries, setAvailableBeneficiaries] = useState<Beneficiary[]>(MOCK_BENEFICIARIES);
+  const [availableVaultFiles, setAvailableVaultFiles] = useState<VaultFile[]>([]);
+  const [availableBeneficiaries, setAvailableBeneficiaries] = useState<Beneficiary[]>([]);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedChecklistServices, setSelectedChecklistServices] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Initialize mock data on the client side to prevent hydration mismatches
+    setAvailableVaultFiles(getMockVaultFiles());
+    setAvailableBeneficiaries(getMockBeneficiaries());
+  }, []);
 
 
   useEffect(() => {
@@ -445,3 +451,6 @@ export default function DigitalFootprintPage({ params }: { params: { lng: Locale
     </div>
   );
 }
+
+
+    
