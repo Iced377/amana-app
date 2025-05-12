@@ -1,4 +1,3 @@
-
 // src/app/[lng]/page.tsx
 "use client"; 
 import { Button } from "@/components/ui/button";
@@ -82,7 +81,7 @@ export default function HomePage() {
                     <Link href={`/${currentLocale}/signup`}>{t('landingHeroCTAStartFree')}</Link>
                   </Button>
                   <Button asChild variant="outline" size="lg" className="shadow-sm">
-                    <Link href="#how-it-works">{t('landingHeroCTAHowItWorks')}</Link>
+                    <Link href={`/${currentLocale}/#how-it-works`}>{t('landingHeroCTAHowItWorks')}</Link>
                   </Button>
                 </div>
                 <div className="mt-4 text-center lg:text-left">
@@ -92,12 +91,12 @@ export default function HomePage() {
                 </div>
               </div>
               <Image
-                src="https://picsum.photos/seed/securevault/600/500"
+                src="https://picsum.photos/seed/peacefularabic/600/500"
                 alt={t('altLegacyHero')}
                 width={600}
                 height={500}
                 className="mx-auto aspect-[6/5] overflow-hidden rounded-xl object-cover sm:w-full shadow-xl"
-                data-ai-hint="secure vault digital protection"
+                data-ai-hint="peaceful arabic"
               />
             </div>
           </div>
@@ -355,4 +354,3 @@ export default function HomePage() {
 // landingFinalCalloutCTAWhy: "لماذا أمانة؟"
 // termsOfService: "شروط الخدمة"
 // privacyPolicy: "سياسة الخصوصية"
-
