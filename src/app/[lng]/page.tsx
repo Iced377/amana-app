@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ShieldCheck, Lock, Users, UploadCloud, BrainCircuit, Package, BookOpen, MessageSquare, HeartHandshake, CalendarClock, Globe, CheckCircle, Info, MoonStar, MessageCircleHeart } from "lucide-react";
 import Image from "next/image";
 import { ModeToggle } from "@/components/mode-toggle";
+import { LanguageToggle } from "@/components/language-toggle"; // Import LanguageToggle
 import { usePathname } from 'next/navigation'; 
 import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings'; 
 import { AppLogo } from "@/components/AppLogo";
@@ -54,6 +55,7 @@ export default function HomePage() {
         <div className="container flex h-16 items-center justify-between">
           <AppLogo />
           <div className="flex items-center gap-2">
+            <LanguageToggle /> {/* Added LanguageToggle */}
             <ModeToggle />
             <Button asChild variant="ghost">
               <Link href={`/${currentLocale}/login`}>{t('login')}</Link>

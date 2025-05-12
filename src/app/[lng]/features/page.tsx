@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import Link from "next/link";
 import { AppLogo } from "@/components/AppLogo";
+import { LanguageToggle } from "@/components/language-toggle"; // Import LanguageToggle
+import { ModeToggle } from '@/components/mode-toggle'; // Assuming ModeToggle might be wanted here too
 import { Check, HelpCircle, X, ShieldCheck, Info } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings';
@@ -65,6 +67,8 @@ export default function FeaturesPage() {
         <div className="container flex h-16 items-center justify-between">
           <AppLogo />
           <div className="flex items-center gap-2">
+            <LanguageToggle /> {/* Added LanguageToggle */}
+            <ModeToggle /> {/* Added ModeToggle for consistency */}
             <Button asChild variant="ghost">
               <Link href={`/${currentLocale}/login`}>{t('login')}</Link>
             </Button>
@@ -214,5 +218,3 @@ export default function FeaturesPage() {
     </div>
   );
 }
-
-    

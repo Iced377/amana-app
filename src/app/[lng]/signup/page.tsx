@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import React, { useState } from 'react';
 import { ModeToggle } from "@/components/mode-toggle";
+import { LanguageToggle } from "@/components/language-toggle"; // Import LanguageToggle
 import { useUserPreferences } from "@/context/UserPreferencesContext";
 import type { UserPreferenceMode, UserProfile } from "@/types";
 import type { LocaleTypes } from "@/locales/settings";
@@ -144,7 +145,8 @@ export default function SignupPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-secondary/30 p-4">
-      <div className="absolute top-4 right-4 rtl:left-4 rtl:right-auto">
+      <div className="absolute top-4 right-4 rtl:left-4 rtl:right-auto flex items-center gap-2">
+        <LanguageToggle /> {/* Added LanguageToggle */}
         <ModeToggle />
       </div>
       <Card className="w-full max-w-md shadow-xl">

@@ -35,6 +35,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { AppLogo } from '@/components/AppLogo';
 import { ModeToggle } from '@/components/mode-toggle';
+import { LanguageToggle } from '@/components/language-toggle'; // Import LanguageToggle
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { useTranslation } from '@/locales/client'; 
 import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings';
@@ -147,6 +148,7 @@ export default function DashboardLayout({
           </Sheet>
           <div className="w-full flex-1">
           </div>
+          <LanguageToggle /> {/* Added LanguageToggle */}
           <ModeToggle />
           <Button variant="ghost" size="icon" className="rounded-full">
             <Bell className="h-5 w-5" />

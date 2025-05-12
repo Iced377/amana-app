@@ -7,6 +7,8 @@ import Link from "next/link";
 import { ShieldCheck, Lock, KeyRound, DatabaseZap, Users, ShieldAlert, Info } from "lucide-react";
 import Image from "next/image";
 import { AppLogo } from "@/components/AppLogo";
+import { LanguageToggle } from "@/components/language-toggle"; // Import LanguageToggle
+import { ModeToggle } from '@/components/mode-toggle'; // Import ModeToggle
 import { usePathname } from "next/navigation"; // For currentLocale
 import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings'; // For currentLocale
 
@@ -28,6 +30,8 @@ export default function SecurityInfoPage() {
         <div className="container flex h-16 items-center justify-between">
           <AppLogo /> 
           <div className="flex items-center gap-2">
+            <LanguageToggle /> {/* Added LanguageToggle */}
+            <ModeToggle /> {/* Added ModeToggle */}
             <Button asChild variant="ghost">
               <Link href={`/${currentLocale}/login`}>Login</Link>
             </Button>
