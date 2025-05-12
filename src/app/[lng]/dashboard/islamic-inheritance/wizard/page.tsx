@@ -19,6 +19,10 @@ import { Landmark, Wand2, Info, AlertTriangle, Loader2, Edit3, CheckSquare, Refr
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
 
 // Minimal valid Base64 encoded PDF (displays "Hello, World!")
 const MINIMAL_PDF_DATA_URI = 'data:application/pdf;base64,JVBERi0xLjQKJSAxIDAgb2JqPDw+PmVuZG9iajogMiAwIG9iajw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAxIDAgUj4+ZW5kb2JqIDMgMCBvYmo8PC9UeXBlL1BhZ2VzL0NvdW50IDEgMCBSL0tpZHNbNCAwIFIgXS9SZXNvdXJjZXMoPD4pL01lZGlhQm94WzAgMCA2MTIgNzkyXT4+ZW5kb2JqIDQgMCBvYmo8PC9UeXBlL1BhZ2UvUGFyZW50IDMgMCBSL0NvbnRlbnRzIDUgMCBSPj5lbmRvYmogNSAwIG9iajw8L0xlbmd0aCAxNT4+c3RyZWFtCkJUCi9GMSAxMiBUZgo1MCA3MDAgVGQKKFJvbGxpbmcgRGljZSEpJ1RKT0VtQ0JEZW5kc3RyZWFtCmVuZG9iajx4cmVmDQowIDYNCjAwMDAwMDAwMDAgNjU1MzUgZiANCjAwMDAwMDAwMTkgMDAwMDAgbiANCjAwMDAwMDAwNzYgMDAwMDAgbiANCjAwMDAwMDAxNzAgMDAwMDAgbiANCjAwMDAwMDAyODAgMDAwMDAgbiANCjAwMDAwMDAzNjkgMDAwMDAgbiANClRyYWlsZXIKPDwvUm9vdCAyIDAgUi9TaXplIDY+PgpzdGFydHhyZWYKNDExCiUlRU9GCg==';
@@ -40,6 +44,16 @@ const MOCK_REGISTERED_ASSETS: RegisteredAsset[] = [
 
 type WizardStep = 'madhhab' | 'scan' | 'review' | 'summary';
 
+const initialEditFormData: Omit<ClassifiedAsset, 'assetId'> = {
+    assetName: '',
+    classification: 'NeedsReview',
+    extractedValue: undefined,
+    currency: undefined,
+    reason: '',
+    details: undefined,
+};
+
+
 export default function IslamicInheritanceWizardPage({ params }: { params: { lng: LocaleTypes }}) {
   const resolvedParams = use(params);
   const lng = resolvedParams.lng;
@@ -58,6 +72,11 @@ export default function IslamicInheritanceWizardPage({ params }: { params: { lng
   const [wasiyyahAmount, setWasiyyahAmount] = useState<number | undefined>(undefined);
   const [netEstateForFaraid, setNetEstateForFaraid] = useState<number | undefined>(undefined);
 
+  // State for Edit Asset Dialog
+  const [isEditAssetModalOpen, setIsEditAssetModalOpen] = useState(false);
+  const [assetToEdit, setAssetToEdit] = useState<ClassifiedAsset | null>(null);
+  const [currentEditFormAsset, setCurrentEditFormAsset] = useState<Omit<ClassifiedAsset, 'assetId'>>(initialEditFormData);
+
 
   useEffect(() => {
     if (profile?.islamicPreferences?.madhhab) {
@@ -65,6 +84,21 @@ export default function IslamicInheritanceWizardPage({ params }: { params: { lng
       if(step === 'madhhab' && profile.islamicPreferences.madhhab) setStep('scan'); // If madhhab already set, skip first step
     }
   }, [profile, step]);
+
+  useEffect(() => {
+    if (assetToEdit) {
+        setCurrentEditFormAsset({
+            assetName: assetToEdit.assetName,
+            classification: assetToEdit.classification,
+            extractedValue: assetToEdit.extractedValue,
+            currency: assetToEdit.currency,
+            reason: assetToEdit.reason,
+            details: assetToEdit.details,
+        });
+    } else {
+        setCurrentEditFormAsset(initialEditFormData);
+    }
+  }, [assetToEdit]);
 
   const handleMadhhabConfirm = () => {
     if (!selectedMadhhab) {
@@ -85,14 +119,13 @@ export default function IslamicInheritanceWizardPage({ params }: { params: { lng
     setClassifiedAssets([]);
     setUserReviewedAssets([]);
 
-    // Combine VaultFiles and RegisteredAssets into a format for the AI flow
     const assetsToClassify: AssetForClassification[] = [];
     MOCK_VAULT_FILES.forEach(vf => {
       assetsToClassify.push({
         id: vf.id,
         name: vf.name,
         type: vf.type,
-        fileDataUri: vf.dataUri, 
+        fileDataUri: vf.fileDataUri && vf.fileDataUri.includes(';base64,') ? vf.fileDataUri : undefined,
         size: vf.size,
         estimatedUSDValue: vf.estimatedUSDValue,
       });
@@ -102,7 +135,7 @@ export default function IslamicInheritanceWizardPage({ params }: { params: { lng
         id: ra.id,
         name: ra.assetDescription, 
         type: ra.categoryKey,
-        fileDataUri: ra.fileDataUri, 
+        fileDataUri: ra.fileDataUri && ra.fileDataUri.includes(';base64,') ? ra.fileDataUri : undefined,
         manualDescription: ra.assetDescription,
         size: ra.fileSize,
         estimatedUSDValue: ra.estimatedUSDValue,
@@ -112,12 +145,10 @@ export default function IslamicInheritanceWizardPage({ params }: { params: { lng
     if (assetsToClassify.length === 0) {
         toast({title: t('noAssetsFoundTitle'), description: t('noAssetsToScanDesc'), variant: 'default'});
         setIsScanning(false);
-        setStep('review'); // Go to review even if empty, user might add manually
+        setStep('review'); 
         return;
     }
 
-
-    // Simulate progress for AI processing
     let progress = 0;
     const progressInterval = setInterval(() => {
       progress += 10;
@@ -126,7 +157,6 @@ export default function IslamicInheritanceWizardPage({ params }: { params: { lng
     }, 300);
 
     try {
-      // Limiting for demo to avoid large payload for AI & cost. In production, handle batching or larger payloads.
       const result = await classifyIslamicEstateAssets({
         assets: assetsToClassify.slice(0, 5), 
         madhhab: selectedMadhhab
@@ -134,26 +164,46 @@ export default function IslamicInheritanceWizardPage({ params }: { params: { lng
       clearInterval(progressInterval);
       setScanProgress(100);
       setClassifiedAssets(result.classifiedAssets);
-      setUserReviewedAssets(JSON.parse(JSON.stringify(result.classifiedAssets))); // Deep copy for editing
+      setUserReviewedAssets(JSON.parse(JSON.stringify(result.classifiedAssets)));
       setStep('review');
       toast({ title: t('scanCompleteTitle'), description: t('assetsClassifiedDesc') });
     } catch (error: any) {
       clearInterval(progressInterval);
-      setScanProgress(0); // Reset progress on error
+      setScanProgress(0); 
       console.error("Error during asset scan:", error);
       toast({ title: t('errorText'), description: error.message || t('assetClassificationFailedError'), variant: "destructive" });
     } finally {
       setIsScanning(false);
-      // setTimeout(() => setScanProgress(0), 1000); // Reset progress bar after a bit
     }
   };
-
-  const handleAssetReviewChange = (assetId: string, field: keyof ClassifiedAsset, value: any) => {
+  
+  const handleClassificationReviewChange = (assetId: string, classification: 'Inheritable' | 'Excluded' | 'NeedsReview') => {
     setUserReviewedAssets(prev =>
       prev.map(asset =>
-        asset.assetId === assetId ? { ...asset, [field]: value } : asset
+        asset.assetId === assetId ? { ...asset, classification } : asset
       )
     );
+  };
+
+  const openEditAssetModal = (asset: ClassifiedAsset) => {
+    setAssetToEdit(asset);
+    setIsEditAssetModalOpen(true);
+  };
+
+  const handleSaveAssetChanges = () => {
+    if (!assetToEdit) return;
+    const updatedAsset: ClassifiedAsset = {
+      ...assetToEdit, // Keeps original assetId and any other non-edited fields
+      ...currentEditFormAsset,
+    };
+    setUserReviewedAssets(prevAssets =>
+      prevAssets.map(asset =>
+        asset.assetId === updatedAsset.assetId ? updatedAsset : asset
+      )
+    );
+    setIsEditAssetModalOpen(false);
+    setAssetToEdit(null);
+    toast({ title: t('assetUpdatedSuccessTitle'), description: `${updatedAsset.assetName} ${t('assetUpdatedSuccessDesc')}` });
   };
   
   const calculateNetEstate = () => {
@@ -165,17 +215,15 @@ export default function IslamicInheritanceWizardPage({ params }: { params: { lng
     });
     
     const debts = debtsAmount || 0;
-    const wasiyyah = wasiyyahAmount || 0; // Assuming this is flat amount for simplicity
+    const wasiyyah = wasiyyahAmount || 0;
     
     let netEstate = totalInheritableValue - debts;
-    // Wasiyyah is up to 1/3 of estate *after* debts
     const maxWasiyyah = netEstate > 0 ? netEstate / 3 : 0;
     const appliedWasiyyah = Math.min(wasiyyah, maxWasiyyah);
     
     netEstate -= appliedWasiyyah;
-    setNetEstateForFaraid(Math.max(0, netEstate)); // Ensure it's not negative
+    setNetEstateForFaraid(Math.max(0, netEstate));
     setStep('summary');
-    // Mock saving to Firestore
     console.log("Saving to Firestore (mock):", { userId: profile?.id, madhhab: selectedMadhhab, classifiedAssets: userReviewedAssets, netEstateForFaraid: Math.max(0,netEstate) });
     toast({title: t('estateSummaryCalculatedTitle'), description: t('estateSummaryCalculatedDesc')});
   };
@@ -262,57 +310,59 @@ export default function IslamicInheritanceWizardPage({ params }: { params: { lng
                         {userReviewedAssets.length === 0 ? (
                             <p>{t('noAssetsToReview')}</p>
                         ) : (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>{t('assetNameLabel')}</TableHead>
-                                        <TableHead>{t('aiClassificationLabel')}</TableHead>
-                                        <TableHead>{t('userClassificationLabel')}</TableHead>
-                                        <TableHead>{t('extractedValueLabel')}</TableHead>
-                                        <TableHead>{t('reasonNotesLabel')}</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {userReviewedAssets.map(asset => (
-                                        <TableRow key={asset.assetId}>
-                                            <TableCell>{asset.assetName}</TableCell>
-                                            <TableCell>
-                                                <Badge variant={
-                                                    asset.classification === 'Inheritable' ? 'default' :
-                                                    asset.classification === 'Excluded' ? 'secondary' : 'destructive'
-                                                }>{t(`assetClassification${asset.classification}` as any)}</Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Select 
-                                                    value={asset.classification} 
-                                                    onValueChange={(val) => handleAssetReviewChange(asset.assetId, 'classification', val)}
-                                                >
-                                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="Inheritable">{t('assetClassificationInheritable')}</SelectItem>
-                                                        <SelectItem value="Excluded">{t('assetClassificationExcluded')}</SelectItem>
-                                                        <SelectItem value="NeedsReview">{t('assetClassificationNeedsReview')}</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="relative">
-                                                    <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                                                    <Input 
-                                                        type="number" 
-                                                        value={asset.extractedValue ?? ''} 
-                                                        onChange={(e) => handleAssetReviewChange(asset.assetId, 'extractedValue', parseFloat(e.target.value) || undefined)}
-                                                        placeholder={t('valuePlaceholder')}
-                                                        className="w-28 pl-6"
-                                                    />
-                                                </div>
-                                                {asset.currency && <span className="text-xs ml-1">{asset.currency}</span>}
-                                            </TableCell>
-                                            <TableCell className="text-xs">{asset.reason} {asset.details && `(${asset.details})`}</TableCell>
+                            <ScrollArea className="max-h-[60vh]">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>{t('assetNameLabel')}</TableHead>
+                                            <TableHead>{t('aiClassificationLabel')}</TableHead>
+                                            <TableHead>{t('userClassificationLabel')}</TableHead>
+                                            <TableHead>{t('extractedValueLabel')}</TableHead>
+                                            <TableHead>{t('currencyLabel')}</TableHead>
+                                            <TableHead>{t('reasonNotesLabel')}</TableHead>
+                                            <TableHead>{t('actionsLabel')}</TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {userReviewedAssets.map(asset => (
+                                            <TableRow key={asset.assetId}>
+                                                <TableCell>{asset.assetName}</TableCell>
+                                                <TableCell>
+                                                    <Badge variant={
+                                                        asset.classification === 'Inheritable' ? 'default' :
+                                                        asset.classification === 'Excluded' ? 'secondary' : 'destructive'
+                                                    }>{t(`assetClassification${asset.classification}` as any)}</Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Select 
+                                                        value={asset.classification} 
+                                                        onValueChange={(val) => handleClassificationReviewChange(asset.assetId, val as 'Inheritable' | 'Excluded' | 'NeedsReview')}
+                                                    >
+                                                        <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Inheritable">{t('assetClassificationInheritable')}</SelectItem>
+                                                            <SelectItem value="Excluded">{t('assetClassificationExcluded')}</SelectItem>
+                                                            <SelectItem value="NeedsReview">{t('assetClassificationNeedsReview')}</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {asset.extractedValue !== undefined ? asset.extractedValue.toLocaleString() : t('notApplicableShort')}
+                                                </TableCell>
+                                                <TableCell>{asset.currency || t('notApplicableShort')}</TableCell>
+                                                <TableCell className="text-xs max-w-xs truncate" title={`${asset.reason} ${asset.details ? `(${asset.details})` : ''}`}>
+                                                    {asset.reason} {asset.details && `(${asset.details})`}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Button variant="ghost" size="icon" onClick={() => openEditAssetModal(asset)}>
+                                                        <Edit3 className="h-4 w-4" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </ScrollArea>
                         )}
                          <div className="grid md:grid-cols-2 gap-4 pt-4">
                             <div>
@@ -357,6 +407,96 @@ export default function IslamicInheritanceWizardPage({ params }: { params: { lng
                 </Alert>
             </CardFooter>
        </Card>
+
+       {/* Edit Asset Dialog */}
+       <Dialog open={isEditAssetModalOpen} onOpenChange={(isOpen) => {
+           if (!isOpen) {
+               setAssetToEdit(null);
+               setCurrentEditFormAsset(initialEditFormData);
+           }
+           setIsEditAssetModalOpen(isOpen);
+       }}>
+           <DialogContent className="sm:max-w-lg">
+               <DialogHeader>
+                   <DialogTitle>{t('editAssetTitle')}: {assetToEdit?.assetName}</DialogTitle>
+                   <DialogDescription>{t('editAssetDescModal')}</DialogDescription>
+               </DialogHeader>
+               <ScrollArea className="max-h-[60vh] pr-4 -mr-4">
+                <div className="grid gap-4 py-4">
+                    <div className="space-y-1.5">
+                        <Label htmlFor="editAssetName">{t('assetNameLabel')}</Label>
+                        <Input 
+                            id="editAssetName" 
+                            value={currentEditFormAsset.assetName} 
+                            onChange={(e) => setCurrentEditFormAsset(prev => ({...prev, assetName: e.target.value}))} 
+                            placeholder={t('assetNamePlaceholderModal')}
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="editAssetClassification">{t('userClassificationLabel')}</Label>
+                        <Select 
+                            value={currentEditFormAsset.classification} 
+                            onValueChange={(val) => setCurrentEditFormAsset(prev => ({...prev, classification: val as 'Inheritable' | 'Excluded' | 'NeedsReview'}))}
+                        >
+                            <SelectTrigger id="editAssetClassification"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Inheritable">{t('assetClassificationInheritable')}</SelectItem>
+                                <SelectItem value="Excluded">{t('assetClassificationExcluded')}</SelectItem>
+                                <SelectItem value="NeedsReview">{t('assetClassificationNeedsReview')}</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="editAssetValue">{t('extractedValueLabel')}</Label>
+                            <Input 
+                                id="editAssetValue" 
+                                type="number"
+                                value={currentEditFormAsset.extractedValue ?? ''} 
+                                onChange={(e) => setCurrentEditFormAsset(prev => ({...prev, extractedValue: parseFloat(e.target.value) || undefined}))} 
+                                placeholder={t('valuePlaceholder')}
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="editAssetCurrency">{t('currencyLabel')}</Label>
+                            <Input 
+                                id="editAssetCurrency" 
+                                value={currentEditFormAsset.currency ?? ''} 
+                                onChange={(e) => setCurrentEditFormAsset(prev => ({...prev, currency: e.target.value || undefined}))} 
+                                placeholder={t('currencyPlaceholderModal')}
+                            />
+                        </div>
+                    </div>
+                     <div className="space-y-1.5">
+                        <Label htmlFor="editAssetReason">{t('reasonForClassificationLabelModal')}</Label>
+                        <Textarea
+                            id="editAssetReason" 
+                            value={currentEditFormAsset.reason} 
+                            onChange={(e) => setCurrentEditFormAsset(prev => ({...prev, reason: e.target.value}))} 
+                            placeholder={t('reasonPlaceholderModal')}
+                            rows={3}
+                        />
+                    </div>
+                     <div className="space-y-1.5">
+                        <Label htmlFor="editAssetDetails">{t('additionalDetailsLabelModal')}</Label>
+                        <Textarea
+                            id="editAssetDetails" 
+                            value={currentEditFormAsset.details ?? ''} 
+                            onChange={(e) => setCurrentEditFormAsset(prev => ({...prev, details: e.target.value || undefined}))} 
+                            placeholder={t('detailsPlaceholderModal')}
+                            rows={3}
+                        />
+                    </div>
+                </div>
+               </ScrollArea>
+               <DialogFooter>
+                   <Button variant="outline" onClick={() => setIsEditAssetModalOpen(false)}>{t('cancelButton')}</Button>
+                   <Button onClick={handleSaveAssetChanges}>{t('saveChangesButton')}</Button>
+               </DialogFooter>
+           </DialogContent>
+       </Dialog>
+
     </div>
   );
 }
+

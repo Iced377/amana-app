@@ -456,7 +456,7 @@
   "assetNameLabel": "اسم/وصف الأصل",
   "aiClassificationLabel": "تصنيف الذكاء الاصطناعي",
   "userClassificationLabel": "تصنيفك",
-  "extractedValueLabel": "القيمة (مستخرجة/معدلة)",
+  "extractedValueLabel": "القيمة (بالدولار الأمريكي)",
   "reasonNotesLabel": "سبب/ملاحظات الذكاء الاصطناعي",
   "assetClassificationInheritable": "يورث",
   "assetClassificationExcluded": "مستبعد (دين، أمانة)",
@@ -476,5 +476,14 @@
   "downloadSummaryButton": "تنزيل الملخص",
   "wizardDisclaimerTitle": "إخلاء مسؤولية المعالج",
   "wizardDisclaimerContent": "يوفر هذا المعالج المدعوم بالذكاء الاصطناعي إرشادات بناءً على مدخلاتك والمذهب المختار. وهو ليس بديلاً عن الاستشارة القانونية أو الدينية المتخصصة. استشر دائمًا عالمًا إسلاميًا مؤهلاً وخبيرًا قانونيًا.",
-  "islamicModeRequiredForWizard": "يجب تمكين الوضع الإسلامي في إعداداتك لاستخدام معالج التركة الإسلامية."
+  "islamicModeRequiredForWizard": "يجب تمكين الوضع الإسلامي في إعداداتك لاستخدام معالج التركة الإسلامية.",
+  "editAssetTitle": "تعديل الأصل",
+  "editAssetDescModal": "قم بتعديل تفاصيل هذا الأصل حسب الحاجة.",
+  "assetNamePlaceholderModal": "مثال: منزل العائلة، حساب التوفير",
+  "currencyPlaceholderModal": "مثال: دولار أمريكي، ريال سعودي، يورو",
+  "reasonForClassificationLabelModal": "سبب التصنيف",
+  "reasonPlaceholderModal": "مثال: مملوك بالكامل للمتوفى، أمانة لـ فلان",
+  "additionalDetailsLabelModal": "تفاصيل إضافية/ملاحظات",
+  "detailsPlaceholderModal": "مثال: الوثيقة تذكر شروطاً محددة، القيمة مقدرة من سعر السوق"
 }
+

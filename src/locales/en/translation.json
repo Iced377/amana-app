@@ -456,7 +456,7 @@
   "assetNameLabel": "Asset Name/Description",
   "aiClassificationLabel": "AI Classification",
   "userClassificationLabel": "Your Classification",
-  "extractedValueLabel": "Value (AI Extracted/Edit)",
+  "extractedValueLabel": "Value (USD)",
   "reasonNotesLabel": "AI Reason / Notes",
   "assetClassificationInheritable": "Inheritable",
   "assetClassificationExcluded": "Excluded (e.g., Debt, Amanah)",
@@ -476,5 +476,14 @@
   "downloadSummaryButton": "Download Summary",
   "wizardDisclaimerTitle": "Wizard Disclaimer",
   "wizardDisclaimerContent": "This AI-powered wizard provides guidance based on your inputs and selected Madhhab. It is not a substitute for professional legal or religious advice. Always consult a qualified Islamic scholar and legal expert.",
-  "islamicModeRequiredForWizard": "Islamic Mode must be enabled in your settings to use the Islamic Estate Wizard."
+  "islamicModeRequiredForWizard": "Islamic Mode must be enabled in your settings to use the Islamic Estate Wizard.",
+  "editAssetTitle": "Edit Asset",
+  "editAssetDescModal": "Modify the details of this asset as needed.",
+  "assetNamePlaceholderModal": "e.g., Family Home, Savings Account",
+  "currencyPlaceholderModal": "e.g., USD, SAR, EUR",
+  "reasonForClassificationLabelModal": "Reason for Classification",
+  "reasonPlaceholderModal": "e.g., Owned solely by deceased, Held in trust for X",
+  "additionalDetailsLabelModal": "Additional Details/Notes",
+  "detailsPlaceholderModal": "e.g., Document mentions specific conditions, Value estimated from market price"
 }
+
