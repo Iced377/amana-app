@@ -1,15 +1,40 @@
 
-// Make this a client component to use usePathname or pass locale as prop if server-side
+// src/app/[lng]/page.tsx
 "use client"; 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { ShieldCheck, Lock, Users, UploadCloud, BrainCircuit, Package } from "lucide-react";
+import { ShieldCheck, Lock, Users, UploadCloud, BrainCircuit, Package, BookOpen, MessageSquare, HeartHandshake, CalendarClock, Globe, CheckCircle, Info, MoonStar } from "lucide-react";
 import Image from "next/image";
 import { ModeToggle } from "@/components/mode-toggle";
 import { usePathname } from 'next/navigation'; 
 import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings'; 
 import { AppLogo } from "@/components/AppLogo";
+import { useTranslation } from '@/locales/client';
+import { cn } from "@/lib/utils";
+
+const featureIcons = {
+  upload: UploadCloud,
+  tag: BrainCircuit,
+  decide: ShieldCheck,
+  deliver: Package,
+};
+
+const carouselItems = [
+  { src: "https://picsum.photos/seed/letter/400/300", altKey: "altLetter", hint: "handwritten letter" },
+  { src: "https://picsum.photos/seed/familyphoto/400/300", altKey: "altFamilyPhoto", hint: "family portrait" },
+  { src: "https://picsum.photos/seed/videomsg/400/300", altKey: "altVideoMessage", hint: "video message" },
+  { src: "https://picsum.photos/seed/insurancedoc/400/300", altKey: "altInsuranceDoc", hint: "insurance document" },
+  { src: "https://picsum.photos/seed/quranverse/400/300", altKey: "altQuranVerse", hint: "Quran calligraphy" },
+];
+
+const differentiators = [
+  "differentiatorPosthumousSharing",
+  "differentiatorAIEmotion",
+  "differentiatorLangSupport",
+  "differentiatorLegacyCalendar",
+  "differentiatorSmartVault",
+];
 
 export default function HomePage() {
   const pathname = usePathname();
@@ -21,203 +46,320 @@ export default function HomePage() {
       currentLocale = segments[1] as LocaleTypes;
     }
   }
+  const { t } = useTranslation(currentLocale, 'translation');
   
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <AppLogo />
           <div className="flex items-center gap-2">
             <ModeToggle />
             <Button asChild variant="ghost">
-              <Link href={`/${currentLocale}/login`}>Login</Link>
+              <Link href={`/${currentLocale}/login`}>{t('login')}</Link>
             </Button>
             <Button asChild>
-              <Link href={`/${currentLocale}/signup`}>Sign Up</Link>
+              <Link href={`/${currentLocale}/signup`}>{t('signUp')}</Link>
             </Button>
           </div>
         </div>
       </header>
 
       <main className="flex-1">
-        <section className="py-12 md:py-24 lg:py-32 bg-gradient-to-b from-background to-secondary/30">
+        {/* Hero Section */}
+        <section className="py-16 md:py-24 lg:py-32 bg-gradient-to-b from-background to-secondary/20 dark:from-background dark:to-secondary/10">
           <div className="container px-4 md:px-6">
-            <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
-              <div className="flex flex-col justify-center space-y-4">
-                <div className="space-y-2">
-                  <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                    Secure Your Digital Legacy with Amana
-                  </h1>
-                  <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Safeguard your important documents, precious memories, and final wishes. Ensure your digital assets are passed on securely and privately to your loved ones.
-                  </p>
+            <div className="grid gap-8 lg:grid-cols-2 lg:gap-12 items-center">
+              <div className="flex flex-col justify-center space-y-6 text-center lg:text-left">
+                <h1 className="text-4xl font-bold tracking-tight sm:text-5xl xl:text-6xl/none">
+                  {t('landingHeroTitle')}
+                </h1>
+                <p className="max-w-[600px] text-muted-foreground md:text-xl mx-auto lg:mx-0">
+                  {t('landingHeroSubtitle')}
+                </p>
+                <div className="flex flex-col gap-3 min-[400px]:flex-row justify-center lg:justify-start">
+                  <Button asChild size="lg" className="shadow-md">
+                    <Link href={`/${currentLocale}/signup`}>{t('landingHeroCTAStartFree')}</Link>
+                  </Button>
+                  <Button asChild variant="outline" size="lg" className="shadow-sm">
+                    <Link href="#how-it-works">{t('landingHeroCTAHowItWorks')}</Link>
+                  </Button>
                 </div>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Button asChild size="lg">
-                    <Link href={`/${currentLocale}/signup`}>Get Started for Free</Link>
-                  </Button>
-                  <Button asChild variant="outline" size="lg">
-                    <Link href={`/${currentLocale}/#features`}>Learn More</Link>
-                  </Button>
+                <div className="mt-4 text-center lg:text-left">
+                    <span className="inline-flex items-center gap-2 rounded-full bg-green-100 dark:bg-green-900/30 px-4 py-2 text-sm font-medium text-green-700 dark:text-green-300">
+                        <Lock className="h-4 w-4" /> {t('landingHeroBadgePrivate')}
+                    </span>
                 </div>
               </div>
               <Image
-                src="https://picsum.photos/600/400?grayscale"
-                alt="Abstract representation of digital legacy"
+                src="https://picsum.photos/seed/legacyhero/600/500"
+                alt={t('altLegacyHero')}
                 width={600}
-                height={400}
-                className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:order-last lg:aspect-square shadow-lg"
-                data-ai-hint="digital security abstract"
+                height={500}
+                className="mx-auto aspect-[6/5] overflow-hidden rounded-xl object-cover sm:w-full shadow-xl"
+                data-ai-hint="serene landscape sunrise"
               />
             </div>
           </div>
         </section>
 
-        <section id="features" className="py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-              <div className="space-y-2">
-                <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm text-secondary-foreground">Key Features</div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Everything You Need to Protect Your Legacy</h2>
-                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Amana provides a comprehensive suite of tools to manage and secure your digital assets for the future.
-                </p>
-              </div>
-            </div>
-            <div className="mx-auto grid items-start gap-8 sm:max-w-4xl sm:grid-cols-2 md:gap-12 lg:max-w-5xl lg:grid-cols-3">
-              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-md">
-                      <UploadCloud className="h-6 w-6 text-primary" />
-                    </div>
-                    <CardTitle>Secure Upload Vault</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Upload documents, images, and videos to your personal vault for safekeeping.
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center gap-3">
-                     <div className="p-2 bg-primary/10 rounded-md">
-                       <BrainCircuit className="h-6 w-6 text-primary" />
-                     </div>
-                    <CardTitle>AI-Powered File Tagging</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    AI automatically tags files (e.g., 'Insurance', 'Will', 'Personal') for easy organization.
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <CardHeader className="pb-4">
-                   <div className="flex items-center gap-3">
-                     <div className="p-2 bg-primary/10 rounded-md">
-                       <Users className="h-6 w-6 text-primary" />
-                     </div>
-                    <CardTitle>Beneficiary Management</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Assign files to specific beneficiaries. Manage who receives what, ensuring your wishes are honored.
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-md">
-                      <Lock className="h-6 w-6 text-primary" />
-                    </div>
-                    <CardTitle>Death Trigger Mechanism</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Allow trusted contacts to initiate the process of distributing your digital assets according to your plans.
-                  </p>
-                </CardContent>
-              </Card>
-               <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-md">
-                      <Package className="h-6 w-6 text-primary" />
-                    </div>
-                    <CardTitle>Secure Storage</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Your data is stored securely with robust infrastructure and access controls.
-                  </p>
-                </CardContent>
-              </Card>
-               <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-md">
-                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary"><path d="M17 14V4.5C17 3.67 16.33 3 15.5 3H11.5C10.67 3 10 3.67 10 4.5V10L7.12 14.12C6.43 15.01 7.01 16.27 8 16.63V19.5C8 20.33 8.67 21 9.5 21H14.5C15.33 21 16 20.33 16 19.5V16.63C16.99 16.27 17.57 15.01 16.88 14.12L14 10V4.5H15.5V10L17 14Z"/><path d="M12 15L12 16"/></svg>
-                    </div>
-                    <CardTitle>Islamic Mode</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Optional mode to tailor features according to Islamic inheritance principles (Wasiyyah, Faraid).
-                  </p>
-                </CardContent>
-              </Card>
+        {/* Legacy Isn’t Just Documents */}
+        <section className="py-16 md:py-24 lg:py-32">
+          <div className="container px-4 md:px-6 text-center">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mb-6">
+              {t('landingNarrativeTitle')}
+            </h2>
+            <p className="max-w-3xl mx-auto text-muted-foreground md:text-xl mb-10">
+              {t('landingNarrativeParagraph')}
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+              {carouselItems.map((item, index) => (
+                <div key={index} className="aspect-square overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+                  <Image
+                    src={item.src}
+                    alt={t(item.altKey)}
+                    width={200}
+                    height={200}
+                    className="object-cover w-full h-full"
+                    data-ai-hint={item.hint}
+                  />
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
-        <section className="py-12 md:py-24 lg:py-32 bg-secondary/30">
-          <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6">
-            <div className="space-y-3">
-              <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">
-                Ready to Secure Your Digital Future?
-              </h2>
-              <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Join Amana today and gain peace of mind knowing your digital legacy is protected.
-              </p>
+        {/* How It Works */}
+        <section id="how-it-works" className="py-16 md:py-24 lg:py-32 bg-secondary/20 dark:bg-secondary/10">
+          <div className="container px-4 md:px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">{t('landingHowItWorksTitle')}</h2>
             </div>
-            <div className="mx-auto w-full max-w-sm space-y-2">
-              <Button asChild size="lg" className="w-full">
-                <Link href={`/${currentLocale}/signup`}>Sign Up Now</Link>
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+              {[
+                { id: 'upload', icon: featureIcons.upload, titleKey: 'landingHowItWorksUploadTitle', descKey: 'landingHowItWorksUploadDesc' },
+                { id: 'tag', icon: featureIcons.tag, titleKey: 'landingHowItWorksTagTitle', descKey: 'landingHowItWorksTagDesc' },
+                { id: 'decide', icon: featureIcons.decide, titleKey: 'landingHowItWorksDecideTitle', descKey: 'landingHowItWorksDecideDesc' },
+                { id: 'deliver', icon: featureIcons.deliver, titleKey: 'landingHowItWorksDeliverTitle', descKey: 'landingHowItWorksDeliverDesc' },
+              ].map((step) => {
+                const Icon = step.icon;
+                return (
+                  <Card key={step.id} className="text-center shadow-lg hover:shadow-xl transition-shadow p-6">
+                    <div className="flex justify-center mb-4">
+                        <div className="p-3 bg-primary/10 rounded-full">
+                            <Icon className="h-8 w-8 text-primary" />
+                        </div>
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">{t(step.titleKey)}</h3>
+                    <p className="text-sm text-muted-foreground">{t(step.descKey)}</p>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Faith-Based Legacy Planning */}
+        <section className="py-16 md:py-24 lg:py-32">
+          <div className="container px-4 md:px-6">
+            <div className="grid gap-8 lg:grid-cols-2 lg:gap-16 items-center">
+              <div className="order-2 lg:order-1">
+                <Image
+                  src="https://picsum.photos/seed/islamicfaith/500/400"
+                  alt={t('altIslamicFaith')}
+                  width={500}
+                  height={400}
+                  className="rounded-xl object-cover shadow-xl"
+                  data-ai-hint="mosque silhouette calligraphy"
+                />
+              </div>
+              <div className="space-y-6 order-1 lg:order-2 text-center lg:text-left">
+                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
+                  {t('landingFaithBasedTitle')}
+                </h2>
+                <p className="text-muted-foreground md:text-lg">
+                  {t('landingFaithBasedParagraph')}
+                </p>
+                <div className="flex justify-center lg:justify-start">
+                    <span className="inline-flex items-center gap-2 rounded-full bg-green-100 dark:bg-green-900/30 px-4 py-2 text-sm font-medium text-green-700 dark:text-green-300">
+                        <MoonStar className="h-4 w-4" /> {t('landingFaithBasedBadgeCertified')}
+                    </span>
+                </div>
+                {/* The language toggle is typically global in the header, but if a specific action is needed here: */}
+                 <p className="text-sm text-muted-foreground text-center lg:text-left">
+                  {t('landingFaithBasedLanguagePrompt')}{' '}
+                  <Link href={`/${currentLocale === 'en' ? 'ar' : 'en'}${pathname.substring(3)}`} className="text-primary hover:underline">
+                    {currentLocale === 'en' ? t('arabic') : t('english')}
+                  </Link>
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* What Makes Amana Different */}
+        <section id="features" className="py-16 md:py-24 lg:py-32 bg-secondary/20 dark:bg-secondary/10">
+          <div className="container px-4 md:px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">{t('landingDifferentiatorsTitle')}</h2>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {differentiators.map((key, index) => (
+                <Card key={index} className="p-6 shadow-lg hover:shadow-xl transition-shadow">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                    <p className="text-muted-foreground">{t(key)}</p>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Start Free */}
+        <section className="py-16 md:py-24 lg:py-32">
+          <div className="container px-4 md:px-6 text-center">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mb-4">
+              {t('landingStartFreeTitle')}
+            </h2>
+            <p className="max-w-2xl mx-auto text-muted-foreground md:text-xl mb-8">
+             {t('landingStartFreeParagraph')}
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row justify-center">
+              <Button asChild size="lg" className="shadow-md">
+                <Link href={`/${currentLocale}/signup`}>{t('landingStartFreeCTACreate')}</Link>
               </Button>
-              <p className="text-xs text-muted-foreground">
-                Free to start. No credit card required.
-                 <Link href={`/${currentLocale}/pricing`} className="text-primary hover:underline ml-1">View plans</Link>
-              </p>
+              <Button asChild variant="outline" size="lg" className="shadow-sm">
+                <Link href={`/${currentLocale}/features`}>{t('landingStartFreeCTASample')}</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* Final Callout */}
+        <section className="py-16 md:py-24 lg:py-32 bg-primary text-primary-foreground">
+          <div className="container px-4 md:px-6 text-center">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mb-6">
+              {t('landingFinalCalloutTitle')}
+            </h2>
+            <div className="flex flex-col gap-3 sm:flex-row justify-center">
+              <Button asChild size="lg" variant="secondary" className="shadow-md">
+                <Link href={`/${currentLocale}/signup`}>{t('landingFinalCalloutCTABegin')}</Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="border-primary-foreground/50 hover:bg-primary-foreground/10 text-primary-foreground shadow-sm">
+                <Link href="#features">{t('landingFinalCalloutCTAWhy')}</Link>
+              </Button>
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="border-t">
+      <footer className="border-t bg-background">
         <div className="container flex flex-col items-center justify-between gap-4 py-10 md:h-24 md:flex-row md:py-0">
           <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
-            <AppLogo iconSize={6} textSize="text-base" showText={false} />
+            <AppLogo iconSize={6} textSize="text-base" />
             <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-              &copy; {new Date().getFullYear()} Amana. All rights reserved.
+              &copy; {new Date().getFullYear()} {t('appName')}. {t('allRightsReserved')}.
             </p>
           </div>
           <nav className="flex gap-4 sm:gap-6">
-            <Link href={`/${currentLocale}/security-info`} className="text-sm hover:underline underline-offset-4">Security</Link>
-            <Link href={`/${currentLocale}/info-help`} className="text-sm hover:underline underline-offset-4">Help</Link>
-            <Link href={`/${currentLocale}/terms`} className="text-sm hover:underline underline-offset-4">Terms of Service</Link>
-            <Link href={`/${currentLocale}/privacy`} className="text-sm hover:underline underline-offset-4">Privacy Policy</Link>
+            <Link href={`/${currentLocale}/security-info`} className="text-sm hover:underline underline-offset-4">{t('security')}</Link>
+            <Link href={`/${currentLocale}/features`} className="text-sm hover:underline underline-offset-4">{t('featuresPageTitle')}</Link>
+            <Link href={`/${currentLocale}/info-help`} className="text-sm hover:underline underline-offset-4">{t('help')}</Link>
+            <Link href={`/${currentLocale}/terms`} className="text-sm hover:underline underline-offset-4">{t('termsOfService')}</Link>
+            <Link href={`/${currentLocale}/privacy`} className="text-sm hover:underline underline-offset-4">{t('privacyPolicy')}</Link>
           </nav>
         </div>
       </footer>
     </div>
   );
 }
+
+// Add keys to translation files:
+// landingHeroTitle: "Your story deserves to outlive you."
+// landingHeroSubtitle: "Preserve what truly matters. Amana helps you share your memories, instructions, and legacy — securely and in your own time."
+// landingHeroCTAStartFree: "Start Free"
+// landingHeroCTAHowItWorks: "How It Works"
+// landingHeroBadgePrivate: "Private by default. Nothing shared unless you choose."
+// altLegacyHero: "Symbolic image of a legacy being preserved and passed on."
+// landingNarrativeTitle: "We don’t just leave assets. We leave meaning."
+// landingNarrativeParagraph: "A whispered prayer. A recorded goodbye. A deed to your home. A letter for your daughter’s wedding. Amana lets you preserve these things — for the right people, at the right time."
+// altLetter: "A handwritten letter"
+// altFamilyPhoto: "A cherished family photograph"
+// altVideoMessage: "A personal video message being recorded or played"
+// altInsuranceDoc: "An important insurance document"
+// altQuranVerse: "Calligraphy of a Quranic verse about remembrance or legacy"
+// landingHowItWorksTitle: "How Amana Works"
+// landingHowItWorksUploadTitle: "1. Securely Upload"
+// landingHowItWorksUploadDesc: "Add your documents, videos, or voice notes. All stored securely with us."
+// landingHowItWorksTagTitle: "2. Tag & Assign"
+// landingHowItWorksTagDesc: "Choose who receives what, and when. Organize with smart AI-powered tags."
+// landingHowItWorksDecideTitle: "3. Decide Visibility"
+// landingHowItWorksDecideDesc: "Keep private, share now, or set for release only upon your passing."
+// landingHowItWorksDeliverTitle: "4. Let Amana Deliver"
+// landingHowItWorksDeliverDesc: "Through inactivity detection, trusted contact initiation, or your faith-based inheritance flow."
+// landingFaithBasedTitle: "Built for Trust. Certified for Faith."
+// landingFaithBasedParagraph: "Amana’s Islamic Mode was developed in consultation with certified Shariah Advisors, supporting major Islamic schools of thought. It includes inheritance logic (Faraid), Wasiyyah tools, and guidance for ethical digital closure."
+// landingFaithBasedBadgeCertified: "Certified by Shariah Advisors"
+// altIslamicFaith: "Image representing Islamic faith, like a mosque or prayer beads"
+// landingFaithBasedLanguagePrompt: "View this page in"
+// landingDifferentiatorsTitle: "When you're no longer here, your voice still can be."
+// differentiatorPosthumousSharing: "Posthumous sharing via verified death triggers."
+// differentiatorAIEmotion: "AI emotion detection for legacy messages (Premium)."
+// differentiatorLangSupport: "Full Arabic and English support with RTL."
+// differentiatorLegacyCalendar: "Legacy calendar: schedule messages for future key dates (Premium)."
+// differentiatorSmartVault: "Smart vault for family guidance, legal peace, and spiritual clarity."
+// landingStartFreeTitle: "Start building your legacy — it costs nothing to begin."
+// landingStartFreeParagraph: "You can add your first memories, messages, and essential documents today. Upgrade only if you need more space or advanced features. Your privacy is always protected."
+// landingStartFreeCTACreate: "Create My Vault"
+// landingStartFreeCTASample: "View Features" // Changed from Sample Vault to Features page
+// landingFinalCalloutTitle: "Start writing the part of your story they’ll read when you’re gone."
+// landingFinalCalloutCTABegin: "Begin For Free"
+// landingFinalCalloutCTAWhy: "Why Amana?"
+// termsOfService: "Terms of Service"
+// privacyPolicy: "Privacy Policy"
+
+// For Arabic (ar/translation.json)
+// landingHeroTitle: "قصتك تستحق أن تبقى بعدك."
+// landingHeroSubtitle: "احفظ ما هو مهم حقًا. أمانة يساعدك على مشاركة ذكرياتك، تعليماتك، وإرثك - بأمان وفي الوقت الذي تختاره."
+// landingHeroCTAStartFree: "ابدأ مجانًا"
+// landingHeroCTAHowItWorks: "كيف يعمل"
+// landingHeroBadgePrivate: "خاص تلقائيًا. لا شيء يُشارك إلا باختيارك."
+// altLegacyHero: "صورة رمزية لإرث يتم الحفاظ عليه وتمريره."
+// landingNarrativeTitle: "نحن لا نترك أصولًا فقط. نحن نترك معنى."
+// landingNarrativeParagraph: "دعاءٌ يُهمس. وداعٌ مُسجل. صك ملكية منزلك. رسالة لزفاف ابنتك. أمانة يتيح لك الحفاظ على هذه الأشياء - للأشخاص المناسبين، في الوقت المناسب."
+// altLetter: "رسالة مكتوبة بخط اليد"
+// altFamilyPhoto: "صورة عائلية عزيزة"
+// altVideoMessage: "رسالة فيديو شخصية يتم تسجيلها أو تشغيلها"
+// altInsuranceDoc: "وثيقة تأمين هامة"
+// altQuranVerse: "خط لآية قرآنية عن الذكر أو الإرث"
+// landingHowItWorksTitle: "كيف يعمل أمانة"
+// landingHowItWorksUploadTitle: "١. ارفع بأمان"
+// landingHowItWorksUploadDesc: "أضف مستنداتك، مقاطع الفيديو، أو الملاحظات الصوتية. كلها مخزنة بأمان لدينا."
+// landingHowItWorksTagTitle: "٢. علّم وعيّن"
+// landingHowItWorksTagDesc: "اختر من يتلقى ماذا، ومتى. نظم باستخدام علامات ذكية مدعومة بالذكاء الاصطناعي."
+// landingHowItWorksDecideTitle: "٣. قرر الرؤية"
+// landingHowItWorksDecideDesc: "احتفظ بالخصوصية، شارك الآن، أو اضبط للإفراج فقط عند وفاتك."
+// landingHowItWorksDeliverTitle: "٤. دع أمانة يوصل"
+// landingHowItWorksDeliverDesc: "من خلال كشف عدم النشاط، مبادرة الاتصال الموثوق به، أو تدفق الميراث المبني على الإيمان."
+// landingFaithBasedTitle: "مبني على الثقة. معتمد للإيمان."
+// landingFaithBasedParagraph: "تم تطوير وضع أمانة الإسلامي بالتشاور مع مستشارين شرعيين معتمدين، ويدعم المذاهب الإسلامية الرئيسية. يتضمن منطق الميراث (الفرائض)، أدوات الوصية، وإرشادات للإغلاق الرقمي الأخلاقي."
+// landingFaithBasedBadgeCertified: "معتمد من مستشارين شرعيين"
+// altIslamicFaith: "صورة تمثل الإيمان الإسلامي، مثل مسجد أو مسبحة"
+// landingFaithBasedLanguagePrompt: "اعرض هذه الصفحة باللغة"
+// landingDifferentiatorsTitle: "عندما لا تكون هنا، صوتك لا يزال يمكن أن يكون."
+// differentiatorPosthumousSharing: "مشاركة بعد الوفاة عبر مشغلات وفاة مُحققة."
+// differentiatorAIEmotion: "كشف المشاعر بالذكاء الاصطناعي للرسائل المتروكة (بريميوم)."
+// differentiatorLangSupport: "دعم كامل للغتين العربية والإنجليزية مع RTL."
+// differentiatorLegacyCalendar: "تقويم الإرث: جدولة الرسائل لتواريخ رئيسية مستقبلية (بريميوم)."
+// differentiatorSmartVault: "خزنة ذكية للإرشاد الأسري، السلام القانوني، والوضوح الروحي."
+// landingStartFreeTitle: "ابدأ في بناء إرثك - لا يكلف شيئًا للبدء."
+// landingStartFreeParagraph: "يمكنك إضافة ذكرياتك الأولى، رسائلك، ومستنداتك الأساسية اليوم. قم بالترقية فقط إذا كنت بحاجة إلى مساحة أكبر أو ميزات متقدمة. خصوصيتك محمية دائمًا."
+// landingStartFreeCTACreate: "أنشئ خزنتي"
+// landingStartFreeCTASample: "عرض الميزات"
+// landingFinalCalloutTitle: "ابدأ بكتابة الجزء من قصتك الذي سيقرؤونه عندما ترحل."
+// landingFinalCalloutCTABegin: "ابدأ مجانًا"
+// landingFinalCalloutCTAWhy: "لماذا أمانة؟"
+// termsOfService: "شروط الخدمة"
+// privacyPolicy: "سياسة الخصوصية"
+
