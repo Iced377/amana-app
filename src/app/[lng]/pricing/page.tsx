@@ -71,12 +71,10 @@ export default function PricingPage() {
 
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('annually');
 
-  const getPrice = (plan: 'standard' | 'premium') => {
-    return billingCycle === 'annually' ? planDetails[plan].annualPrice : planDetails[plan].monthlyPrice;
-  };
-
-  const getBillingCycleText = () => {
-    return billingCycle === 'annually' ? "/year" : "/month";
+  const getDisplayedMonthlyRate = (plan: 'standard' | 'premium') => {
+    return billingCycle === 'annually' 
+      ? (planDetails[plan].annualPrice / 12) 
+      : planDetails[plan].monthlyPrice;
   };
   
   const getBilledAsText = (plan: 'standard' | 'premium') => {
@@ -135,8 +133,8 @@ export default function PricingPage() {
                 <CardHeader className="pb-4 text-center">
                   <CardTitle className="text-2xl">{planDetails.standard.name}</CardTitle>
                   <div className="mt-2">
-                    <span className="text-4xl font-bold">${getPrice('standard').toFixed(2)}</span>
-                    <span className="text-muted-foreground">{getBillingCycleText()}</span>
+                    <span className="text-4xl font-bold">${getDisplayedMonthlyRate('standard').toFixed(2)}</span>
+                    <span className="text-muted-foreground">/month</span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">{getBilledAsText('standard')}</p>
                   {billingCycle === 'annually' && (
@@ -168,8 +166,8 @@ export default function PricingPage() {
                 <CardHeader className="pb-4 text-center pt-8">
                   <CardTitle className="text-2xl">{planDetails.premium.name}</CardTitle>
                   <div className="mt-2">
-                    <span className="text-4xl font-bold">${getPrice('premium').toFixed(2)}</span>
-                    <span className="text-muted-foreground">{getBillingCycleText()}</span>
+                    <span className="text-4xl font-bold">${getDisplayedMonthlyRate('premium').toFixed(2)}</span>
+                    <span className="text-muted-foreground">/month</span>
                   </div>
                    <p className="text-xs text-muted-foreground mt-1">{getBilledAsText('premium')}</p>
                    {billingCycle === 'annually' && (
