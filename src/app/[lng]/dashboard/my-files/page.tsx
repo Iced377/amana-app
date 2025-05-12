@@ -12,8 +12,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import type { VaultFile, FileType, FileVisibility, Beneficiary } from '@/types';
-import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole, Unlock, Eye, Download, X, Cloud, Info, Lock, Users, ArchiveRestore, Settings2 } from 'lucide-react';
-import { performAiTagging, performShariahComplianceCheck } from './actions';
+import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole, Unlock, Eye, Download, X, Cloud, Info, Lock, Users, ArchiveRestore, Settings2, CopyWarning, CheckSquare } from 'lucide-react';
+import { performAiTagging, performShariahComplianceCheck, performDuplicateCheck } from './actions';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +37,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 // import { encryptDataUri, decryptDataUri } from '@/lib/encryption'; // Encryption removed
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 
 // MOCK Beneficiaries - In a real app, this would come from context or be fetched
 const MOCK_BENEFICIARIES: Beneficiary[] = [
@@ -81,7 +83,7 @@ export default function MyFilesPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
-  const [viewMode, setViewMode = "list" | "grid">('list');
+  const [viewMode, setViewMode] = useState<"list" | "grid">('list');
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -99,6 +101,8 @@ export default function MyFilesPage() {
   const [fileToPreview, setFileToPreview] = useState<VaultFile | null>(null);
   const [previewContentUrl, setPreviewContentUrl] = useState<string | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  
+  const [showOnlyDuplicates, setShowOnlyDuplicates] = useState(false);
 
 
   const { toast } = useToast();
@@ -140,12 +144,7 @@ export default function MyFilesPage() {
         setUploadProgress(prev => Math.min(prev + 10, 90)); 
       }, 100);
 
-      // Encryption removed
-      // const encryptedFileContent = await encryptDataUri(previewDataUrl, encryptionKey);
-      // if (!encryptedFileContent) {
-      //   throw new Error("File encryption failed.");
-      // }
-      const fileContentForStorage = previewDataUrl; // Store raw data URI
+      const fileContentForStorage = previewDataUrl; 
 
       const { name, type: mimeType, size } = selectedFile;
       const fileType: FileType = mimeType.startsWith('image/') ? 'image' :
@@ -160,24 +159,68 @@ export default function MyFilesPage() {
         shariahComplianceResult = await performShariahComplianceCheck({ fileDataUri: previewDataUrl, filename: name, fileType });
       }
       
+      const newFileId = crypto.randomUUID();
+      let duplicateCheckResult;
+      const existingFilesMetadataForCheck = files.map(f => ({ id: f.id, name: f.name, type: f.type, size: f.size, uploadDate: f.uploadDate }));
+      if (existingFilesMetadataForCheck.length > 0) {
+        duplicateCheckResult = await performDuplicateCheck({
+            targetFileDataUri: previewDataUrl,
+            targetFileName: name,
+            targetFileType: fileType,
+            targetFileSize: size,
+            existingFilesMetadata: existingFilesMetadataForCheck,
+        });
+      }
+
       if (progressInterval) clearInterval(progressInterval);
       setUploadProgress(100);
 
       const newFile: VaultFile = {
-        id: crypto.randomUUID(),
+        id: newFileId,
         name,
         type: fileType,
         size, 
         uploadDate: new Date().toISOString(),
-        dataUri: fileContentForStorage, // Storing raw data URI
+        dataUri: fileContentForStorage, 
         aiTags: aiTaggingResult.tags || ['untagged'],
         shariahCompliance: shariahComplianceResult ? { ...shariahComplianceResult, checkedAt: new Date().toISOString() } : undefined,
         icon: getFileIcon(fileType),
         visibility: currentFileVisibility,
         specificSharedBeneficiaryIds: currentFileVisibility === 'sharedImmediately' ? [...currentSharedBeneficiaryIds] : undefined,
+        isPotentialDuplicate: duplicateCheckResult?.isDuplicate || false,
+        duplicateInfo: duplicateCheckResult?.isDuplicate ? {
+            note: `Potential duplicate of '${files.find(f => f.id === duplicateCheckResult.duplicateOfFileId)?.name || 'unknown file'}'. Reason: ${duplicateCheckResult.reason || 'Similar metadata/content'}. Confidence: ${duplicateCheckResult.confidenceScore.toFixed(2)}`,
+            checkedAt: new Date().toISOString(),
+            duplicateOfFileId: duplicateCheckResult.duplicateOfFileId,
+        } : { checkedAt: new Date().toISOString(), note: "No duplicate detected upon upload." },
       };
-      setFiles(prevFiles => [newFile, ...prevFiles]);
+      
+      setFiles(prevFiles => {
+        let updatedFiles = [newFile, ...prevFiles];
+        if (duplicateCheckResult?.isDuplicate && duplicateCheckResult.duplicateOfFileId) {
+            const originalFileId = duplicateCheckResult.duplicateOfFileId;
+            updatedFiles = updatedFiles.map(f => {
+                if (f.id === originalFileId) {
+                    return {
+                        ...f,
+                        isPotentialDuplicate: true,
+                        duplicateInfo: {
+                            ...(f.duplicateInfo || { note: '', checkedAt: new Date().toISOString() }),
+                            note: (f.duplicateInfo?.note ? f.duplicateInfo.note + " | " : "") + `Also potentially duplicated by '${newFile.name}'.`,
+                            checkedAt: new Date().toISOString(),
+                        }
+                    };
+                }
+                return f;
+            });
+        }
+        return updatedFiles;
+      });
+      
       toast({ title: "File Uploaded", description: `${name} has been securely uploaded.` }); 
+      if (duplicateCheckResult?.isDuplicate) {
+        toast({ title: "Potential Duplicate Found", description: `${name} might be a duplicate of an existing file.`, variant: "default", duration: 5000 });
+      }
       
       setIsUploadDialogOpen(false);
       setSelectedFile(null);
@@ -236,18 +279,8 @@ export default function MyFilesPage() {
     setIsPreviewOpen(true);
     setPreviewContentUrl(null); 
 
-    // Decryption removed
-    // const encryptionKey = getEncryptionKey();
-    // if (!encryptionKey) {
-    //   toast({ title: "Decryption Key Missing", description: "Cannot preview file without an encryption key.", variant: "destructive" });
-    //   setIsPreviewLoading(false);
-    //   setIsPreviewOpen(false);
-    //   return;
-    // }
-
     try {
-      // const decryptedDataUri = await decryptDataUri(file.encryptedDataUri, encryptionKey);
-      const dataUriToPreview = file.dataUri; // Use raw data URI for preview
+      const dataUriToPreview = file.dataUri; 
       if (dataUriToPreview) {
         setPreviewContentUrl(dataUriToPreview);
       } else {
@@ -264,15 +297,8 @@ export default function MyFilesPage() {
   };
 
   const handleDownloadFile = async (file: VaultFile) => {
-    // Decryption removed
-    // const encryptionKey = getEncryptionKey();
-    // if (!encryptionKey) {
-    //     toast({ title: "Download Error", description: "Encryption key missing.", variant: "destructive" });
-    //     return;
-    // }
     try {
-        // const decryptedDataUri = await decryptDataUri(file.encryptedDataUri, encryptionKey);
-        const dataUriToDownload = file.dataUri; // Use raw data URI
+        const dataUriToDownload = file.dataUri; 
         if (!dataUriToDownload) {
             toast({ title: "Download Error", description: "Failed to load file data.", variant: "destructive" });
             return;
@@ -291,12 +317,13 @@ export default function MyFilesPage() {
   };
 
   const handleDownloadAllFiles = () => {
-    if (filteredFiles.length === 0) {
-      toast({ title: "No Files", description: "There are no files to download.", variant: "destructive" });
+    const filesToDownload = filteredFiles; // Use currently filtered files
+    if (filesToDownload.length === 0) {
+      toast({ title: "No Files", description: "There are no files to download with the current filter.", variant: "destructive" });
       return;
     }
-    toast({ title: "Downloading All Files", description: `Preparing to download ${filteredFiles.length} files.`});
-    filteredFiles.forEach((file, index) => {
+    toast({ title: "Downloading Files", description: `Preparing to download ${filesToDownload.length} files.`});
+    filesToDownload.forEach((file, index) => {
       setTimeout(() => {
         handleDownloadFile(file);
       }, index * 1000); 
@@ -312,8 +339,9 @@ export default function MyFilesPage() {
   };
   
   const filteredFiles = files.filter(file => 
-    file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (file.aiTags && file.aiTags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
+    (file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (file.aiTags && file.aiTags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))))
+    && (!showOnlyDuplicates || file.isPotentialDuplicate) 
   );
 
   const handleBeneficiarySelectionChange = (beneficiaryId: string, checked: boolean) => {
@@ -328,6 +356,56 @@ export default function MyFilesPage() {
     );
   };
 
+  const handleMarkNotDuplicate = (fileId: string) => {
+    setFiles(currentFiles => {
+        return currentFiles.map(f => {
+            if (f.id === fileId) {
+                // Unflag current file
+                const updatedFile = { ...f, isPotentialDuplicate: false, duplicateInfo: { ...(f.duplicateInfo || {note:'', checkedAt:''}), note: "Manually marked as not a duplicate.", duplicateOfFileId: undefined } };
+                
+                // Try to unflag the other file if it was directly linked
+                const otherFileId = f.duplicateInfo?.duplicateOfFileId;
+                if (otherFileId) {
+                    return currentFiles.map(cf => {
+                        if (cf.id === otherFileId && cf.duplicateInfo?.duplicateOfFileId === fileId) {
+                             // This condition might be too strict if duplicateInfo was overwritten.
+                             // A simpler approach: if fileX was duplicate of fileY, unflagging fileX clears its flag.
+                             // Unflagging fileY clears its flag. They are independent after the initial link.
+                            return { ...cf, isPotentialDuplicate: false, duplicateInfo: { ...(cf.duplicateInfo || {note:'', checkedAt:''}), note: (cf.duplicateInfo?.note || "") + " | Related file marked as not duplicate." } };
+                        }
+                        if (cf.id === fileId) return updatedFile;
+                        return cf;
+                    })[currentFiles.findIndex(fi => fi.id === fileId)]; // This logic is flawed for updating two files in a map
+                }
+                return updatedFile;
+            }
+            return f;
+        });
+    });
+
+    // Corrected logic:
+    setFiles(currentFiles => {
+        const fileToUpdate = currentFiles.find(f => f.id === fileId);
+        if (!fileToUpdate) return currentFiles;
+
+        const otherFileId = fileToUpdate.duplicateInfo?.duplicateOfFileId;
+
+        return currentFiles.map(f => {
+            if (f.id === fileId) {
+                return { ...f, isPotentialDuplicate: false, duplicateInfo: { ...(f.duplicateInfo || {note:'', checkedAt:''}), note: "Manually marked as not a duplicate by user.", duplicateOfFileId: undefined } };
+            }
+            // If the other file was linked to this one, update its note too
+            if (otherFileId && f.id === otherFileId && f.duplicateInfo?.duplicateOfFileId === fileId) {
+                 return { ...f, isPotentialDuplicate: false, duplicateInfo: { ...(f.duplicateInfo || {note:'', checkedAt:''}), note: (f.duplicateInfo?.note || "") + " | Related file marked as not duplicate.", duplicateOfFileId: undefined } };
+            }
+            return f;
+        });
+    });
+
+
+    toast({ title: "File status updated", description: "The file is no longer flagged as a potential duplicate." });
+  };
+
 
   return (
     <div className="space-y-6">
@@ -335,7 +413,7 @@ export default function MyFilesPage() {
         <h1 className="text-2xl font-semibold md:text-3xl">My Files</h1>
         <div className="flex gap-2">
            <Button onClick={handleDownloadAllFiles} variant="outline" disabled={filteredFiles.length === 0}>
-            <Download className="mr-2 h-4 w-4" /> Download All
+            <Download className="mr-2 h-4 w-4" /> Download All ({filteredFiles.length})
           </Button>
           <Dialog open={isUploadDialogOpen} onOpenChange={(isOpen) => {
             setIsUploadDialogOpen(isOpen);
@@ -353,12 +431,12 @@ export default function MyFilesPage() {
               <Button onClick={() => setIsUploadDialogOpen(true)}>
                 <UploadCloud className="mr-2 h-4 w-4" /> Upload File
               </Button>
-            DialogTrigger>
+            </DialogTrigger>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>Upload a New File</DialogTitle>
                 <DialogDescription>
-                  Choose a file. It will be AI-tagged and stored. Manage visibility below.
+                  Choose a file. It will be AI-tagged and checked for duplicates. Manage visibility below.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-6 py-4">
@@ -402,7 +480,7 @@ export default function MyFilesPage() {
                       <RadioGroupItem value="sharedImmediately" id="vis-specific" />
                       <Label htmlFor="vis-specific" className="font-normal">Share Immediately (With specific beneficiaries)</Label>
                     </div>
-                  RadioGroup>
+                  </RadioGroup>
                 </div>
 
                 {currentFileVisibility === 'sharedImmediately' && (
@@ -431,19 +509,22 @@ export default function MyFilesPage() {
                   <div>
                     <Progress value={uploadProgress} className="w-full" />
                     <p className="text-sm text-center mt-1">
-                      {uploadProgress < 30 ? "Preparing..." : uploadProgress < 60 ? "Processing..." : uploadProgress < 90 ? "AI Tagging..." : "Finalizing..."} ({uploadProgress}%)
+                      {uploadProgress < 25 ? "Preparing..." 
+                       : uploadProgress < 50 ? "AI Tagging..." 
+                       : uploadProgress < 75 ? "Compliance & Duplicate Check..." 
+                       : "Finalizing..."} ({uploadProgress}%)
                     </p>
                   </div>
                 )}
               </div>
-              DialogFooter>
+              <DialogFooter>
                   <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>Cancel</Button>
                 <Button onClick={handleUpload} disabled={isUploading || !selectedFile || !previewDataUrl}>
                   {isUploading ? 'Processing...' : 'Upload File'}
                 </Button>
               </DialogFooter>
             </DialogContent>
-          Dialog>
+          </Dialog>
         </div>
       </div>
 
@@ -452,9 +533,17 @@ export default function MyFilesPage() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-2">
             <div>
               <CardTitle className="flex items-center gap-2"><LockKeyhole className="h-5 w-5 text-primary"/> Your Amana vault</CardTitle> 
-              <CardDescription>Manage your documents, images, and videos.</CardDescription>
-            div>
+              <CardDescription>Manage your documents, images, and videos. Checked for potential duplicates.</CardDescription>
+            </div>
             <div className="flex items-center gap-2 w-full md:w-auto">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                    id="show-duplicates-filter"
+                    checked={showOnlyDuplicates}
+                    onCheckedChange={(checked) => setShowOnlyDuplicates(!!checked)}
+                />
+                <Label htmlFor="show-duplicates-filter" className="text-sm font-normal">Show potential duplicates only</Label>
+              </div>
               <div className="relative flex-grow md:flex-grow-0">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
@@ -467,171 +556,214 @@ export default function MyFilesPage() {
               </div>
               <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')} aria-label="List view">
                 <List className="h-4 w-4" />
-              Button>
+              </Button>
               <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')} aria-label="Grid view">
                 <GripVertical className="h-4 w-4" />
-              Button>
-            div>
-          div>
-        CardHeader>
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
         <CardContent>
           {filteredFiles.length === 0 ? (
             <div className="text-center py-10">
               <FileQuestion className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-2 text-sm font-medium text-foreground">No files found</h3>
+              <h3 className="mt-2 text-sm font-medium text-foreground">
+                {showOnlyDuplicates ? "No potential duplicates found" : "No files found"}
+              </h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                {searchTerm ? "Try a different search term." : "Upload your first file to get started."}
-              p>
-            div>
+                {searchTerm ? "Try a different search term." : (showOnlyDuplicates ? "Clear filter to see all files." : "Upload your first file to get started.")}
+              </p>
+            </div>
           ) : viewMode === 'list' ? (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[50px]">IconTableHead>
-                  <TableHead>NameTableHead>
-                  <TableHead>SizeTableHead>
-                  <TableHead>DateTableHead>
-                  <TableHead>VisibilityTableHead>
-                  <TableHead>AI TagsTableHead>
-                  {userMode === 'islamic' && <TableHead>Shariah ComplianceTableHead>}
-                  <TableHead className="text-right">ActionsTableHead>
-                TableRow>
-              TableHeader>
+                  <TableHead className="w-[50px]">Icon</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Size</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Visibility</TableHead>
+                  <TableHead>AI Tags</TableHead>
+                  {userMode === 'islamic' && <TableHead>Shariah</TableHead>}
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
               <TableBody>
                 {filteredFiles.map((file) => {
                   const visibilityInfo = getVisibilityIconAndText(file, availableBeneficiaries);
                   return (
-                    <TableRow key={file.id}>
+                    <TableRow key={file.id} className={file.isPotentialDuplicate ? "bg-yellow-50 dark:bg-yellow-900/20" : ""}>
                       <TableCell>
                           <file.icon 
-                            className="h-5 w-5 text-muted-foreground cursor:pointer hover:text-primary" 
+                            className="h-5 w-5 text-muted-foreground cursor-pointer hover:text-primary" 
                             onClick={() => handlePreviewFile(file)}
                           />
-                      TableCell>
+                      </TableCell>
                       <TableCell 
-                          className="font-medium cursor:pointer hover:text-primary hover:underline"
+                          className="font-medium cursor-pointer hover:text-primary hover:underline"
                           onClick={() => handlePreviewFile(file)}
                       >
                           {file.name}
-                      TableCell>
-                      <TableCell>{(file.size / (1024 * 1024)).toFixed(2)} MBTableCell>
-                      <TableCell>{new Date(file.uploadDate).toLocaleDateString()}TableCell>
+                      </TableCell>
+                      <TableCell>{(file.size / (1024 * 1024)).toFixed(2)} MB</TableCell>
+                      <TableCell>{new Date(file.uploadDate).toLocaleDateString()}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                            <visibilityInfo.icon className={`h-4 w-4 ${visibilityInfo.color}`} />
-                           <span className="text-xs">{visibilityInfo.text}span>
-                        div>
-                      TableCell>
+                           <span className="text-xs">{visibilityInfo.text}</span>
+                        </div>
+                      </TableCell>
                       <TableCell>
-                        {file.aiTags && file.aiTags.map(tag => <Badge key={tag} variant="secondary" className="mr-1 mb-1">{tag}Badge>)}
-                      TableCell>
+                        {file.aiTags && file.aiTags.map(tag => <Badge key={tag} variant="secondary" className="mr-1 mb-1">{tag}</Badge>)}
+                      </TableCell>
                        {userMode === 'islamic' && (
                           <TableCell>
                             {file.shariahCompliance ? (
                               <Badge variant={file.shariahCompliance.isCompliant ? "default" : "destructive"}>
                                 {file.shariahCompliance.isCompliant ? "Compliant" : "Review Needed"}
-                              Badge>
+                              </Badge>
                             ) : (
-                              <Badge variant="outline">N/ABadge>
+                              <Badge variant="outline">N/A</Badge>
                             )}
-                          TableCell>
+                          </TableCell>
                         )}
-                      TableCell className="text-right">
+                        <TableCell>
+                          {file.isPotentialDuplicate && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="destructive" className="cursor-help"><CopyWarning className="h-3 w-3 mr-1" /> Duplicate?</Badge>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p className="text-xs">{file.duplicateInfo?.note || "Potential duplicate detected."}</p>
+                                  {file.duplicateInfo?.checkedAt && <p className="text-xs text-muted-foreground">Checked: {new Date(file.duplicateInfo.checkedAt).toLocaleString()}</p>}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </TableCell>
+                      <TableCell className="text-right">
                           <Button variant="ghost" size="icon" onClick={() => handlePreviewFile(file)} title="Preview file">
                               <Eye className="h-4 w-4" />
-                              <span className="sr-only">Previewspan>
-                          Button>
+                              <span className="sr-only">Preview</span>
+                          </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon"><Settings2 className="h-4 w-4" /><span className="sr-only">File optionsspan>Button>
-                          DropdownMenuTrigger>
+                            <Button variant="ghost" size="icon"><Settings2 className="h-4 w-4" /><span className="sr-only">File options</span></Button>
+                          </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                              <DropdownMenuItem onClick={() => handlePreviewFile(file)}>
                               <Eye className="mr-2 h-4 w-4" /> Preview
-                            DropdownMenuItem>
+                            </DropdownMenuItem>
                              <DropdownMenuItem onClick={() => handleDownloadFile(file)}>
                               <Download className="mr-2 h-4 w-4" /> Download
-                            DropdownMenuItem>
+                            </DropdownMenuItem>
                              <DropdownMenuItem onClick={() => handleOpenEditVisibilityDialog(file)}>
                               <Edit3 className="mr-2 h-4 w-4" /> Manage Sharing
-                            DropdownMenuItem>
+                            </DropdownMenuItem>
+                            {file.isPotentialDuplicate && (
+                              <DropdownMenuItem onClick={() => handleMarkNotDuplicate(file.id)}>
+                                <CheckSquare className="mr-2 h-4 w-4" /> Mark as Not Duplicate
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => handleDeleteFile(file.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                               <Trash2 className="mr-2 h-4 w-4" /> Delete
-                            DropdownMenuItem>
-                          DropdownMenuContent>
-                        DropdownMenu>
-                      TableCell>
-                    TableRow>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              TableBody>
-            Table>
+              </TableBody>
+            </Table>
           ) : ( 
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {filteredFiles.map((file) => {
                   const visibilityInfo = getVisibilityIconAndText(file, availableBeneficiaries);
                   return (
-                    <Card key={file.id} className="flex flex-col">
-                      <CardHeader className="flex flex-row items-center justify-between p-4">
-                        <file.icon className="h-8 w-8 text-muted-foreground cursor:pointer hover:text-primary" onClick={() => handlePreviewFile(file)} />
+                    <Card key={file.id} className={`flex flex-col ${file.isPotentialDuplicate ? "border-yellow-400 border-2" : ""}`}>
+                      <CardHeader className="flex flex-row items-start justify-between p-3">
+                        <div className="flex items-center gap-2">
+                          <file.icon className="h-8 w-8 text-muted-foreground cursor-pointer hover:text-primary" onClick={() => handlePreviewFile(file)} />
+                           {file.isPotentialDuplicate && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <CopyWarning className="h-5 w-5 text-yellow-500 cursor-help" />
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs">
+                                     <p className="text-xs">{file.duplicateInfo?.note || "Potential duplicate detected."}</p>
+                                     {file.duplicateInfo?.checkedAt && <p className="text-xs text-muted-foreground">Checked: {new Date(file.duplicateInfo.checkedAt).toLocaleString()}</p>}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                        </div>
                          <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon"><Settings2 className="h-4 w-4" /><span className="sr-only">File optionsspan>Button>
-                          DropdownMenuTrigger>
+                            <Button variant="ghost" size="icon"><Settings2 className="h-4 w-4" /><span className="sr-only">File options</span></Button>
+                          </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                              <DropdownMenuItem onClick={() => handlePreviewFile(file)}>
                               <Eye className="mr-2 h-4 w-4" /> Preview
-                            DropdownMenuItem>
+                            </DropdownMenuItem>
                              <DropdownMenuItem onClick={() => handleDownloadFile(file)}>
                               <Download className="mr-2 h-4 w-4" /> Download
-                            DropdownMenuItem>
+                            </DropdownMenuItem>
                              <DropdownMenuItem onClick={() => handleOpenEditVisibilityDialog(file)}>
                               <Edit3 className="mr-2 h-4 w-4" /> Manage Sharing
-                            DropdownMenuItem>
+                            </DropdownMenuItem>
+                             {file.isPotentialDuplicate && (
+                              <DropdownMenuItem onClick={() => handleMarkNotDuplicate(file.id)}>
+                                <CheckSquare className="mr-2 h-4 w-4" /> Mark as Not Duplicate
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => handleDeleteFile(file.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                               <Trash2 className="mr-2 h-4 w-4" /> Delete
-                            DropdownMenuItem>
-                          DropdownMenuContent>
-                        DropdownMenu>
-                      CardHeader>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </CardHeader>
                       <CardContent 
-                          className="p-4 flex-grow cursor:pointer"
+                          className="p-3 pt-0 flex-grow cursor-pointer"
                           onClick={() => handlePreviewFile(file)}
                       >
-                        <h3 className="font-medium truncate" title={file.name}>{file.name}h3>
-                        <p className="text-xs text-muted-foreground">{(file.size / (1024 * 1024)).toFixed(2)} MBp>
-                        <p className="text-xs text-muted-foreground">{new Date(file.uploadDate).toLocaleDateString()}p>
-                        <div className="mt-2 flex items-center gap-1" title={visibilityInfo.text}>
+                        <h3 className="font-medium truncate text-sm" title={file.name}>{file.name}</h3>
+                        <p className="text-xs text-muted-foreground">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
+                        <p className="text-xs text-muted-foreground">{new Date(file.uploadDate).toLocaleDateString()}</p>
+                        <div className="mt-1 flex items-center gap-1" title={visibilityInfo.text}>
                            <visibilityInfo.icon className={`h-3 w-3 ${visibilityInfo.color}`} />
-                           <span className="text-xs">{visibilityInfo.text}span>
-                        div>
-                        <div className="mt-2">
-                          {file.aiTags && file.aiTags.slice(0,2).map(tag => <Badge key={tag} variant="secondary" className="mr-1 mb-1 text-xs">{tag}Badge>)}
-                          {file.aiTags && file.aiTags.length > 2 && <Badge variant="secondary" className="text-xs">+{file.aiTags.length-2}Badge>}
-                        div>
+                           <span className="text-xs">{visibilityInfo.text}</span>
+                        </div>
+                        <div className="mt-1">
+                          {file.aiTags && file.aiTags.slice(0,2).map(tag => <Badge key={tag} variant="secondary" className="mr-1 mb-1 text-xs">{tag}</Badge>)}
+                          {file.aiTags && file.aiTags.length > 2 && <Badge variant="secondary" className="text-xs">+{file.aiTags.length-2}</Badge>}
+                        </div>
                         {userMode === 'islamic' && file.shariahCompliance && (
                           <div className="mt-1">
                              <Badge variant={file.shariahCompliance.isCompliant ? "default" : "destructive"} className="text-xs">
-                                {file.shariahCompliance.isCompliant ? "Shariah Compliant" : "Shariah Review Needed"}
-                             Badge>
-                          div>
+                                {file.shariahCompliance.isCompliant ? "Shariah Compliant" : "Shariah Review"}
+                             </Badge>
+                          </div>
                         )}
-                      CardContent>
-                    Card>
+                      </CardContent>
+                    </Card>
                   );
                 })}
-            div>
+            </div>
           )}
-        CardContent>
-      Card>
+        </CardContent>
+      </Card>
 
       <Card className="shadow-md">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Cloud className="h-5 w-5 text-primary"/> Cloud Storage IntegrationsCardTitle>
-          <CardDescription>Connect your existing cloud storage accounts to easily import files from your Amana vault.CardDescription>
-        CardHeader>
+          <CardTitle className="flex items-center gap-2"><Cloud className="h-5 w-5 text-primary"/> Cloud Storage Integrations</CardTitle>
+          <CardDescription>Connect your existing cloud storage accounts to easily import files from your Amana vault.</CardDescription>
+        </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
@@ -642,58 +774,58 @@ export default function MyFilesPage() {
             ].map((service) => (
               <Card key={service.name} className="p-4 flex flex-col items-center justify-center">
                 <service.icon className="h-10 w-10 text-muted-foreground mb-2" />
-                p className="font-medium mb-3">{service.name}p>
+                <p className="font-medium mb-3">{service.name}</p>
                 <Button 
                   variant="outline" 
                   className="w-full"
                   onClick={() => handleConnectCloudService(service.name)}
                 >
                   Connect
-                Button>
-              Card>
+                </Button>
+              </Card>
             ))}
-          div>
+          </div>
           <div className="flex items-center p-3 bg-accent/50 rounded-lg mt-4">
               <Info className="h-5 w-5 text-accent-foreground mr-2 rtl:ml-2 shrink-0" />
               <p className="text-sm text-accent-foreground">
               Importing files from cloud services is a planned feature. Connecting will allow you to browse and select files to add to your Amana vault.
-              p>
-          div>
-        CardContent>
-      Card>
+              </p>
+          </div>
+        </CardContent>
+      </Card>
 
 
       {editingVisibilityFile && (
         <Dialog open={isEditVisibilityDialogOpen} onOpenChange={(isOpen) => { if(!isOpen) { setIsEditVisibilityDialogOpen(false); setEditingVisibilityFile(null);}}}>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
-              <DialogTitle>Manage Sharing for {editingVisibilityFile.name}DialogTitle>
+              <DialogTitle>Manage Sharing for {editingVisibilityFile.name}</DialogTitle>
               <DialogDescription>
                 Choose how this file should be shared or kept private.
-              DialogDescription>
-            DialogHeader>
+              </DialogDescription>
+            </DialogHeader>
             <div className="grid gap-6 py-4">
                <div className="space-y-2">
-                  <Label>VisibilityLabel>
+                  <Label>Visibility</Label>
                   <RadioGroup value={tempVisibility} onValueChange={(val) => setTempVisibility(val as FileVisibility)}>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="private" id="edit-vis-private" />
-                      <Label htmlFor="edit-vis-private" className="font-normal">Keep PrivateLabel>
-                    div>
+                      <Label htmlFor="edit-vis-private" className="font-normal">Keep Private</Label>
+                    </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="releaseOnDeath" id="edit-vis-onDeath" />
-                      <Label htmlFor="edit-vis-onDeath" className="font-normal">Release Upon DeathLabel>
-                    div>
+                      <Label htmlFor="edit-vis-onDeath" className="font-normal">Release Upon Death</Label>
+                    </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="sharedImmediately" id="edit-vis-specific" />
-                      <Label htmlFor="edit-vis-specific" className="font-normal">Share ImmediatelyLabel>
-                    div>
-                  RadioGroup>
-                div>
+                      <Label htmlFor="edit-vis-specific" className="font-normal">Share Immediately</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
 
                 {tempVisibility === 'sharedImmediately' && (
                   <div className="space-y-2 pl-2 border-l-2 ml-2">
-                    <Label>Select Beneficiaries to Share With:Label>
+                    <Label>Select Beneficiaries to Share With:</Label>
                      {availableBeneficiaries.length > 0 ? (
                         <ScrollArea className="h-32">
                           {availableBeneficiaries.map(ben => (
@@ -703,22 +835,22 @@ export default function MyFilesPage() {
                                 checked={tempSharedBeneficiaryIds.includes(ben.id)}
                                 onCheckedChange={(checked) => handleTempBeneficiarySelectionChange(ben.id, !!checked)}
                               />
-                              <Label htmlFor={`ben-edit-${ben.id}`} className="font-normal">{ben.name}Label>
-                            div>
+                              <Label htmlFor={`ben-edit-${ben.id}`} className="font-normal">{ben.name}</Label>
+                            </div>
                           ))}
-                        ScrollArea>
+                        </ScrollArea>
                       ) : (
-                        <p className="text-sm text-muted-foreground">No beneficiaries available to select.p>
+                        <p className="text-sm text-muted-foreground">No beneficiaries available to select.</p>
                       )}
-                  div>
+                  </div>
                 )}
-            div>
-            DialogFooter>
-              <Button variant="outline" onClick={() => { setIsEditVisibilityDialogOpen(false); setEditingVisibilityFile(null);}}>CancelButton>
-              <Button onClick={handleSaveVisibility}>Save ChangesButton>
-            DialogFooter>
-          DialogContent>
-        Dialog>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setIsEditVisibilityDialogOpen(false); setEditingVisibilityFile(null);}}>Cancel</Button>
+              <Button onClick={handleSaveVisibility}>Save Changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
 
       <Dialog open={isPreviewOpen} onOpenChange={(isOpen) => {
@@ -730,20 +862,20 @@ export default function MyFilesPage() {
       }}>
         <DialogContent className="sm:max-w-[90vw] md:max-w-[70vw] lg:max-w-[60vw] xl:max-w-[50vw] h-[85vh] flex flex-col">
           <DialogHeader className="flex flex-row justify-between items-center">
-            <DialogTitle>Preview: {fileToPreview?.name}DialogTitle>
+            <DialogTitle>Preview: {fileToPreview?.name}</DialogTitle>
             <DialogClose asChild>
                 <Button variant="ghost" size="icon" onClick={() => { setIsPreviewOpen(false); setFileToPreview(null); setPreviewContentUrl(null); }}>
                     <X className="h-4 w-4" />
-                    <span className="sr-only">Closespan>
-                Button>
-            DialogClose>
-          DialogHeader>
+                    <span className="sr-only">Close</span>
+                </Button>
+            </DialogClose>
+          </DialogHeader>
           <div className="py-2 flex-grow overflow-auto flex items-center justify-center">
             {isPreviewLoading ? (
                 <div className="flex flex-col items-center justify-center h-full">
                     <Unlock className="h-16 w-16 text-primary animate-pulse mb-4" />
-                    <p className="text-muted-foreground">Loading preview...p>
-                div>
+                    <p className="text-muted-foreground">Loading preview...</p>
+                </div>
             ) : previewContentUrl && fileToPreview ? (
               <>
                 {fileToPreview.type === 'image' && (
@@ -755,10 +887,10 @@ export default function MyFilesPage() {
                         style={{objectFit: "contain"}}
                         data-ai-hint="file preview content"
                     />
-                  div>
+                  </div>
                 )}
                 {fileToPreview.type === 'video' && (
-                  <video src={previewContentUrl} controls className="w-full h-full max-h-[calc(85vh-100px)]">Your browser does not support the video tag.video>
+                  <video src={previewContentUrl} controls className="w-full h-full max-h-[calc(85vh-100px)]">Your browser does not support the video tag.</video>
                 )}
                 {fileToPreview.type === 'document' && fileToPreview.name.toLowerCase().endsWith('.pdf') && (
                    <iframe src={previewContentUrl} title={`Preview of ${fileToPreview.name}`} className="w-full h-full border-0" />
@@ -766,36 +898,36 @@ export default function MyFilesPage() {
                 {(fileToPreview.type === 'document' && !fileToPreview.name.toLowerCase().endsWith('.pdf')) || fileToPreview.type === 'other' ? (
                   <div className="flex flex-col items-center justify-center h-full text-center p-4">
                     {fileToPreview.type === 'document' ? <FileText className="h-16 w-16 text-muted-foreground mb-4" /> : <FileQuestion className="h-16 w-16 text-muted-foreground mb-4" />}
-                    <p className="text-muted-foreground mb-2">Preview not available for this file type.p>
+                    <p className="text-muted-foreground mb-2">Preview not available for this file type.</p>
                     <Button onClick={() => fileToPreview && handleDownloadFile(fileToPreview)}>
                         <Download className="mr-2 h-4 w-4" /> Download File
-                    Button>
-                  div>
+                    </Button>
+                  </div>
                 ) : null}
               </>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
                  <FileQuestion className="h-16 w-16 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Could not load preview.p>
+                <p className="text-muted-foreground">Could not load preview.</p>
                 {fileToPreview && 
                     <Button onClick={() => handleDownloadFile(fileToPreview)} className="mt-2">
                         <Download className="mr-2 h-4 w-4" /> Download File
-                    Button>
+                    </Button>
                 }
-              div>
+              </div>
             )}
-          div>
+          </div>
            <DialogFooter className="mt-auto pt-2 border-t">
              {fileToPreview && !isPreviewLoading && (
                 <Button onClick={() => handleDownloadFile(fileToPreview)}>
                     <Download className="mr-2 h-4 w-4" /> Download
-                Button>
+                </Button>
              )}
-            <Button variant="outline" onClick={() => { setIsPreviewOpen(false); setFileToPreview(null); setPreviewContentUrl(null); }}>Close PreviewButton>
-          DialogFooter>
-        DialogContent>
-      Dialog>
+            <Button variant="outline" onClick={() => { setIsPreviewOpen(false); setFileToPreview(null); setPreviewContentUrl(null); }}>Close Preview</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-    div>
+    </div>
   );
 }

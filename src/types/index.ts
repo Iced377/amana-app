@@ -22,6 +22,12 @@ export interface VaultFile {
   specificSharedBeneficiaryIds?: string[]; 
   icon: LucideIcon;
   fileObject?: File; 
+  isPotentialDuplicate?: boolean; // Flag if this file is considered a potential duplicate
+  duplicateInfo?: {            // Information about the duplicate check
+    note: string;               // e.g., "Potential duplicate of 'file.txt' (ID: xyz). Confidence: 0.85"
+    checkedAt: string;          // ISO string timestamp of when the check was performed
+    duplicateOfFileId?: string; // ID of the file it's a duplicate of, if applicable
+  };
 }
 
 export interface Beneficiary {
@@ -138,4 +144,3 @@ export interface InsurancePolicy {
 
   registrationDate: string; // ISO string
 }
-
