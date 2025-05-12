@@ -1,4 +1,3 @@
-
 "use client";
 
 import type React from 'react';
@@ -79,7 +78,7 @@ export default function MyFilesPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null); 
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false); // Corrected initialization
   const [searchTerm, setSearchTerm] = useState('');
   
   const [viewMode, setViewMode] = useState<"list" | "grid">('list');
@@ -207,7 +206,7 @@ export default function MyFilesPage() {
                         ...f,
                         isPotentialDuplicate: true,
                         duplicateInfo: {
-                            ...(f.duplicateInfo || { note: '', checkedAt: new Date().toISOString() }),
+                            ...(f.duplicateInfo || {note:'', checkedAt:''}),
                             note: (f.duplicateInfo?.note ? f.duplicateInfo.note + " | " : "") + `Also potentially duplicated by '${newFile.name}'.`,
                             checkedAt: new Date().toISOString(),
                         }
@@ -926,4 +925,3 @@ export default function MyFilesPage() {
     </div>
   );
 }
-

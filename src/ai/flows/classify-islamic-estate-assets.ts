@@ -18,7 +18,7 @@ const AssetForClassificationSchema = z.object({
   name: z.string().describe('Filename or description of the asset.'),
   type: z.string().optional().describe('File type or asset category (e.g., PDF, image, bank account, property).'),
   fileDataUri: z.string().optional().describe(
-    "The file data as a data URI (if applicable). Format: 'data:<mimetype>;base64,<encoded_data>'."
+    "The file data as a data URI (if applicable). Format: 'data:<mimetype>;base64,<encoded_data>'. If the data URI is malformed or content is unreadable, rely on other provided metadata."
   ),
   manualDescription: z.string().optional().describe('User-provided description of the asset.'),
   size: z.number().optional().describe('File size in bytes, if applicable.'),
@@ -41,7 +41,7 @@ const ClassifiedAssetSchema = z.object({
   extractedValue: z.number().optional().describe('Estimated monetary value of the asset. This could be user-provided (in USD) or AI-extracted.'),
   currency: z.string().optional().describe('Currency of the extracted value (e.g., USD, SAR). If user provided estimatedUSDValue, this will be USD.'),
   reason: z.string().describe('Brief explanation for the classification, considering the Madhhab.'),
-  details: z.string().optional().describe('Any other relevant details extracted or notes about the asset, including discrepancies between user-provided value and document content.'),
+  details: z.string().optional().describe('Any other relevant details extracted or notes about the asset, including discrepancies between user-provided value and document content, or if file content was unusable.'),
 });
 export type ClassifiedAsset = z.infer<typeof ClassifiedAssetSchema>;
 
@@ -94,10 +94,11 @@ Madhhab-Specific Considerations (Examples - you should use your knowledge):
 For each asset in the input array 'assets':
 1. Value Determination:
    - If a 'estimatedUSDValue' is provided by the user for this asset, use that as the 'extractedValue' and set 'currency' to 'USD'.
-   - If 'estimatedUSDValue' is NOT provided, THEN analyze its name, type, manualDescription, and fileDataUri (if provided for content) to extract a monetary value and its currency. If no value is found, omit 'extractedValue' and 'currency'.
+   - If 'estimatedUSDValue' is NOT provided, THEN analyze its name, type, manualDescription, and fileDataUri (if provided for content) to extract a monetary value and its currency.
+   - If fileDataUri is present but seems malformed or its content is unreadable/irrelevant for value extraction, state this in the 'details' and rely on other metadata. If no value is found, omit 'extractedValue' and 'currency'.
 2. Classification: Determine its classification: 'Inheritable', 'Excluded', or 'NeedsReview'.
 3. Reason: Provide a concise 'reason' for your classification, referencing the {{{madhhab}}} Madhhab if specific rules apply.
-4. Details: Add any other 'details' (e.g., "Value extracted from document title", "User provided USD value used.", "Original document mentioned 5000 EUR but user provided 5500 USD."). If 'estimatedUSDValue' was used, mention if this differs significantly from any value found in the content.
+4. Details: Add any other 'details' (e.g., "Value extracted from document title", "User provided USD value used.", "Original document mentioned 5000 EUR but user provided 5500 USD.", "File content was not usable for value extraction."). If 'estimatedUSDValue' was used, mention if this differs significantly from any value found in the content.
 
 Asset List:
 {{#each assets}}
@@ -115,6 +116,7 @@ Return ONLY a JSON object matching the ClassifyIslamicEstateAssetsOutputSchema s
 Ensure 'assetId' and 'assetName' in the output match the input asset's id and name/description.
 If no value can be confidently extracted and no user value was provided, omit 'extractedValue' and 'currency'.
 If an asset clearly states it is a "debt owed by deceased" or "funeral expenses", classify as 'Excluded'.
+If the content of a file (fileDataUri) is unreadable or problematic, note this in the 'details' field for that asset and classify as 'NeedsReview' if other information is insufficient.
 `,
   // Configure safety settings if dealing with potentially sensitive financial/personal data interpretation
   config: {
@@ -135,19 +137,21 @@ const classifyIslamicEstateAssetsFlow = ai.defineFlow(
     if (!input.assets || input.assets.length === 0) {
       return { classifiedAssets: [] };
     }
-    const { output } = await classifyIslamicEstateAssetsPrompt(input);
-    if (!output) {
-      // Handle cases where the prompt might not return a valid output (e.g., safety blocked)
+    const {output} = await classifyIslamicEstateAssetsPrompt(input);
+    
+    if (!output || !output.classifiedAssets) {
+      // Handle cases where the prompt might not return a valid output (e.g., safety blocked, malformed response)
       // Create a 'NeedsReview' entry for each input asset
+      console.warn('AI classification prompt did not return expected output. Marking assets for review.');
       const reviewAssets = input.assets.map(asset => ({
         assetId: asset.id,
         assetName: asset.name,
         classification: 'NeedsReview' as const,
-        reason: "AI analysis could not be completed. Manual review required.",
+        reason: "AI analysis could not be completed or returned an invalid response. Manual review required.",
+        details: asset.fileDataUri ? "Attempted to process file content, but issues encountered." : "No file content provided or processed.",
       }));
       return { classifiedAssets: reviewAssets };
     }
     return output;
   }
 );
-

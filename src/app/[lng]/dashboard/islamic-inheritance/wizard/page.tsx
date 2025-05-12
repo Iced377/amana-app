@@ -20,14 +20,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 
+// Minimal valid Base64 encoded PDF (displays "Hello, World!")
+const MINIMAL_PDF_DATA_URI = 'data:application/pdf;base64,JVBERi0xLjQKJSAxIDAgb2JqPDw+PmVuZG9iajogMiAwIG9iajw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAxIDAgUj4+ZW5kb2JqIDMgMCBvYmo8PC9UeXBlL1BhZ2VzL0NvdW50IDEgMCBSL0tpZHNbNCAwIFIgXS9SZXNvdXJjZXMoPD4pL01lZGlhQm94WzAgMCA2MTIgNzkyXT4+ZW5kb2JqIDQgMCBvYmo8PC9UeXBlL1BhZ2UvUGFyZW50IDMgMCBSL0NvbnRlbnRzIDUgMCBSPj5lbmRvYmogNSAwIG9iajw8L0xlbmd0aCAxNT4+c3RyZWFtCkJUCi9GMSAxMiBUZgo1MCA3MDAgVGQKKFJvbGxpbmcgRGljZSEpJ1RKT0VtQ0JEZW5kc3RyZWFtCmVuZG9iajx4cmVmDQowIDYNCjAwMDAwMDAwMDAgNjU1MzUgZiANCjAwMDAwMDAwMTkgMDAwMDAgbiANCjAwMDAwMDAwNzYgMDAwMDAgbiANCjAwMDAwMDAxNzAgMDAwMDAgbiANCjAwMDAwMDAyODAgMDAwMDAgbiANCjAwMDAwMDAzNjkgMDAwMDAgbiANClRyYWlsZXIKPDwvUm9vdCAyIDAgUi9TaXplIDY+PgpzdGFydHhyZWYKNDExCiUlRU9GCg==';
+
+// Minimal valid Base64 encoded JPEG (1x1 black pixel)
+const MINIMAL_JPEG_DATA_URI = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/4QAiRXhpZgAASUkqAAgAAAABABIBAwABAAAABgASAAAAAAD/7QAsUGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAABAHAANkJUOEggMSw3LjM5NjgzMDczODQ2MSBGMjEwNTk0OEI2OEVFNjQ2QkYwNDY5RkQ4MzJBRDI5AP/bAEMACAYGBwYFCAcHBwkJCAoMFA0MCwsMGRITDxQdGh8eHRocHCAkLicgIiwjHBwoNyksMDE0NDQfJzk9ODI8LjM0Mv/bAEMBCQkJDAsMGA0NGDIhHCEyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMv/AABEIAAEAAQMBEQACEQEDEQH/xAAfAAABBQEBAQEBAQAAAAAAAAAAAQIDBAUGBwgJCgv/xAC1EAACAQMDAgQDBQUEBAAAAX0BAgMABBEFEiExQQYTUWEHInEUMoGRoQgjQrHBFVLR8CQzYnKCCQoWFxgZGiUmJygpKjQ1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4eLj5OXm5+jp6vHy8/T19vf4+fr/xAAfAQADAQEBAQEBAQEBAAAAAAAAAQIDBAUGBwgJCgv/xAC1EQACAQIEBAMEBwUEBAABAncAAQIDEQQFITEGEkFRB2FxEyIygQgUQpGhscEJIzNS8BVictEKFiQ04SXxFxgZGiYnKCkqNTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqCg4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tbe4ubrCw8TFxsfIycrS09TV1tfY2dri4+Tl5ufo6ery8/T19vf4+fr/2gAMAwEAAhEDEQA/APwD/wA//9k=';
+
+
 // MOCK DATA - In a real app, this would be fetched based on the user
 const MOCK_VAULT_FILES: VaultFile[] = [
-    { id: 'vf1', name: 'House Deed.pdf', type: 'document', size: 102400, uploadDate: '2023-01-15T10:00:00Z', dataUri: 'data:application/pdf;base64,JVBERi0xLjQKJ...', aiTags: ['legal', 'property'], icon: FileText, visibility: 'private', estimatedUSDValue: 250000 },
-    { id: 'vf2', name: 'Family Gold Coins.jpg', type: 'image', size: 204800, uploadDate: '2023-03-20T14:30:00Z', dataUri: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ...', aiTags: ['personal', 'valuables'], icon: FileText /* Placeholder, should be ImageIcon */, visibility: 'private', estimatedUSDValue: 5000 }
+    { id: 'vf1', name: 'House Deed.pdf', type: 'document', size: 102400, uploadDate: '2023-01-15T10:00:00Z', dataUri: MINIMAL_PDF_DATA_URI, aiTags: ['legal', 'property'], icon: FileText, visibility: 'private', estimatedUSDValue: 250000 },
+    { id: 'vf2', name: 'Family Gold Coins.jpg', type: 'image', size: 204800, uploadDate: '2023-03-20T14:30:00Z', dataUri: MINIMAL_JPEG_DATA_URI, aiTags: ['personal', 'valuables'], icon: FileText /* Placeholder, should be ImageIcon */, visibility: 'private', estimatedUSDValue: 5000 }
 ];
 const MOCK_REGISTERED_ASSETS: RegisteredAsset[] = [
     { id: 'ra1', userId: 'user123', categoryKey: 'financial', assetDescription: 'Savings Account - Bank ABC', registrationDate: '2023-02-10T09:00:00Z', visibility: 'private', estimatedUSDValue: 15000 },
-    { id: 'ra2', userId: 'user123', categoryKey: 'property_vehicles', assetDescription: 'Apartment in City Center', fileName: 'ApartmentDeed.pdf', fileDataUri: 'data:application/pdf;base64,JVBERi0xLjQKJ...', registrationDate: '2023-04-05T11:00:00Z', visibility: 'private', estimatedUSDValue: 180000 }
+    { id: 'ra2', userId: 'user123', categoryKey: 'property_vehicles', assetDescription: 'Apartment in City Center', fileName: 'ApartmentDeed.pdf', fileDataUri: MINIMAL_PDF_DATA_URI, registrationDate: '2023-04-05T11:00:00Z', visibility: 'private', estimatedUSDValue: 180000 }
 ];
 
 
@@ -55,7 +62,7 @@ export default function IslamicInheritanceWizardPage({ params }: { params: { lng
   useEffect(() => {
     if (profile?.islamicPreferences?.madhhab) {
       setSelectedMadhhab(profile.islamicPreferences.madhhab);
-      if(step === 'madhhab') setStep('scan'); // If madhhab already set, skip first step
+      if(step === 'madhhab' && profile.islamicPreferences.madhhab) setStep('scan'); // If madhhab already set, skip first step
     }
   }, [profile, step]);
 
@@ -132,6 +139,8 @@ export default function IslamicInheritanceWizardPage({ params }: { params: { lng
       toast({ title: t('scanCompleteTitle'), description: t('assetsClassifiedDesc') });
     } catch (error: any) {
       clearInterval(progressInterval);
+      setScanProgress(0); // Reset progress on error
+      console.error("Error during asset scan:", error);
       toast({ title: t('errorText'), description: error.message || t('assetClassificationFailedError'), variant: "destructive" });
     } finally {
       setIsScanning(false);
