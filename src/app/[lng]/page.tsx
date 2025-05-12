@@ -1,3 +1,4 @@
+
 // src/app/[lng]/page.tsx
 "use client"; 
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ const carouselItems = [
   { src: "https://picsum.photos/seed/secureletter/400/300", altKey: "altLetter", hint: "secure message" },
   { src: "https://picsum.photos/seed/protectedfamily/400/300", altKey: "altFamilyPhoto", hint: "protected memories" },
   { src: "https://picsum.photos/seed/privatevideo/400/300", altKey: "altVideoMessage", hint: "private video" },
-  { src: "https://picsum.photos/seed/safedocs/400/300", altKey: "altInsuranceDoc", hint: "safe documents" },
+  // Removed: { src: "https://picsum.photos/seed/safedocs/400/300", altKey: "altInsuranceDoc", hint: "safe documents" },
   { src: "https://picsum.photos/seed/spiritualpeace/400/300", altKey: "altQuranVerse", hint: "spiritual peace" },
 ];
 
@@ -91,12 +92,12 @@ export default function HomePage() {
                 </div>
               </div>
               <Image
-                src="https://picsum.photos/seed/peacefularabic/600/500"
-                alt={t('altLegacyHero')}
+                src="https://picsum.photos/seed/safedocs/600/500" // Changed to car image
+                alt={t('altCarLegacy')} // New alt text
                 width={600}
                 height={500}
                 className="mx-auto aspect-[6/5] overflow-hidden rounded-xl object-cover sm:w-full shadow-xl"
-                data-ai-hint="peaceful arabic"
+                data-ai-hint="car document legacy" // Updated hint
               />
             </div>
           </div>
@@ -111,7 +112,7 @@ export default function HomePage() {
             <p className="max-w-3xl mx-auto text-muted-foreground md:text-xl mb-10">
               {t('landingNarrativeParagraph')}
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4"> {/* Adjusted grid for 4 items */}
               {carouselItems.map((item, index) => (
                 <div key={index} className="aspect-square overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-shadow">
                   <Image
@@ -158,40 +159,42 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* New Image for Faith Section */}
+        <section className="py-12 md:py-16 lg:py-20 bg-background">
+          <div className="container px-4 md:px-6">
+            <Image
+              src="https://picsum.photos/seed/holybookstand/1200/400"
+              alt={t('altHolyBookPlaceholder')}
+              width={1200}
+              height={400}
+              className="w-full h-auto object-cover rounded-lg shadow-xl"
+              data-ai-hint="holy book stand"
+            />
+          </div>
+        </section>
+
         {/* Faith-Based Legacy Planning */}
         <section className="py-16 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
-            <div className="grid gap-8 lg:grid-cols-2 lg:gap-16 items-center">
-              <div className="order-2 lg:order-1">
-                <Image
-                  src="https://picsum.photos/seed/serenelegacy/500/400"
-                  alt={t('altIslamicFaith')}
-                  width={500}
-                  height={400}
-                  className="rounded-xl object-cover shadow-xl"
-                  data-ai-hint="serene guidance peaceful faith"
-                />
-              </div>
-              <div className="space-y-6 order-1 lg:order-2 text-center lg:text-left">
-                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
+            <div className="space-y-6 text-center lg:text-left"> {/* Simplified this section as image is now above */}
+                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl text-center">
                   {t('landingFaithBasedTitle')}
                 </h2>
-                <p className="text-muted-foreground md:text-lg">
+                <p className="text-muted-foreground md:text-lg max-w-3xl mx-auto text-center">
                   {t('landingFaithBasedParagraph')}
                 </p>
-                <div className="flex justify-center lg:justify-start">
+                <div className="flex justify-center">
                     <span className="inline-flex items-center gap-2 rounded-full bg-green-100 dark:bg-green-900/30 px-4 py-2 text-sm font-medium text-green-700 dark:text-green-300">
                         <MoonStar className="h-4 w-4" /> {t('landingFaithBasedBadgeCertified')}
                     </span>
                 </div>
-                 <p className="text-sm text-muted-foreground text-center lg:text-left">
+                 <p className="text-sm text-muted-foreground text-center">
                   {t('landingFaithBasedLanguagePrompt')}{' '}
-                  <Link href={`/${currentLocale === 'en' ? 'ar' : 'en'}${pathname.substring(3)}`} className="text-primary hover:underline">
+                  <Link href={`/${currentLocale === 'en' ? 'ar' : 'en'}${pathname.substring(currentLocale.length +1 )}`} className="text-primary hover:underline">
                     {currentLocale === 'en' ? t('arabic') : t('english')}
                   </Link>
                 </p>
               </div>
-            </div>
           </div>
         </section>
 
@@ -266,91 +269,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-// Add keys to translation files:
-// landingHeroTitle: "Your story deserves to outlive you."
-// landingHeroSubtitle: "Preserve what truly matters. Amana helps you share your memories, instructions, and legacy — securely and in your own time."
-// landingHeroCTAStartFree: "Start Free"
-// landingHeroCTAHowItWorks: "How It Works"
-// landingHeroBadgePrivate: "Private by default. Nothing shared unless you choose."
-// altLegacyHero: "Symbolic image of a legacy being preserved and passed on."
-// landingNarrativeTitle: "We don’t just leave assets. We leave meaning."
-// landingNarrativeParagraph: "A whispered prayer. A recorded goodbye. A deed to your home. A letter for your daughter’s wedding. Amana lets you preserve these things — for the right people, at the right time."
-// altLetter: "A handwritten letter"
-// altFamilyPhoto: "A cherished family photograph"
-// altVideoMessage: "A personal video message being recorded or played"
-// altInsuranceDoc: "An important insurance document"
-// altQuranVerse: "Calligraphy of a Quranic verse about remembrance or legacy"
-// landingHowItWorksTitle: "How Amana Works"
-// landingHowItWorksUploadTitle: "1. Securely Upload"
-// landingHowItWorksUploadDesc: "Add your documents, videos, or voice notes. All stored securely with us."
-// landingHowItWorksTagTitle: "2. Tag & Assign"
-// landingHowItWorksTagDesc: "Choose who receives what, and when. Organize with smart AI-powered tags."
-// landingHowItWorksDecideTitle: "3. Decide Visibility"
-// landingHowItWorksDecideDesc: "Keep private, share now, or set for release only upon your passing."
-// landingHowItWorksDeliverTitle: "4. Let Amana Deliver"
-// landingHowItWorksDeliverDesc: "Through inactivity detection, trusted contact initiation, or your faith-based inheritance flow."
-// landingFaithBasedTitle: "Built for Trust. Certified for Faith."
-// landingFaithBasedParagraph: "Amana’s Islamic Mode was developed in consultation with certified Shariah Advisors, supporting major Islamic schools of thought. It includes inheritance logic (Faraid), Wasiyyah tools, and guidance for ethical digital closure."
-// landingFaithBasedBadgeCertified: "Certified by Shariah Advisors"
-// altIslamicFaith: "Image representing Islamic faith, like a mosque or prayer beads"
-// landingFaithBasedLanguagePrompt: "View this page in"
-// landingDifferentiatorsTitle: "When you're no longer here, your voice still can be."
-// differentiatorPosthumousSharing: "Posthumous sharing via verified death triggers."
-// differentiatorAIEmotion: "AI emotion detection for legacy messages (Premium)."
-// differentiatorLangSupport: "Full Arabic and English support with RTL."
-// differentiatorLegacyCalendar: "Legacy calendar: schedule messages for future key dates (Premium)."
-// differentiatorSmartVault: "Smart vault for family guidance, legal peace, and spiritual clarity."
-// landingStartFreeTitle: "Start building your legacy — it costs nothing to begin."
-// landingStartFreeParagraph: "You can add your first memories, messages, and essential documents today. Upgrade only if you need more space or advanced features. Your privacy is always protected."
-// landingStartFreeCTACreate: "Create My Vault"
-// landingStartFreeCTASample: "View Features" // Changed from Sample Vault to Features page
-// landingFinalCalloutTitle: "Start writing the part of your story they’ll read when you’re gone."
-// landingFinalCalloutCTABegin: "Begin For Free"
-// landingFinalCalloutCTAWhy: "Why Amana?"
-// termsOfService: "Terms of Service"
-// privacyPolicy: "Privacy Policy"
-
-// For Arabic (ar/translation.json)
-// landingHeroTitle: "قصتك تستحق أن تبقى بعدك."
-// landingHeroSubtitle: "احفظ ما هو مهم حقًا. أمانة يساعدك على مشاركة ذكرياتك، تعليماتك، وإرثك - بأمان وفي الوقت الذي تختاره."
-// landingHeroCTAStartFree: "ابدأ مجانًا"
-// landingHeroCTAHowItWorks: "كيف يعمل"
-// landingHeroBadgePrivate: "خاص تلقائيًا. لا شيء يُشارك إلا باختيارك."
-// altLegacyHero: "صورة رمزية لإرث يتم الحفاظ عليه وتمريره."
-// landingNarrativeTitle: "نحن لا نترك أصولًا فقط. نحن نترك معنى."
-// landingNarrativeParagraph: "دعاءٌ يُهمس. وداعٌ مُسجل. صك ملكية منزلك. رسالة لزفاف ابنتك. أمانة يتيح لك الحفاظ على هذه الأشياء - للأشخاص المناسبين، في الوقت المناسب."
-// altLetter: "رسالة مكتوبة بخط اليد"
-// altFamilyPhoto: "صورة عائلية عزيزة"
-// altVideoMessage: "رسالة فيديو شخصية يتم تسجيلها أو تشغيلها"
-// altInsuranceDoc: "وثيقة تأمين هامة"
-// altQuranVerse: "خط لآية قرآنية عن الذكر أو الإرث"
-// landingHowItWorksTitle: "كيف يعمل أمانة"
-// landingHowItWorksUploadTitle: "١. ارفع بأمان"
-// landingHowItWorksUploadDesc: "أضف مستنداتك، مقاطع الفيديو، أو الملاحظات الصوتية. كلها مخزنة بأمان لدينا."
-// landingHowItWorksTagTitle: "٢. علّم وعيّن"
-// landingHowItWorksTagDesc: "اختر من يتلقى ماذا، ومتى. نظم باستخدام علامات ذكية مدعومة بالذكاء الاصطناعي."
-// landingHowItWorksDecideTitle: "٣. قرر الرؤية"
-// landingHowItWorksDecideDesc: "احتفظ بالخصوصية، شارك الآن، أو اضبط للإفراج فقط عند وفاتك."
-// landingHowItWorksDeliverTitle: "٤. دع أمانة يوصل"
-// landingHowItWorksDeliverDesc: "من خلال كشف عدم النشاط، مبادرة الاتصال الموثوق به، أو تدفق الميراث المبني على الإيمان."
-// landingFaithBasedTitle: "مبني على الثقة. معتمد للإيمان."
-// landingFaithBasedParagraph: "تم تطوير وضع أمانة الإسلامي بالتشاور مع مستشارين شرعيين معتمدين، ويدعم المذاهب الإسلامية الرئيسية. يتضمن منطق الميراث (الفرائض)، أدوات الوصية، وإرشادات للإغلاق الرقمي الأخلاقي."
-// landingFaithBasedBadgeCertified: "معتمد من مستشارين شرعيين"
-// altIslamicFaith: "صورة تمثل الإيمان الإسلامي، مثل مسجد أو مسبحة"
-// landingFaithBasedLanguagePrompt: "اعرض هذه الصفحة باللغة"
-// landingDifferentiatorsTitle: "عندما لا تكون هنا، صوتك لا يزال يمكن أن يكون."
-// differentiatorPosthumousSharing: "مشاركة بعد الوفاة عبر مشغلات وفاة مُحققة."
-// differentiatorAIEmotion: "كشف المشاعر بالذكاء الاصطناعي للرسائل المتروكة (بريميوم)."
-// differentiatorLangSupport: "دعم كامل للغتين العربية والإنجليزية مع RTL."
-// differentiatorLegacyCalendar: "تقويم الإرث: جدولة الرسائل لتواريخ رئيسية مستقبلية (بريميوم)."
-// differentiatorSmartVault: "خزنة ذكية للإرشاد الأسري، السلام القانوني، والوضوح الروحي."
-// landingStartFreeTitle: "ابدأ في بناء إرثك - لا يكلف شيئًا للبدء."
-// landingStartFreeParagraph: "يمكنك إضافة ذكرياتك الأولى، رسائلك، ومستنداتك الأساسية اليوم. قم بالترقية فقط إذا كنت بحاجة إلى مساحة أكبر أو ميزات متقدمة. خصوصيتك محمية دائمًا."
-// landingStartFreeCTACreate: "أنشئ خزنتي"
-// landingStartFreeCTASample: "عرض الميزات"
-// landingFinalCalloutTitle: "ابدأ بكتابة الجزء من قصتك الذي سيقرؤونه عندما ترحل."
-// landingFinalCalloutCTABegin: "ابدأ مجانًا"
-// landingFinalCalloutCTAWhy: "لماذا أمانة؟"
-// termsOfService: "شروط الخدمة"
-// privacyPolicy: "سياسة الخصوصية"
