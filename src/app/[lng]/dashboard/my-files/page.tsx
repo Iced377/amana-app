@@ -1,3 +1,4 @@
+
 "use client";
 
 import type React from 'react';
@@ -36,7 +37,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
+import { QuranicVerse } from '@/components/QuranicVerse'; // Added import
 
 // MOCK Beneficiaries - In a real app, this would come from context or be fetched
 const MOCK_BENEFICIARIES: Beneficiary[] = [
@@ -45,6 +46,9 @@ const MOCK_BENEFICIARIES: Beneficiary[] = [
   { id: 'ben3', name: 'Charlie Brown', email: 'charlie@example.com' },
   { id: 'ben4', name: 'Diana Prince', email: 'diana@example.com' },
 ];
+
+const QURAN_VERSE_DEATH = "كُلُّ نَفْسٍۢ ذَآئِقَةُ ٱلْمَوْتِ ۗ وَإِنَّمَا تُوَفَّوْنَ أُجُورَكُمْ يَوْمَ ٱلْقِيَٰمَةِ"; // Al-'Imran 3:185 (part of it)
+const QURAN_VERSE_DEATH_CITATION = "سورة آل عمران: ١٨٥";
 
 
 const getFileIcon = (type: FileType) => {
@@ -78,7 +82,7 @@ export default function MyFilesPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null); 
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false); // Corrected initialization
+  const [isUploading, setIsUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
   const [viewMode, setViewMode] = useState<"list" | "grid">('list');
@@ -467,6 +471,9 @@ export default function MyFilesPage() {
                       <RadioGroupItem value="releaseOnDeath" id="vis-onDeath" />
                       <Label htmlFor="vis-onDeath" className="font-normal">Release Upon Death (To selected beneficiaries)</Label>
                     </div>
+                     {currentFileVisibility === 'releaseOnDeath' && profile?.mode === 'islamic' && (
+                        <QuranicVerse verse={QURAN_VERSE_DEATH} citation={QURAN_VERSE_DEATH_CITATION} className="text-xs my-1 py-1 px-2"/>
+                     )}
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="sharedImmediately" id="vis-specific" />
                       <Label htmlFor="vis-specific" className="font-normal">Share Immediately (With specific beneficiaries)</Label>
@@ -810,6 +817,9 @@ export default function MyFilesPage() {
                       <RadioGroupItem value="releaseOnDeath" id="edit-vis-onDeath" />
                       <Label htmlFor="edit-vis-onDeath" className="font-normal">Release Upon Death</Label>
                     </div>
+                     {tempVisibility === 'releaseOnDeath' && profile?.mode === 'islamic' && (
+                        <QuranicVerse verse={QURAN_VERSE_DEATH} citation={QURAN_VERSE_DEATH_CITATION} className="text-xs my-1 py-1 px-2"/>
+                     )}
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="sharedImmediately" id="edit-vis-specific" />
                       <Label htmlFor="edit-vis-specific" className="font-normal">Share Immediately</Label>

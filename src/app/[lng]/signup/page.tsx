@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { auth, googleProvider } from '@/lib/firebase'; 
 import { signInWithPopup, type UserCredential } from "firebase/auth"; 
 import { AppLogo } from "@/components/AppLogo";
+import { QuranicVerse } from '@/components/QuranicVerse'; // Added import
 
 // Inline SVG for Google Icon
 const GoogleIcon = () => (
@@ -43,10 +44,13 @@ const GoogleIcon = () => (
   </svg>
 );
 
+const QURAN_VERSE_AMANAH = "إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُّوا۟ ٱلْأَمَٰنَٰتِ إِلَىٰٓ أَهْلِهَا"; // An-Nisa 4:58
+const QURAN_VERSE_AMANAH_CITATION = "سورة النساء: ٥٨";
+
 export default function SignupPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const { setProfile, generateEncryptionKey, profile: currentGlobalProfile } = useUserPreferences();
+  const { setProfile, profile: currentGlobalProfile } = useUserPreferences(); // Removed generateEncryptionKey
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -69,17 +73,8 @@ export default function SignupPage() {
         language: currentLocale,
         subscriptionTier: 'free',
         is2FAEnabled: false,
-        encryptionKey: undefined, 
+        // encryptionKey is no longer set here
       };
-
-      // Encryption key is no longer generated/needed on login/signup
-      // const key = generateEncryptionKey();
-      // if (!key) {
-      //   console.error("Failed to generate encryption key on Google signup.");
-      //   toast({ title: "Signup Error", description: "Could not initialize security settings.", variant: "destructive" });
-      //   return;
-      // }
-      // newUserProfile.encryptionKey = key;
       
       console.log("Google Sign-Up Profile being set in SignupPage:", JSON.stringify(newUserProfile, null, 2));
       setProfile(newUserProfile);
@@ -117,24 +112,8 @@ export default function SignupPage() {
       language: currentLocale, 
       subscriptionTier: 'free',
       is2FAEnabled: false,
-      encryptionKey: undefined,
+      // encryptionKey is no longer set here
     };
-
-    // try {
-    //   const key = generateEncryptionKey(); 
-    //   if (!key) {
-    //     console.error("Failed to generate encryption key on signup.");
-    //     toast({ title: "Signup Error", description: "Could not initialize security settings. Please try again.", variant: "destructive" });
-    //     return;
-    //   } else {
-    //     console.log("Encryption key generated and will be associated with profile.");
-    //     newUserProfile.encryptionKey = key;
-    //   }
-    // } catch (error) {
-    //    console.error("Error generating encryption key:", error);
-    //    toast({ title: "Signup Error", description: "An unexpected error occurred with security setup. Please try again.", variant: "destructive" });
-    //    return;
-    // }
 
     console.log("Profile being set in SignupPage:", JSON.stringify(newUserProfile, null, 2));
     setProfile(newUserProfile); 
@@ -146,7 +125,7 @@ export default function SignupPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-secondary/30 p-4">
       <div className="absolute top-4 right-4 rtl:left-4 rtl:right-auto flex items-center gap-2">
-        <LanguageToggle /> {/* Added LanguageToggle */}
+        <LanguageToggle /> 
         <ModeToggle />
       </div>
       <Card className="w-full max-w-md shadow-xl">
@@ -192,6 +171,9 @@ export default function SignupPage() {
                   <Label htmlFor="mode-islamic" className="font-normal">Islamic Mode (e.g., for Wasiyyah, Faraid)</Label>
                 </div>
               </RadioGroup>
+              {selectedMode === 'islamic' && (
+                <QuranicVerse verse={QURAN_VERSE_AMANAH} citation={QURAN_VERSE_AMANAH_CITATION} className="mt-2 text-sm" />
+              )}
               <p className="text-xs text-muted-foreground">
                 Islamic Mode tailors features according to Islamic principles. You can change this later in settings.
               </p>

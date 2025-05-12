@@ -9,6 +9,11 @@ import Image from "next/image";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
 import { usePathname } from "next/navigation";
 import type { LocaleTypes } from "@/locales/settings";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // For the reminder banner
+import { QuranicVerse } from '@/components/QuranicVerse'; // Added import
+
+const QURAN_VERSE_INFAQ = "وَأَنفِقُوا۟ مِن مَّا رَزَقْنَٰكُم مِّن قَبْلِ أَن يَأْتِىَ أَحَدَكُمُ ٱلْمَوْتُ فَيَقُولَ رَبِّ لَوْلَآ أَخَّرْتَنِىٓ إِلَىٰٓ أَجَلٍۢ قَرِيبٍۢ فَأَصَّدَّقَ وَأَكُن مِّنَ ٱلصَّٰلِحِينَ"; // Al-Munafiqun 63:10
+const QURAN_VERSE_INFAQ_CITATION = "سورة المنافقون: ١٠";
 
 export default function DashboardPage() {
   const { profile } = useUserPreferences();
@@ -34,6 +39,17 @@ export default function DashboardPage() {
           </Link>
         </Button>
       </div>
+      
+      {profile?.mode === 'islamic' && (
+        <Alert variant="default" className="border-primary/30 bg-primary/5 dark:bg-primary/10">
+          <Landmark className="h-5 w-5 text-primary" />
+          <AlertTitle className="text-primary">Islamic Legacy Reminder</AlertTitle>
+          <AlertDescription>
+            <QuranicVerse verse={QURAN_VERSE_INFAQ} citation={QURAN_VERSE_INFAQ_CITATION} className="text-sm my-1 py-1 px-2"/>
+            Remember to review your Wasiyyah and ensure your affairs are in order.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-md hover:shadow-lg transition-shadow">

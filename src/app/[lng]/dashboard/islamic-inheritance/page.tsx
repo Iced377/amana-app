@@ -11,7 +11,10 @@ import { useEffect } from "react";
 import Image from "next/image";
 import type { LocaleTypes } from "@/locales/settings"; 
 import { useTranslation } from "@/locales/client";
+import { QuranicVerse } from '@/components/QuranicVerse'; // Added import
 
+const QURAN_VERSE_WASIYYAH = "كُتِبَ عَلَيْكُمْ إِذَا حَضَرَ أَحَدَكُمُ ٱلْمَوْتُ إِن تَرَكَ خَيْرًا ٱلْوَصِيَّةُ لِلْوَٰلِدَيْنِ وَٱلْأَقْرَبِينَ بِٱلْمَعْرُوفِ ۖ حَقًّا عَلَى ٱلْمُتَّقِينَ"; // Al-Baqarah 2:180 (part of it, often cited for Wasiyyah)
+const QURAN_VERSE_WASIYYAH_CITATION = "سورة البقرة: ١٨٠";
 
 export default function IslamicInheritancePage() {
   const { profile, isLoading } = useUserPreferences();
@@ -95,6 +98,7 @@ export default function IslamicInheritancePage() {
             <CardDescription>{t('wasiyyahDesc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+             <QuranicVerse verse={QURAN_VERSE_WASIYYAH} citation={QURAN_VERSE_WASIYYAH_CITATION} />
             <p className="text-sm text-muted-foreground">
               {t('wasiyyahExplanation')}
             </p>

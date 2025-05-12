@@ -1,3 +1,4 @@
+
 "use client";
 
 import type React from 'react';
@@ -17,6 +18,11 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, L
 import { calculateInheritanceShares } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { Landmark, Calculator, Info, Users, BarChart3, FileDown, Save, AlertTriangle } from 'lucide-react';
+import { QuranicVerse } from '@/components/QuranicVerse'; // Added import
+
+const QURAN_VERSE_FARAID_CHILDREN = "يُوصِيكُمُ ٱللَّهُ فِىٓ أَوْلَٰدِكُمْ ۖ لِلذَّكَرِ مِثْلُ حَظِّ ٱلْأُنثَيَيْنِ"; // An-Nisa 4:11 (part of it)
+const QURAN_VERSE_FARAID_CHILDREN_CITATION = "سورة النساء: ١١";
+
 
 const initialFormData: Omit<InheritanceInput, 'userId' | 'madhhab'> = {
   maritalStatus: 'never_married',
@@ -146,6 +152,7 @@ export default function FaraidCalculatorPage({ params }: { params: { lng: Locale
           <Calculator className="h-7 w-7 text-primary" /> {t('faraidCalculatorTitle')}
         </h1>
       </div>
+      <QuranicVerse verse={QURAN_VERSE_FARAID_CHILDREN} citation={QURAN_VERSE_FARAID_CHILDREN_CITATION} />
        <Card className="shadow-md">
         <CardHeader>
             <CardTitle>{t('selectMadhhabTitle')}</CardTitle>
