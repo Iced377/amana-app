@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { ShieldCheck, Lock, Users, UploadCloud, BrainCircuit, Package, BookOpen, MessageSquare, HeartHandshake, CalendarClock, Globe, CheckCircle, Info, MoonStar } from "lucide-react";
+import { ShieldCheck, Lock, Users, UploadCloud, BrainCircuit, Package, BookOpen, MessageSquare, HeartHandshake, CalendarClock, Globe, CheckCircle, Info, MoonStar, MessageCircleHeart } from "lucide-react";
 import Image from "next/image";
 import { ModeToggle } from "@/components/mode-toggle";
 import { usePathname } from 'next/navigation'; 
@@ -24,7 +24,6 @@ const carouselItems = [
   { src: "https://picsum.photos/seed/secureletter/400/300", altKey: "altLetter", hint: "secure message" },
   { src: "https://picsum.photos/seed/protectedfamily/400/300", altKey: "altFamilyPhoto", hint: "protected memories" },
   { src: "https://picsum.photos/seed/privatevideo/400/300", altKey: "altVideoMessage", hint: "private video" },
-  // Removed: { src: "https://picsum.photos/seed/safedocs/400/300", altKey: "altInsuranceDoc", hint: "safe documents" },
   { src: "https://picsum.photos/seed/spiritualpeace/400/300", altKey: "altQuranVerse", hint: "spiritual peace" },
 ];
 
@@ -34,6 +33,7 @@ const differentiators = [
   "differentiatorLangSupport",
   "differentiatorLegacyCalendar",
   "differentiatorSmartVault",
+  "differentiatorSecureComms" // New feature added
 ];
 
 export default function HomePage() {
@@ -92,12 +92,12 @@ export default function HomePage() {
                 </div>
               </div>
               <Image
-                src="https://picsum.photos/seed/safedocs/600/500" // Changed to car image
-                alt={t('altCarLegacy')} // New alt text
+                src="https://picsum.photos/seed/arabiclegacy/600/500"
+                alt={t('altCarLegacy')} 
                 width={600}
                 height={500}
                 className="mx-auto aspect-[6/5] overflow-hidden rounded-xl object-cover sm:w-full shadow-xl"
-                data-ai-hint="car document legacy" // Updated hint
+                data-ai-hint="arabic manuscript calligraphy" 
               />
             </div>
           </div>
@@ -112,7 +112,7 @@ export default function HomePage() {
             <p className="max-w-3xl mx-auto text-muted-foreground md:text-xl mb-10">
               {t('landingNarrativeParagraph')}
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4"> {/* Adjusted grid for 4 items */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
               {carouselItems.map((item, index) => (
                 <div key={index} className="aspect-square overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-shadow">
                   <Image
@@ -176,7 +176,7 @@ export default function HomePage() {
         {/* Faith-Based Legacy Planning */}
         <section className="py-16 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
-            <div className="space-y-6 text-center lg:text-left"> {/* Simplified this section as image is now above */}
+            <div className="space-y-6 text-center lg:text-left"> 
                 <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl text-center">
                   {t('landingFaithBasedTitle')}
                 </h2>
@@ -208,7 +208,7 @@ export default function HomePage() {
               {differentiators.map((key, index) => (
                 <Card key={index} className="p-6 shadow-lg hover:shadow-xl transition-shadow">
                   <div className="flex items-start gap-3">
-                    <CheckCircle className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                     {key === "differentiatorSecureComms" ? <MessageCircleHeart className="h-6 w-6 text-primary mt-1 flex-shrink-0" /> : <CheckCircle className="h-6 w-6 text-primary mt-1 flex-shrink-0" />}
                     <p className="text-muted-foreground">{t(key)}</p>
                   </div>
                 </Card>
