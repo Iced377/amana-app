@@ -1,8 +1,9 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Landmark, BookOpen, Info, Users, Calculator } from "lucide-react"; // Added Calculator icon
+import { Landmark, BookOpen, Info, Users, Calculator, Wand2 } from "lucide-react"; // Added Calculator and Wand2 icons
 import Link from "next/link";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
 import { useRouter, usePathname } from "next/navigation"; 
@@ -40,22 +41,41 @@ export default function IslamicInheritancePage() {
           {t('islamicInheritancePageDesc')}
         </p>
       </div>
+      
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card className="shadow-md bg-primary/5 dark:bg-primary/20 border-primary/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-primary"><Wand2 className="h-6 w-6" /> {t('islamicEstateWizardTitle')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-primary/90 mb-4">
+              {t('islamicEstateWizardDesc')}
+            </p>
+            <Button asChild>
+              <Link href={`/${currentLocale}/dashboard/islamic-inheritance/wizard`}>
+                <Wand2 className="mr-2 rtl:ml-2 h-4 w-4" /> {t('goToIslamicEstateWizardButton')}
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
 
-      <Card className="shadow-md bg-primary/5 dark:bg-primary/20 border-primary/30">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-primary"><Calculator className="h-6 w-6" /> {t('faraidCalculatorIntroTitle')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-primary/90 mb-4">
-            {t('faraidCalculatorIntroDesc')}
-          </p>
-          <Button asChild>
-            <Link href={`/${currentLocale}/dashboard/islamic-inheritance/calculator`}>
-              <Calculator className="mr-2 rtl:ml-2 h-4 w-4" /> {t('goToFaraidCalculatorButton')}
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+        <Card className="shadow-md bg-primary/5 dark:bg-primary/20 border-primary/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-primary"><Calculator className="h-6 w-6" /> {t('faraidCalculatorIntroTitle')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-primary/90 mb-4">
+              {t('faraidCalculatorIntroDesc')}
+            </p>
+            <Button asChild>
+              <Link href={`/${currentLocale}/dashboard/islamic-inheritance/calculator`}>
+                <Calculator className="mr-2 rtl:ml-2 h-4 w-4" /> {t('goToFaraidCalculatorButton')}
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
 
       <Card className="shadow-md bg-amber-50 dark:bg-amber-900/30 border-amber-500">
         <CardHeader>

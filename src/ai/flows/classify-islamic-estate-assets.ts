@@ -1,0 +1,149 @@
+
+'use server';
+/**
+ * @fileOverview AI flow for classifying user assets for Islamic inheritance.
+ *
+ * - classifyIslamicEstateAssets - Classifies assets based on file content/description and selected Madhhab.
+ * - ClassifyIslamicEstateAssetsInput - Input type for the flow.
+ * - ClassifiedAsset - Represents a single classified asset.
+ * - ClassifyIslamicEstateAssetsOutput - Output type for the flow.
+ */
+
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
+import type { Madhhab } from '@/types'; // Assuming Madhhab type is in global types
+
+const AssetForClassificationSchema = z.object({
+  id: z.string().describe('Unique ID of the asset/file.'),
+  name: z.string().describe('Filename or description of the asset.'),
+  type: z.string().optional().describe('File type or asset category (e.g., PDF, image, bank account, property).'),
+  fileDataUri: z.string().optional().describe(
+    "The file data as a data URI (if applicable). Format: 'data:<mimetype>;base64,<encoded_data>'."
+  ),
+  manualDescription: z.string().optional().describe('User-provided description of the asset.'),
+  size: z.number().optional().describe('File size in bytes, if applicable.'),
+});
+export type AssetForClassification = z.infer<typeof AssetForClassificationSchema>;
+
+const ClassifyIslamicEstateAssetsInputSchema = z.object({
+  assets: z.array(AssetForClassificationSchema).describe('An array of assets to classify.'),
+  madhhab: z.enum(['hanafi', 'maliki', 'shafii', 'hanbali', '']).describe('The Islamic school of thought (Madhhab) to apply for classification rules. Empty string if not specified (use general principles).'),
+});
+export type ClassifyIslamicEstateAssetsInput = z.infer<typeof ClassifyIslamicEstateAssetsInputSchema>;
+
+const ClassifiedAssetSchema = z.object({
+  assetId: z.string().describe('The ID of the original asset/file.'),
+  assetName: z.string().describe('Original name/description of the asset.'),
+  classification: z.enum(['Inheritable', 'Excluded', 'NeedsReview']).describe(
+    'Classification: Inheritable (part of the Islamic estate), Excluded (not part of estate, e.g., trust for specific beneficiary, debts owed BY deceased), NeedsReview (requires user/expert review).'
+  ),
+  extractedValue: z.number().optional().describe('Estimated monetary value extracted from the asset, if possible.'),
+  currency: z.string().optional().describe('Currency of the extracted value (e.g., USD, SAR).'),
+  reason: z.string().describe('Brief explanation for the classification, considering the Madhhab.'),
+  details: z.string().optional().describe('Any other relevant details extracted or notes about the asset.'),
+});
+export type ClassifiedAsset = z.infer<typeof ClassifiedAssetSchema>;
+
+const ClassifyIslamicEstateAssetsOutputSchema = z.object({
+  classifiedAssets: z.array(ClassifiedAssetSchema).describe('An array of classified assets.'),
+});
+export type ClassifyIslamicEstateAssetsOutput = z.infer<typeof ClassifyIslamicEstateAssetsOutputSchema>;
+
+
+export async function classifyIslamicEstateAssets(input: ClassifyIslamicEstateAssetsInput): Promise<ClassifyIslamicEstateAssetsOutput> {
+  if (!input.assets || input.assets.length === 0) {
+    return { classifiedAssets: [] };
+  }
+  return classifyIslamicEstateAssetsFlow(input);
+}
+
+const classifyIslamicEstateAssetsPrompt = ai.definePrompt({
+  name: 'classifyIslamicEstateAssetsPrompt',
+  input: { schema: ClassifyIslamicEstateAssetsInputSchema },
+  output: { schema: ClassifyIslamicEstateAssetsOutputSchema },
+  prompt: `You are an AI assistant specialized in Islamic inheritance (Faraid and Wasiyyah) and asset classification according to different Madhahib (schools of thought).
+Your task is to analyze a list of assets provided by a user and classify each asset as 'Inheritable', 'Excluded', or 'NeedsReview' for the purpose of calculating an Islamic estate.
+You must also attempt to extract a monetary value and currency if mentioned in the asset's name, description, or content (if fileDataUri is provided).
+
+The user has selected the '{{{madhhab}}}' Madhhab. Apply its specific rules. If Madhhab is empty or not specified, use general Islamic principles.
+
+General Principles for Classification:
+- Inheritable: Assets owned outright by the deceased at the time of death (e.g., cash, bank balances, solely owned property, personal belongings with monetary value, business equity).
+- Excluded:
+    - Debts owed BY the deceased (these are paid BEFORE inheritance distribution).
+    - Assets held in trust (Amanah) for others.
+    - Funeral expenses.
+    - Specifically designated Wasiyyah (bequest) up to 1/3 of the net estate (after debts/expenses) to non-heirs or charity. This is separate from Faraid. For classification, if an asset IS the Wasiyyah, mark as 'Excluded' (from Faraid calculation, but note it's a Wasiyyah).
+    - Mehr (dower) owed to the wife if not paid.
+    - Certain types of insurance payouts *depending on the policy structure and Madhhab*. Life insurance where beneficiaries are named directly might be Excluded from Faraid. If payout goes to estate, it's Inheritable.
+    - Jointly owned assets: Only the deceased's share is Inheritable. The other owner's share is Excluded. If share is unclear, mark 'NeedsReview'.
+- NeedsReview:
+    - Assets with unclear ownership.
+    - Complex financial instruments (e.g., derivatives, some types of bonds if Riba is involved - generally excluded but complex).
+    - Insurance policies where beneficiary designation vs. estate payout is unclear.
+    - Assets with potential Shariah compliance issues (e.g., investments in Haram businesses) - value might be inheritable but source needs review.
+    - Waqf (Islamic endowment) properties are generally Excluded from Faraid as they are dedicated to charity/specific purpose.
+
+Madhhab-Specific Considerations (Examples - you should use your knowledge):
+- Hanafi: Generally, more emphasis on Asabah (residuaries). Joint property typically divided by determined shares.
+- Maliki: Wasiyyah rules can be flexible. Life insurance may be viewed differently if premiums were from Halal sources and policy is Shariah-compliant.
+- Shafi'i: Stricter on certain financial transactions. Clear distinction for assets acquired before/after marriage for spouses.
+- Hanbali: Similar to Shafi'i but with some differences in handling specific types of property or debts.
+
+For each asset in the input array 'assets':
+1. Analyze its name, type, manualDescription, and fileDataUri (if provided for content).
+2. Determine its classification: 'Inheritable', 'Excluded', or 'NeedsReview'.
+3. If numerical values are present that seem to indicate monetary worth, extract 'extractedValue' and 'currency'.
+4. Provide a concise 'reason' for your classification, referencing the {{{madhhab}}} Madhhab if specific rules apply.
+5. Add any other 'details' (e.g., "Value extracted from document title", "Ownership seems joint").
+
+Asset List:
+{{#each assets}}
+- ID: {{this.id}}
+  Name: {{this.name}}
+  {{#if this.type}}Type: {{this.type}}{{/if}}
+  {{#if this.manualDescription}}Description: {{this.manualDescription}}{{/if}}
+  {{#if this.fileDataUri}}Content: {{media url=this.fileDataUri}} {{else}} (No file content provided) {{/if}}
+  {{#if this.size}}Size: {{this.size}} bytes{{/if}}
+---
+{{/each}}
+
+Return ONLY a JSON object matching the ClassifyIslamicEstateAssetsOutputSchema structure.
+Ensure 'assetId' and 'assetName' in the output match the input asset's id and name/description.
+If no value can be confidently extracted, omit 'extractedValue' and 'currency'.
+If an asset clearly states it is a "debt owed by deceased" or "funeral expenses", classify as 'Excluded'.
+`,
+  // Configure safety settings if dealing with potentially sensitive financial/personal data interpretation
+  config: {
+    safetySettings: [
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+    ],
+  },
+});
+
+const classifyIslamicEstateAssetsFlow = ai.defineFlow(
+  {
+    name: 'classifyIslamicEstateAssetsFlow',
+    inputSchema: ClassifyIslamicEstateAssetsInputSchema,
+    outputSchema: ClassifyIslamicEstateAssetsOutputSchema,
+  },
+  async (input) => {
+    if (!input.assets || input.assets.length === 0) {
+      return { classifiedAssets: [] };
+    }
+    const { output } = await classifyIslamicEstateAssetsPrompt(input);
+    if (!output) {
+      // Handle cases where the prompt might not return a valid output (e.g., safety blocked)
+      // Create a 'NeedsReview' entry for each input asset
+      const reviewAssets = input.assets.map(asset => ({
+        assetId: asset.id,
+        assetName: asset.name,
+        classification: 'NeedsReview' as const,
+        reason: "AI analysis could not be completed. Manual review required.",
+      }));
+      return { classifiedAssets: reviewAssets };
+    }
+    return output;
+  }
+);
