@@ -1,4 +1,3 @@
-
 {
   "dashboardTitle": "لوحة التحكم",
   "myFilesTitle": "ملفاتي",
@@ -67,6 +66,7 @@
   "assetDescriptionLabel": "وصف الأصل",
   "assetDescriptionPlaceholder": "مثال: حساب توفير في بنك XYZ، وثيقة رقم 12345، ألبوم صور عائلية.",
   "attachFileOptionalLabel": "إرفاق ملف (اختياري)",
+  "replaceFileOptionalLabel": "استبدال الملف (اختياري)",
   "selectedFilePreviewAlt": "معاينة الملف المحدد",
   "previewNotAvailableForType": "المعاينة غير متاحة لـ {fileName}.",
   "noBeneficiariesYet": "لم يتم إضافة مستفيدين بعد. يرجى إضافتهم في قسم المستفيدين.",
@@ -76,6 +76,10 @@
   "savingButton": "جاري الحفظ...",
   "assetRegisteredSuccessTitle": "تم تسجيل الأصل",
   "assetRegisteredSuccessDesc": "تم تسجيله بنجاح.",
+  "assetUpdatedSuccessTitle": "تم تحديث الأصل",
+  "assetUpdatedSuccessDesc": "تم تحديثه بنجاح.",
+  "assetDeletedTitle": "تم حذف الأصل",
+  "assetDeletedDesc": "تمت إزالة الأصل.",
   "assetRegistrationFailedError": "فشل تسجيل الأصل. يرجى المحاولة مرة أخرى.",
   "errorText": "خطأ",
   "categoryOrProfileMissingError": "معلومات الفئة أو الملف الشخصي مفقودة.",
@@ -164,7 +168,7 @@
   "endDateLabel": "تاريخ انتهاء الوثيقة",
   "actionsLabel": "الإجراءات",
   "editPolicyButton": "تعديل الوثيقة",
-  "deletePolicyButton": "حذف الوثيقة",
+  "deletePolicyButton": "حذف الأصل",
   "notApplicableShort": "لا ينطبق",
   "addPolicyTitle": "إضافة وثيقة تأمين جديدة",
   "editPolicyTitle": "تعديل وثيقة التأمين",
@@ -477,13 +481,10 @@
   "wizardDisclaimerTitle": "إخلاء مسؤولية المعالج",
   "wizardDisclaimerContent": "يوفر هذا المعالج المدعوم بالذكاء الاصطناعي إرشادات بناءً على مدخلاتك والمذهب المختار. وهو ليس بديلاً عن الاستشارة القانونية أو الدينية المتخصصة. استشر دائمًا عالمًا إسلاميًا مؤهلاً وخبيرًا قانونيًا.",
   "islamicModeRequiredForWizard": "يجب تمكين الوضع الإسلامي في إعداداتك لاستخدام معالج التركة الإسلامية.",
-  "editAssetTitle": "تعديل الأصل",
-  "editAssetDescModal": "قم بتعديل تفاصيل هذا الأصل حسب الحاجة.",
-  "assetNamePlaceholderModal": "مثال: منزل العائلة، حساب التوفير",
-  "currencyPlaceholderModal": "مثال: دولار أمريكي، ريال سعودي، يورو",
-  "reasonForClassificationLabelModal": "سبب التصنيف",
-  "reasonPlaceholderModal": "مثال: مملوك بالكامل للمتوفى، أمانة لـ فلان",
-  "additionalDetailsLabelModal": "تفاصيل إضافية/ملاحظات",
-  "detailsPlaceholderModal": "مثال: الوثيقة تذكر شروطاً محددة، القيمة مقدرة من سعر السوق"
+  "editAssetDialogTitle": "تحرير الأصل:",
+  "editAssetDialogDesc": "قم بتحديث تفاصيل هذا الأصل المسجل.",
+  "detailsTabTitle": "التفاصيل",
+  "auditTrailTabTitle": "سجل التدقيق",
+  "auditTrailPlaceholder": "سيتم عرض معلومات سجل التدقيق من تكامل Openchain هنا، مع عرض تاريخ التغييرات والتحققات لهذا الأصل.",
+  "deleteAssetButton": "حذف الأصل"
 }
-
