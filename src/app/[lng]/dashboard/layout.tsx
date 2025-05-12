@@ -21,7 +21,7 @@ import {
   DollarSign, 
   FolderPlus, 
   Fingerprint, 
-  ShieldAlert as InsuranceIcon, // Added for Insurance Policies
+  ShieldAlert as InsuranceIcon, 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,10 +32,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet'; 
 import { AppLogo } from '@/components/AppLogo';
 import { ModeToggle } from '@/components/mode-toggle';
-import { LanguageToggle } from '@/components/language-toggle'; // Import LanguageToggle
+import { LanguageToggle } from '@/components/language-toggle'; 
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { useTranslation } from '@/locales/client'; 
 import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings';
@@ -50,7 +50,7 @@ export default function DashboardLayout({
   const { profile } = useUserPreferences();
   const pathname = usePathname();
   
-  const resolvedParams = use(params);
+  const resolvedParams = use(params); // Use React.use to unwrap the Promise
   const currentLocale = resolvedParams.lng;
   
   const { t } = useTranslation(currentLocale); 
@@ -60,7 +60,7 @@ export default function DashboardLayout({
     { href: `/${currentLocale}/dashboard`, labelKey: 'dashboardTitle', icon: Home },
     { href: `/${currentLocale}/dashboard/my-files`, labelKey: 'myFilesTitle', icon: FileText },
     { href: `/${currentLocale}/dashboard/register-assets`, labelKey: 'registerAssetsTitle', icon: FolderPlus }, 
-    { href: `/${currentLocale}/dashboard/insurance-policies`, labelKey: 'insurancePoliciesTitle', icon: InsuranceIcon }, // New Nav Item
+    { href: `/${currentLocale}/dashboard/insurance-policies`, labelKey: 'insurancePoliciesTitle', icon: InsuranceIcon }, 
     { href: `/${currentLocale}/dashboard/digital-footprint`, labelKey: 'digitalFootprintTitle', icon: Fingerprint }, 
     { href: `/${currentLocale}/dashboard/beneficiaries`, labelKey: 'beneficiariesTitle', icon: Users },
     { href: `/${currentLocale}/dashboard/shared-upon-death`, labelKey: 'sharedUponDeathTitle', icon: Share2 },
@@ -128,11 +128,13 @@ export default function DashboardLayout({
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col bg-sidebar dark:bg-sidebar-dark">
-              <nav className="grid gap-2 text-lg font-medium">
-                <div className="flex h-16 items-center border-b px-4 mb-4">
-                   <AppLogo />
-                </div>
+            <SheetContent side="left" className="flex flex-col bg-sidebar dark:bg-sidebar-dark p-0">
+              <SheetHeader className="flex h-16 items-center border-b px-4 lg:px-6">
+                <SheetTitle> 
+                  <AppLogo />
+                </SheetTitle>
+              </SheetHeader>
+              <nav className="grid gap-2 text-lg font-medium p-4">
                 {navItems.map((item) => (
                   <Link
                     key={item.labelKey}
@@ -148,7 +150,7 @@ export default function DashboardLayout({
           </Sheet>
           <div className="w-full flex-1">
           </div>
-          <LanguageToggle /> {/* Added LanguageToggle */}
+          <LanguageToggle /> 
           <ModeToggle />
           <Button variant="ghost" size="icon" className="rounded-full">
             <Bell className="h-5 w-5" />
@@ -181,3 +183,4 @@ export default function DashboardLayout({
     </div>
   );
 }
+
