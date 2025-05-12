@@ -28,6 +28,7 @@ export interface VaultFile {
     checkedAt: string;          // ISO string timestamp of when the check was performed
     duplicateOfFileId?: string; // ID of the file it's a duplicate of, if applicable
   };
+  estimatedUSDValue?: number; // Estimated value in USD
 }
 
 export interface Beneficiary {
@@ -97,6 +98,7 @@ export interface RegisteredAsset {
   beneficiaryIds?: string[];
   visibility: FileVisibility;
   registrationDate: string; // ISO string of when the asset was registered
+  estimatedUSDValue?: number; // Estimated value in USD
 }
 
 // Digital Footprint Discovery Types
@@ -116,6 +118,7 @@ export interface DiscoveredAccount {
   linkedFileId?: string; 
   discoveryMethod: DigitalAccountDiscoveryMethod;
   dateAdded: string; // ISO string
+  estimatedUSDValue?: number; // Estimated value in USD
 }
 
 // Insurance Policy Types
@@ -149,6 +152,7 @@ export interface InsurancePolicy {
   specificSharedBeneficiaryIds?: string[]; // For 'sharedImmediately' or 'releaseOnDeath' if specific to this policy
 
   registrationDate: string; // ISO string
+  estimatedUSDValue?: number; // Estimated value in USD
 }
 
 // Islamic Inheritance Calculator Types

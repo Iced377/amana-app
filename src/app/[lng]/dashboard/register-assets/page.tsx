@@ -24,7 +24,7 @@ import type { RegisteredAsset, AssetCategoryKey, Beneficiary, FileVisibility } f
 import { assetCategoryKeys } from '@/types';
 import { handleRegisterAsset } from './actions'; 
 
-import { DollarSign, Home, ShieldAlert as InsuranceIcon, FileText as LegalIcon, Globe, Gem, FolderPlus, Info, UploadCloud, Users as BeneficiariesIcon } from 'lucide-react';
+import { DollarSign, Home, ShieldAlert as InsuranceIcon, FileText as LegalIcon, Globe, Gem, FolderPlus, Info, UploadCloud, Users as BeneficiariesIcon, Eye } from 'lucide-react';
 import Image from 'next/image';
 
 
@@ -52,6 +52,7 @@ const initialAssetFormState = {
   fileDataUri: undefined as string | undefined,
   beneficiaryIds: [] as string[],
   visibility: 'private' as FileVisibility,
+  estimatedUSDValue: undefined as number | undefined,
 };
 
 
@@ -121,7 +122,7 @@ export default function RegisterAssetsPage({ params }: { params: { lng: LocaleTy
       toast({ title: t('errorText'), description: t('assetDescriptionRequiredError'), variant: "destructive" });
       return;
     }
-     if (assetFormData.visibility === 'sharedImmediately' && (!assetFormData.beneficiaryIds || assetFormData.beneficiaryIds.length === 0)) {
+     if ((assetFormData.visibility === 'sharedImmediately' || assetFormData.visibility === 'releaseOnDeath') && (!assetFormData.beneficiaryIds || assetFormData.beneficiaryIds.length === 0)) {
       toast({ title: t('errorText'), description: t('beneficiarySelectionRequiredError'), variant: "destructive" });
       return;
     }
@@ -136,8 +137,9 @@ export default function RegisterAssetsPage({ params }: { params: { lng: LocaleTy
         fileType: selectedFile?.type,
         fileSize: selectedFile?.size,
         fileDataUri: assetFormData.fileDataUri, // Pass data URI for server action to handle
-        beneficiaryIds: assetFormData.visibility === 'sharedImmediately' ? assetFormData.beneficiaryIds : [],
+        beneficiaryIds: (assetFormData.visibility === 'sharedImmediately' || assetFormData.visibility === 'releaseOnDeath') ? assetFormData.beneficiaryIds : [],
         visibility: assetFormData.visibility,
+        estimatedUSDValue: assetFormData.estimatedUSDValue,
       };
       
       // Server action will handle actual file upload to storage and saving metadata to Firestore
@@ -216,6 +218,7 @@ export default function RegisterAssetsPage({ params }: { params: { lng: LocaleTy
                         {assetsInThisCategory.map(asset => (
                           <li key={asset.id} className="text-muted-foreground">
                             {asset.assetDescription} {asset.fileName && `(${asset.fileName})`}
+                            {asset.estimatedUSDValue !== undefined && <span className="text-xs italic"> (Est. Value: ${asset.estimatedUSDValue.toLocaleString()})</span>}
                             {/* TODO: Add Edit/Delete buttons here */}
                           </li>
                         ))}
@@ -237,6 +240,9 @@ export default function RegisterAssetsPage({ params }: { params: { lng: LocaleTy
         if (!isOpen) {
           setIsAssetFormOpen(false);
           setCurrentCategory(null);
+          setAssetFormData(initialAssetFormState); // Reset form when dialog closes
+          setSelectedFile(null);
+          setFilePreview(null);
         }
       }}>
         <DialogContent className="sm:max-w-lg">
@@ -244,74 +250,91 @@ export default function RegisterAssetsPage({ params }: { params: { lng: LocaleTy
             <DialogTitle>{t('registerNewAssetTitle')} {currentCategory && `- ${t(categoryDetails[currentCategory].titleKey)}`}</DialogTitle>
             <DialogDescription>{t('registerNewAssetDesc')}</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="assetDescription">{t('assetDescriptionLabel')}</Label>
-              <Textarea
-                id="assetDescription"
-                value={assetFormData.assetDescription}
-                onChange={(e) => setAssetFormData(prev => ({ ...prev, assetDescription: e.target.value }))}
-                placeholder={t('assetDescriptionPlaceholder')}
-              />
-            </div>
+          <ScrollArea className="max-h-[70vh] pr-6 -mr-6">
+            <div className="grid gap-4 py-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="assetDescription">{t('assetDescriptionLabel')}</Label>
+                <Textarea
+                  id="assetDescription"
+                  value={assetFormData.assetDescription}
+                  onChange={(e) => setAssetFormData(prev => ({ ...prev, assetDescription: e.target.value }))}
+                  placeholder={t('assetDescriptionPlaceholder')}
+                />
+              </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="fileUpload">{t('attachFileOptionalLabel')}</Label>
-              <Input id="fileUpload" type="file" onChange={handleFileChange} />
-              {filePreview && selectedFile?.type.startsWith('image/') && (
-                <div className="mt-2">
-                  <Image src={filePreview} alt={t('selectedFilePreviewAlt')} width={100} height={100} className="rounded-md object-contain max-h-24" data-ai-hint="file preview" />
+              <div className="space-y-1.5">
+                <Label htmlFor="estimatedUSDValueAsset">Estimated USD Value (Optional)</Label>
+                <div className="relative">
+                  <DollarSign className="absolute left-2.5 rtl:right-2.5 rtl:left-auto top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="estimatedUSDValueAsset" 
+                    type="number" 
+                    placeholder="e.g., 1000" 
+                    value={assetFormData.estimatedUSDValue === undefined ? '' : assetFormData.estimatedUSDValue} 
+                    onChange={(e) => setAssetFormData(prev => ({...prev, estimatedUSDValue: e.target.value ? parseFloat(e.target.value) : undefined}))}
+                    className="pl-8 rtl:pr-8 rtl:pl-3"
+                  />
                 </div>
-              )}
-              {selectedFile && !selectedFile.type.startsWith('image/') && (
-                 <p className="text-xs text-muted-foreground mt-1">{t('previewNotAvailableForType', {fileName: selectedFile.name})}</p>
-              )}
-            </div>
+              </div>
 
-            <div className="space-y-2">
-              <Label>{t('visibility')}</Label>
-              <RadioGroup 
-                value={assetFormData.visibility} 
-                onValueChange={(val) => setAssetFormData(prev => ({...prev, visibility: val as FileVisibility}))}
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="private" id="asset-vis-private" />
-                  <Label htmlFor="asset-vis-private" className="font-normal">{t('keepPrivate')}</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="releaseOnDeath" id="asset-vis-onDeath" />
-                  <Label htmlFor="asset-vis-onDeath" className="font-normal">{t('releaseUponDeath')}</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="sharedImmediately" id="asset-vis-specific" />
-                  <Label htmlFor="asset-vis-specific" className="font-normal">{t('shareWithSpecificBeneficiaries')}</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {assetFormData.visibility === 'sharedImmediately' && (
-              <div className="space-y-2 pl-2 border-l-2 ml-2">
-                <Label>{t('selectBeneficiariesToShareWith')}</Label>
-                {availableBeneficiaries.length > 0 ? (
-                  <ScrollArea className="h-32">
-                    {availableBeneficiaries.map(ben => (
-                      <div key={ben.id} className="flex items-center space-x-2 py-1">
-                        <Checkbox
-                          id={`ben-asset-${ben.id}`}
-                          checked={(assetFormData.beneficiaryIds || []).includes(ben.id)}
-                          onCheckedChange={(checked) => handleBeneficiarySelection(ben.id, !!checked)}
-                        />
-                        <Label htmlFor={`ben-asset-${ben.id}`} className="font-normal">{ben.name}</Label>
-                      </div>
-                    ))}
-                  </ScrollArea>
-                ) : (
-                  <p className="text-sm text-muted-foreground">{t('noBeneficiariesYet')}</p>
+              <div className="space-y-1.5">
+                <Label htmlFor="fileUpload">{t('attachFileOptionalLabel')}</Label>
+                <Input id="fileUpload" type="file" onChange={handleFileChange} />
+                {filePreview && selectedFile?.type.startsWith('image/') && (
+                  <div className="mt-2">
+                    <Image src={filePreview} alt={t('selectedFilePreviewAlt')} width={100} height={100} className="rounded-md object-contain max-h-24" data-ai-hint="file preview" />
+                  </div>
+                )}
+                {selectedFile && !selectedFile.type.startsWith('image/') && (
+                  <p className="text-xs text-muted-foreground mt-1">{t('previewNotAvailableForType', {fileName: selectedFile.name})}</p>
                 )}
               </div>
-            )}
-          </div>
-          <DialogFooter>
+
+              <div className="space-y-2">
+                <Label>{t('visibility')}</Label>
+                <RadioGroup 
+                  value={assetFormData.visibility} 
+                  onValueChange={(val) => setAssetFormData(prev => ({...prev, visibility: val as FileVisibility}))}
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="private" id="asset-vis-private" />
+                    <Label htmlFor="asset-vis-private" className="font-normal">{t('keepPrivate')}</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="releaseOnDeath" id="asset-vis-onDeath" />
+                    <Label htmlFor="asset-vis-onDeath" className="font-normal">{t('releaseUponDeathSpecific')}</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="sharedImmediately" id="asset-vis-specific" />
+                    <Label htmlFor="asset-vis-specific" className="font-normal">{t('shareWithSpecificBeneficiaries')}</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {(assetFormData.visibility === 'sharedImmediately' || assetFormData.visibility === 'releaseOnDeath') && (
+                <div className="space-y-2 pl-2 border-l-2 ml-2">
+                  <Label>{t('selectBeneficiariesToShareWith')}</Label>
+                  {availableBeneficiaries.length > 0 ? (
+                    <ScrollArea className="h-32">
+                      {availableBeneficiaries.map(ben => (
+                        <div key={ben.id} className="flex items-center space-x-2 py-1">
+                          <Checkbox
+                            id={`ben-asset-${ben.id}`}
+                            checked={(assetFormData.beneficiaryIds || []).includes(ben.id)}
+                            onCheckedChange={(checked) => handleBeneficiarySelection(ben.id, !!checked)}
+                          />
+                          <Label htmlFor={`ben-asset-${ben.id}`} className="font-normal">{ben.name}</Label>
+                        </div>
+                      ))}
+                    </ScrollArea>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">{t('noBeneficiariesYet')}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+          <DialogFooter className="pt-4 border-t">
             <Button variant="outline" onClick={() => setIsAssetFormOpen(false)} disabled={isSubmitting}>{t('cancelButton')}</Button>
             <Button onClick={handleSubmitAsset} disabled={isSubmitting}>
               {isSubmitting ? t('savingButton') : (selectedFile ? t('saveAssetAndUploadFileButton') : t('saveAssetButton'))}

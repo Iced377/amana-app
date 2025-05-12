@@ -15,19 +15,19 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from '@/hooks/use-toast';
 import { classifyIslamicEstateAssets } from '@/ai/flows/classify-islamic-estate-assets';
 import type { AssetForClassification, ClassifiedAsset } from '@/ai/flows/classify-islamic-estate-assets';
-import { Landmark, Wand2, Info, AlertTriangle, Loader2, Edit3, CheckSquare, RefreshCw } from 'lucide-react';
+import { Landmark, Wand2, Info, AlertTriangle, Loader2, Edit3, CheckSquare, RefreshCw, FileText, DollarSign } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 
 // MOCK DATA - In a real app, this would be fetched based on the user
 const MOCK_VAULT_FILES: VaultFile[] = [
-    // Example: { id: 'vf1', name: 'House Deed.pdf', type: 'document', size: 102400, uploadDate: '2023-01-15T10:00:00Z', dataUri: 'data:application/pdf;base64,JVBERi0xLjQKJ...', aiTags: ['legal', 'property'], icon: FileText, visibility: 'private' },
-    // Example: { id: 'vf2', name: 'Family Gold Coins.jpg', type: 'image', size: 204800, uploadDate: '2023-03-20T14:30:00Z', dataUri: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ...', aiTags: ['personal', 'valuables'], icon: ImageIcon, visibility: 'private' }
+    { id: 'vf1', name: 'House Deed.pdf', type: 'document', size: 102400, uploadDate: '2023-01-15T10:00:00Z', dataUri: 'data:application/pdf;base64,JVBERi0xLjQKJ...', aiTags: ['legal', 'property'], icon: FileText, visibility: 'private', estimatedUSDValue: 250000 },
+    { id: 'vf2', name: 'Family Gold Coins.jpg', type: 'image', size: 204800, uploadDate: '2023-03-20T14:30:00Z', dataUri: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ...', aiTags: ['personal', 'valuables'], icon: FileText /* Placeholder, should be ImageIcon */, visibility: 'private', estimatedUSDValue: 5000 }
 ];
 const MOCK_REGISTERED_ASSETS: RegisteredAsset[] = [
-    // Example: { id: 'ra1', userId: 'user123', categoryKey: 'financial', assetDescription: 'Savings Account - Bank ABC', registrationDate: '2023-02-10T09:00:00Z', visibility: 'private' },
-    // Example: { id: 'ra2', userId: 'user123', categoryKey: 'property_vehicles', assetDescription: 'Apartment in City Center', fileName: 'ApartmentDeed.pdf', fileDataUri: 'data:application/pdf;base64,JVBERi0xLjQKJ...', registrationDate: '2023-04-05T11:00:00Z', visibility: 'private' }
+    { id: 'ra1', userId: 'user123', categoryKey: 'financial', assetDescription: 'Savings Account - Bank ABC', registrationDate: '2023-02-10T09:00:00Z', visibility: 'private', estimatedUSDValue: 15000 },
+    { id: 'ra2', userId: 'user123', categoryKey: 'property_vehicles', assetDescription: 'Apartment in City Center', fileName: 'ApartmentDeed.pdf', fileDataUri: 'data:application/pdf;base64,JVBERi0xLjQKJ...', registrationDate: '2023-04-05T11:00:00Z', visibility: 'private', estimatedUSDValue: 180000 }
 ];
 
 
@@ -85,18 +85,20 @@ export default function IslamicInheritanceWizardPage({ params }: { params: { lng
         id: vf.id,
         name: vf.name,
         type: vf.type,
-        fileDataUri: vf.dataUri, // This is problematic for many files, but required by AI flow spec
+        fileDataUri: vf.dataUri, 
         size: vf.size,
+        estimatedUSDValue: vf.estimatedUSDValue,
       });
     });
     MOCK_REGISTERED_ASSETS.forEach(ra => {
       assetsToClassify.push({
         id: ra.id,
-        name: ra.assetDescription, // Use description as name for registered assets
+        name: ra.assetDescription, 
         type: ra.categoryKey,
-        fileDataUri: ra.fileDataUri, // If registered asset has associated file
+        fileDataUri: ra.fileDataUri, 
         manualDescription: ra.assetDescription,
         size: ra.fileSize,
+        estimatedUSDValue: ra.estimatedUSDValue,
       });
     });
     
@@ -117,8 +119,9 @@ export default function IslamicInheritanceWizardPage({ params }: { params: { lng
     }, 300);
 
     try {
+      // Limiting for demo to avoid large payload for AI & cost. In production, handle batching or larger payloads.
       const result = await classifyIslamicEstateAssets({
-        assets: assetsToClassify.slice(0, 5), // Limiting for demo to avoid large payload for AI
+        assets: assetsToClassify.slice(0, 5), 
         madhhab: selectedMadhhab
       });
       clearInterval(progressInterval);
@@ -284,13 +287,16 @@ export default function IslamicInheritanceWizardPage({ params }: { params: { lng
                                                 </Select>
                                             </TableCell>
                                             <TableCell>
-                                                <Input 
-                                                    type="number" 
-                                                    value={asset.extractedValue ?? ''} 
-                                                    onChange={(e) => handleAssetReviewChange(asset.assetId, 'extractedValue', parseFloat(e.target.value) || undefined)}
-                                                    placeholder={t('valuePlaceholder')}
-                                                    className="w-28"
-                                                />
+                                                <div className="relative">
+                                                    <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                                                    <Input 
+                                                        type="number" 
+                                                        value={asset.extractedValue ?? ''} 
+                                                        onChange={(e) => handleAssetReviewChange(asset.assetId, 'extractedValue', parseFloat(e.target.value) || undefined)}
+                                                        placeholder={t('valuePlaceholder')}
+                                                        className="w-28 pl-6"
+                                                    />
+                                                </div>
                                                 {asset.currency && <span className="text-xs ml-1">{asset.currency}</span>}
                                             </TableCell>
                                             <TableCell className="text-xs">{asset.reason} {asset.details && `(${asset.details})`}</TableCell>
@@ -318,10 +324,10 @@ export default function IslamicInheritanceWizardPage({ params }: { params: { lng
                         <Card>
                             <CardHeader><CardTitle>{t('finalEstateSummaryTitle')}</CardTitle></CardHeader>
                             <CardContent>
-                                <p>{t('totalValueInheritableAssetsLabel')}: {userReviewedAssets.filter(a=>a.classification === 'Inheritable').reduce((sum, a) => sum + (a.extractedValue || 0), 0).toFixed(2)}</p>
-                                <p>{t('debtsAmountLabel')}: {debtsAmount?.toFixed(2) || '0.00'}</p>
-                                <p>{t('wasiyyahAmountLabel')}: {wasiyyahAmount?.toFixed(2) || '0.00'}</p>
-                                <p className="font-semibold mt-2">{t('netEstateForFaraidLabel')}: {netEstateForFaraid?.toFixed(2) || '0.00'}</p>
+                                <p>{t('totalValueInheritableAssetsLabel')}: ${userReviewedAssets.filter(a=>a.classification === 'Inheritable').reduce((sum, a) => sum + (a.extractedValue || 0), 0).toFixed(2)}</p>
+                                <p>{t('debtsAmountLabel')}: ${debtsAmount?.toFixed(2) || '0.00'}</p>
+                                <p>{t('wasiyyahAmountLabel')}: ${wasiyyahAmount?.toFixed(2) || '0.00'}</p>
+                                <p className="font-semibold mt-2">{t('netEstateForFaraidLabel')}: ${netEstateForFaraid?.toFixed(2) || '0.00'}</p>
                             </CardContent>
                         </Card>
                         <div className="flex gap-2">

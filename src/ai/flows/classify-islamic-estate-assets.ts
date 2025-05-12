@@ -22,6 +22,7 @@ const AssetForClassificationSchema = z.object({
   ),
   manualDescription: z.string().optional().describe('User-provided description of the asset.'),
   size: z.number().optional().describe('File size in bytes, if applicable.'),
+  estimatedUSDValue: z.number().optional().describe('User-provided estimated USD value of the asset.'),
 });
 export type AssetForClassification = z.infer<typeof AssetForClassificationSchema>;
 
@@ -37,10 +38,10 @@ const ClassifiedAssetSchema = z.object({
   classification: z.enum(['Inheritable', 'Excluded', 'NeedsReview']).describe(
     'Classification: Inheritable (part of the Islamic estate), Excluded (not part of estate, e.g., trust for specific beneficiary, debts owed BY deceased), NeedsReview (requires user/expert review).'
   ),
-  extractedValue: z.number().optional().describe('Estimated monetary value extracted from the asset, if possible.'),
-  currency: z.string().optional().describe('Currency of the extracted value (e.g., USD, SAR).'),
+  extractedValue: z.number().optional().describe('Estimated monetary value of the asset. This could be user-provided (in USD) or AI-extracted.'),
+  currency: z.string().optional().describe('Currency of the extracted value (e.g., USD, SAR). If user provided estimatedUSDValue, this will be USD.'),
   reason: z.string().describe('Brief explanation for the classification, considering the Madhhab.'),
-  details: z.string().optional().describe('Any other relevant details extracted or notes about the asset.'),
+  details: z.string().optional().describe('Any other relevant details extracted or notes about the asset, including discrepancies between user-provided value and document content.'),
 });
 export type ClassifiedAsset = z.infer<typeof ClassifiedAssetSchema>;
 
@@ -63,7 +64,7 @@ const classifyIslamicEstateAssetsPrompt = ai.definePrompt({
   output: { schema: ClassifyIslamicEstateAssetsOutputSchema },
   prompt: `You are an AI assistant specialized in Islamic inheritance (Faraid and Wasiyyah) and asset classification according to different Madhahib (schools of thought).
 Your task is to analyze a list of assets provided by a user and classify each asset as 'Inheritable', 'Excluded', or 'NeedsReview' for the purpose of calculating an Islamic estate.
-You must also attempt to extract a monetary value and currency if mentioned in the asset's name, description, or content (if fileDataUri is provided).
+You must also determine a monetary value and currency for each asset.
 
 The user has selected the '{{{madhhab}}}' Madhhab. Apply its specific rules. If Madhhab is empty or not specified, use general Islamic principles.
 
@@ -91,17 +92,19 @@ Madhhab-Specific Considerations (Examples - you should use your knowledge):
 - Hanbali: Similar to Shafi'i but with some differences in handling specific types of property or debts.
 
 For each asset in the input array 'assets':
-1. Analyze its name, type, manualDescription, and fileDataUri (if provided for content).
-2. Determine its classification: 'Inheritable', 'Excluded', or 'NeedsReview'.
-3. If numerical values are present that seem to indicate monetary worth, extract 'extractedValue' and 'currency'.
-4. Provide a concise 'reason' for your classification, referencing the {{{madhhab}}} Madhhab if specific rules apply.
-5. Add any other 'details' (e.g., "Value extracted from document title", "Ownership seems joint").
+1. Value Determination:
+   - If a 'estimatedUSDValue' is provided by the user for this asset, use that as the 'extractedValue' and set 'currency' to 'USD'.
+   - If 'estimatedUSDValue' is NOT provided, THEN analyze its name, type, manualDescription, and fileDataUri (if provided for content) to extract a monetary value and its currency. If no value is found, omit 'extractedValue' and 'currency'.
+2. Classification: Determine its classification: 'Inheritable', 'Excluded', or 'NeedsReview'.
+3. Reason: Provide a concise 'reason' for your classification, referencing the {{{madhhab}}} Madhhab if specific rules apply.
+4. Details: Add any other 'details' (e.g., "Value extracted from document title", "User provided USD value used.", "Original document mentioned 5000 EUR but user provided 5500 USD."). If 'estimatedUSDValue' was used, mention if this differs significantly from any value found in the content.
 
 Asset List:
 {{#each assets}}
 - ID: {{this.id}}
   Name: {{this.name}}
   {{#if this.type}}Type: {{this.type}}{{/if}}
+  {{#if this.estimatedUSDValue}}User Estimated USD Value: {{this.estimatedUSDValue}}{{/if}}
   {{#if this.manualDescription}}Description: {{this.manualDescription}}{{/if}}
   {{#if this.fileDataUri}}Content: {{media url=this.fileDataUri}} {{else}} (No file content provided) {{/if}}
   {{#if this.size}}Size: {{this.size}} bytes{{/if}}
@@ -110,7 +113,7 @@ Asset List:
 
 Return ONLY a JSON object matching the ClassifyIslamicEstateAssetsOutputSchema structure.
 Ensure 'assetId' and 'assetName' in the output match the input asset's id and name/description.
-If no value can be confidently extracted, omit 'extractedValue' and 'currency'.
+If no value can be confidently extracted and no user value was provided, omit 'extractedValue' and 'currency'.
 If an asset clearly states it is a "debt owed by deceased" or "funeral expenses", classify as 'Excluded'.
 `,
   // Configure safety settings if dealing with potentially sensitive financial/personal data interpretation
@@ -147,3 +150,4 @@ const classifyIslamicEstateAssetsFlow = ai.defineFlow(
     return output;
   }
 );
+

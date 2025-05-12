@@ -42,7 +42,7 @@ import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { useTranslation } from '@/locales/client';
 import type { LocaleTypes } from '@/locales/settings';
 import type { DiscoveredAccount, DigitalAccountAction, DigitalAccountCategory, VaultFile, Beneficiary, DigitalAccountDiscoveryMethod } from '@/types';
-import { Fingerprint, Mail, Search, CheckSquare, Edit3, Trash2, LinkIcon, PlusCircle, Info, FileText as VaultFileIcon } from 'lucide-react';
+import { Fingerprint, Mail, Search, CheckSquare, Edit3, Trash2, LinkIcon, PlusCircle, Info, FileText as VaultFileIcon, DollarSign } from 'lucide-react';
 
 // Mock data - replace with actual data fetching
 const MOCK_VAULT_FILES: VaultFile[] = [
@@ -63,6 +63,7 @@ const initialAccountFormState: Omit<DiscoveredAccount, 'id' | 'userId' | 'dateAd
   actionOnDeath: 'noAction',
   assignedContactId: undefined,
   linkedFileId: undefined,
+  estimatedUSDValue: undefined,
 };
 
 const commonServicesList: { name: string, category: DigitalAccountCategory }[] = [
@@ -112,6 +113,7 @@ export default function DigitalFootprintPage({ params }: { params: { lng: Locale
         actionOnDeath: editingAccount.actionOnDeath,
         assignedContactId: editingAccount.assignedContactId,
         linkedFileId: editingAccount.linkedFileId,
+        estimatedUSDValue: editingAccount.estimatedUSDValue,
       });
       setIsFormOpen(true);
     } else {
@@ -122,6 +124,11 @@ export default function DigitalFootprintPage({ params }: { params: { lng: Locale
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value === '' ? undefined : parseFloat(value) }));
   };
 
   const handleSelectChange = (name: keyof typeof formData, value: string) => {
@@ -296,9 +303,26 @@ export default function DigitalFootprintPage({ params }: { params: { lng: Locale
               </Select>
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="username">{t('usernameOptionalLabel')}</Label>
-            <Input id="username" name="username" value={formData.username} onChange={handleInputChange} placeholder={t('usernamePlaceholder')} />
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="username">{t('usernameOptionalLabel')}</Label>
+              <Input id="username" name="username" value={formData.username} onChange={handleInputChange} placeholder={t('usernamePlaceholder')} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="estimatedUSDValueAccount">Estimated USD Value (Optional)</Label>
+              <div className="relative">
+                <DollarSign className="absolute left-2.5 rtl:right-2.5 rtl:left-auto top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  id="estimatedUSDValueAccount" 
+                  name="estimatedUSDValue" 
+                  type="number" 
+                  placeholder="e.g., 100" 
+                  value={formData.estimatedUSDValue === undefined ? '' : formData.estimatedUSDValue}
+                  onChange={handleAmountChange}
+                  className="pl-8 rtl:pr-8 rtl:pl-3"
+                />
+              </div>
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="notes">{t('notesForBeneficiaryLabel')}</Label>
@@ -374,6 +398,7 @@ export default function DigitalFootprintPage({ params }: { params: { lng: Locale
                         <h3 className="font-semibold">{acc.serviceName}</h3>
                         <Badge variant="secondary" className="text-xs">{getCategoryTranslation(acc.category)}</Badge>
                         {acc.username && <p className="text-sm text-muted-foreground">Username: {acc.username}</p>}
+                        {acc.estimatedUSDValue !== undefined && <p className="text-sm text-muted-foreground">Est. Value: ${acc.estimatedUSDValue.toLocaleString()}</p>}
                         {acc.notes && <p className="text-sm text-muted-foreground mt-1">Notes: {acc.notes}</p>}
                         <p className="text-sm text-muted-foreground mt-1">Action: {t(acc.actionOnDeath === "noAction" ? "noSpecificAction" : acc.actionOnDeath === "shareLogin" ? "shareLoginDetails" : acc.actionOnDeath === "notifyContact" ? "notifyContactAboutAccount" : "requestAccountDeletion" )}</p>
                         {acc.linkedFileId && <p className="text-sm text-muted-foreground flex items-center gap-1"><LinkIcon className="h-3 w-3"/> Linked File: {availableVaultFiles.find(f=>f.id === acc.linkedFileId)?.name || t('fileNotFound')}</p>}

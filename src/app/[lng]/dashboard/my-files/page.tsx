@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import type { VaultFile, FileType, FileVisibility, Beneficiary } from '@/types';
-import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole, Unlock, Eye, Download, X, Cloud, Info, Lock, Users, ArchiveRestore, Settings2, AlertTriangle, CheckSquare } from 'lucide-react';
+import { UploadCloud, FileText, Image as ImageIcon, Video as VideoIcon, FileQuestion, Trash2, Edit3, Search, GripVertical, List, LockKeyhole, Unlock, Eye, Download, X, Cloud, Info, Lock, Users, ArchiveRestore, Settings2, AlertTriangle, CheckSquare, DollarSign } from 'lucide-react';
 import { performAiTagging, performShariahComplianceCheck, performDuplicateCheck } from './actions';
 import {
   DropdownMenu,
@@ -88,6 +88,8 @@ export default function MyFilesPage() {
 
   const [currentFileVisibility, setCurrentFileVisibility] = useState<FileVisibility>('private');
   const [currentSharedBeneficiaryIds, setCurrentSharedBeneficiaryIds] = useState<string[]>([]);
+  const [currentEstimatedUSDValue, setCurrentEstimatedUSDValue] = useState<number | undefined>(undefined);
+
 
   const [isEditVisibilityDialogOpen, setIsEditVisibilityDialogOpen] = useState(false);
   const [editingVisibilityFile, setEditingVisibilityFile] = useState<VaultFile | null>(null);
@@ -129,8 +131,8 @@ export default function MyFilesPage() {
       return;
     }
     
-    if (currentFileVisibility === 'sharedImmediately' && currentSharedBeneficiaryIds.length === 0) {
-      toast({ title: "No Beneficiaries Selected", description: "Please select at least one beneficiary to share with immediately, or choose a different visibility.", variant: "destructive" });
+    if ((currentFileVisibility === 'sharedImmediately' || currentFileVisibility === 'releaseOnDeath') && currentSharedBeneficiaryIds.length === 0) {
+      toast({ title: "No Beneficiaries Selected", description: "Please select at least one beneficiary to share with, or choose a different visibility.", variant: "destructive" });
       return;
     }
 
@@ -185,7 +187,8 @@ export default function MyFilesPage() {
         shariahCompliance: shariahComplianceResult ? { ...shariahComplianceResult, checkedAt: new Date().toISOString() } : undefined,
         icon: getFileIcon(fileType),
         visibility: currentFileVisibility,
-        specificSharedBeneficiaryIds: currentFileVisibility === 'sharedImmediately' ? [...currentSharedBeneficiaryIds] : currentFileVisibility === 'releaseOnDeath' ? [...currentSharedBeneficiaryIds] : [],
+        specificSharedBeneficiaryIds: (currentFileVisibility === 'sharedImmediately' || currentFileVisibility === 'releaseOnDeath') ? [...currentSharedBeneficiaryIds] : [],
+        estimatedUSDValue: currentEstimatedUSDValue,
         isPotentialDuplicate: duplicateCheckResult?.isDuplicate || false,
         duplicateInfo: duplicateCheckResult?.isDuplicate ? {
             note: `Potential duplicate of '${files.find(f => f.id === duplicateCheckResult.duplicateOfFileId)?.name || 'unknown file'}'. Reason: ${duplicateCheckResult.reason || 'Similar metadata/content'}. Confidence: ${duplicateCheckResult.confidenceScore.toFixed(2)}`,
@@ -226,6 +229,7 @@ export default function MyFilesPage() {
       setPreviewDataUrl(null);
       setCurrentFileVisibility('private');
       setCurrentSharedBeneficiaryIds([]);
+      setCurrentEstimatedUSDValue(undefined);
       if (fileInputRef.current) fileInputRef.current.value = '';
 
 
@@ -366,6 +370,7 @@ export default function MyFilesPage() {
             if (f.id === fileId) {
                 return { ...f, isPotentialDuplicate: false, duplicateInfo: { ...(f.duplicateInfo || {note:'', checkedAt:''}), note: "Manually marked as not a duplicate by user.", duplicateOfFileId: undefined } };
             }
+            // If the other file was also marked as a duplicate of *this* one, clear that reference too.
             if (otherFileId && f.id === otherFileId && f.duplicateInfo?.duplicateOfFileId === fileId) {
                  return { ...f, isPotentialDuplicate: false, duplicateInfo: { ...(f.duplicateInfo || {note:'', checkedAt:''}), note: (f.duplicateInfo?.note || "") + " | Related file marked as not duplicate.", duplicateOfFileId: undefined } };
             }
@@ -393,6 +398,7 @@ export default function MyFilesPage() {
               setPreviewDataUrl(null);
               setCurrentFileVisibility('private');
               setCurrentSharedBeneficiaryIds([]);
+              setCurrentEstimatedUSDValue(undefined);
               if (fileInputRef.current) fileInputRef.current.value = '';
               setIsUploading(false);
               setUploadProgress(0);
@@ -435,6 +441,21 @@ export default function MyFilesPage() {
                      )}
                   </div>
                 )}
+                
+                <div className="space-y-1.5">
+                  <Label htmlFor="estimatedUSDValue">Estimated USD Value (Optional)</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      id="estimatedUSDValue" 
+                      type="number" 
+                      placeholder="e.g., 1000" 
+                      value={currentEstimatedUSDValue === undefined ? '' : currentEstimatedUSDValue} 
+                      onChange={(e) => setCurrentEstimatedUSDValue(e.target.value ? parseFloat(e.target.value) : undefined)}
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
 
                 <div className="space-y-2">
                   <Label>Visibility</Label>
@@ -553,6 +574,7 @@ export default function MyFilesPage() {
                   <TableHead>Name</TableHead>
                   <TableHead>Size</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead>Est. USD Value</TableHead>
                   <TableHead>Visibility</TableHead>
                   <TableHead>AI Tags</TableHead>
                   {userMode === 'islamic' && <TableHead>Shariah</TableHead>}
@@ -579,6 +601,7 @@ export default function MyFilesPage() {
                       </TableCell>
                       <TableCell>{(file.size / (1024 * 1024)).toFixed(2)} MB</TableCell>
                       <TableCell>{new Date(file.uploadDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{file.estimatedUSDValue !== undefined ? `$${file.estimatedUSDValue.toLocaleString()}` : 'N/A'}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                            <visibilityInfo.icon className={`h-4 w-4 ${visibilityInfo.color}`} />
@@ -706,6 +729,7 @@ export default function MyFilesPage() {
                         <h3 className="font-medium truncate text-sm" title={file.name}>{file.name}</h3>
                         <p className="text-xs text-muted-foreground">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
                         <p className="text-xs text-muted-foreground">{new Date(file.uploadDate).toLocaleDateString()}</p>
+                        <p className="text-xs text-muted-foreground">Value: {file.estimatedUSDValue !== undefined ? `$${file.estimatedUSDValue.toLocaleString()}` : 'N/A'}</p>
                         <div className="mt-1 flex items-center gap-1" title={visibilityInfo.text}>
                            <visibilityInfo.icon className={`h-3 w-3 ${visibilityInfo.color}`} />
                            <span className="text-xs">{visibilityInfo.text}</span>

@@ -36,7 +36,7 @@ import { addInsurancePolicy, updateInsurancePolicy, deleteInsurancePolicy } from
 import { format, parseISO, isValid } from 'date-fns';
 import { arSA } from 'date-fns/locale/ar-SA';
 import { enUS } from 'date-fns/locale/en-US';
-import { ShieldAlert, PlusCircle, Edit3, Trash2, CalendarIcon, Search, UploadCloud, Eye, Download, X, FileText as FileIcon, Users, ArchiveRestore, Lock, Settings2, GripVertical, List } from 'lucide-react';
+import { ShieldAlert, PlusCircle, Edit3, Trash2, CalendarIcon, Search, UploadCloud, Eye, Download, X, FileText as FileIcon, Users, ArchiveRestore, Lock, Settings2, GripVertical, List, DollarSign } from 'lucide-react';
 
 // MOCK Beneficiaries - In a real app, this would come from context or be fetched
 const MOCK_BENEFICIARIES: Beneficiary[] = [
@@ -61,6 +61,7 @@ const initialPolicyFormState: Omit<InsurancePolicy, 'id' | 'userId' | 'registrat
   fileSize: undefined,
   visibility: 'private',
   specificSharedBeneficiaryIds: [],
+  estimatedUSDValue: undefined,
 };
 
 const getVisibilityIconAndText = (policy: InsurancePolicy, beneficiaries?: Beneficiary[]) => {
@@ -128,6 +129,7 @@ export default function InsurancePoliciesPage({ params }: { params: { lng: Local
         fileSize: editingPolicy.fileSize,
         visibility: editingPolicy.visibility,
         specificSharedBeneficiaryIds: editingPolicy.specificSharedBeneficiaryIds || [],
+        estimatedUSDValue: editingPolicy.estimatedUSDValue,
       });
       if (editingPolicy.fileDataUri && editingPolicy.fileName && editingPolicy.fileType?.startsWith('image/')) {
         setFilePreview(editingPolicy.fileDataUri);
@@ -148,8 +150,8 @@ export default function InsurancePoliciesPage({ params }: { params: { lng: Local
   };
   
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setFormData(prev => ({ ...prev, insuredAmount: value === '' ? null : parseFloat(value) }));
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value === '' ? null : parseFloat(value) }));
   };
 
   const handleSelectChange = (name: keyof typeof formData, value: string) => {
@@ -338,6 +340,7 @@ export default function InsurancePoliciesPage({ params }: { params: { lng: Local
                   <TableHead>{t('companyNameLabel')}</TableHead>
                   <TableHead>{t('policyNumberLabel')}</TableHead>
                   <TableHead>{t('insuredAmountLabel')}</TableHead>
+                  <TableHead>Est. USD Value</TableHead>
                   <TableHead>{t('endDateLabel')}</TableHead>
                   <TableHead>{t('visibility')}</TableHead>
                   <TableHead className="text-right">{t('actionsLabel')}</TableHead>
@@ -357,6 +360,7 @@ export default function InsurancePoliciesPage({ params }: { params: { lng: Local
                         {policy.insuredAmount?.toLocaleString(lng, { style: 'currency', currency: typeof policy.currency === 'string' && policy.currency !== 'Other' ? policy.currency : 'USD' }) ?? t('notApplicableShort')}
                         {typeof policy.currency === 'string' && policy.currency === 'Other' && policy.insuredAmount && <span className="text-xs"> (Other Currency)</span>}
                         </TableCell>
+                        <TableCell>{policy.estimatedUSDValue !== undefined ? `$${policy.estimatedUSDValue.toLocaleString()}` : t('notApplicableShort')}</TableCell>
                         <TableCell>{policyEndDate && isValid(policyEndDate) ? format(policyEndDate, 'P', {locale: currentLocaleForDate}) : t('notApplicableShort')}</TableCell>
                         <TableCell>
                         <div className="flex items-center gap-1" title={translatedVisText}>
@@ -401,6 +405,7 @@ export default function InsurancePoliciesPage({ params }: { params: { lng: Local
                         </CardHeader>
                         <CardContent className="text-sm space-y-1 flex-grow">
                             <p>{t('insuredAmountLabel')}: {policy.insuredAmount?.toLocaleString(lng, { style: 'currency', currency: typeof policy.currency === 'string' && policy.currency !== 'Other' ? policy.currency : 'USD' }) ?? t('notApplicableShort')}</p>
+                            <p>Est. USD Value: {policy.estimatedUSDValue !== undefined ? `$${policy.estimatedUSDValue.toLocaleString()}` : t('notApplicableShort')}</p>
                             <p>{t('endDateLabel')}: {policyEndDate && isValid(policyEndDate) ? format(policyEndDate, 'P', {locale: currentLocaleForDate}) : t('notApplicableShort')}</p>
                              <div className="flex items-center gap-1" title={translatedVisText}>
                                 <visInfo.icon className={`h-4 w-4 ${visInfo.color}`} />
@@ -461,7 +466,22 @@ export default function InsurancePoliciesPage({ params }: { params: { lng: Local
                             {currencies.map(curr => <SelectItem key={curr} value={curr}>{curr}</SelectItem>)}
                             </SelectContent>
                         </Select>
-                        {formData.currency === 'Other' && <Input name="currency" value={formData.currency} onChange={(e)=>handleSelectChange('currency', e.target.value)} placeholder={t('specifyCurrencyPlaceholder')} className="mt-2"/>}
+                        {formData.currency === 'Other' && <Input name="currencyOther" value={typeof formData.currency === 'string' && !currencies.includes(formData.currency as Currency) ? formData.currency : ''} onChange={(e)=>handleSelectChange('currency', e.target.value)} placeholder={t('specifyCurrencyPlaceholder')} className="mt-2"/>}
+                    </div>
+                    <div>
+                        <Label htmlFor="estimatedUSDValuePolicy">Estimated USD Value (Optional)</Label>
+                        <div className="relative">
+                            <DollarSign className="absolute left-2.5 rtl:right-2.5 rtl:left-auto top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input 
+                                id="estimatedUSDValuePolicy" 
+                                name="estimatedUSDValue" 
+                                type="number" 
+                                placeholder="e.g., 100000" 
+                                value={formData.estimatedUSDValue === undefined ? '' : formData.estimatedUSDValue}
+                                onChange={handleAmountChange}
+                                className="pl-8 rtl:pr-8 rtl:pl-3"
+                            />
+                        </div>
                     </div>
                 </div>
 

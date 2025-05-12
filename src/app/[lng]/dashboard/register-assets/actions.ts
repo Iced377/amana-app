@@ -13,6 +13,7 @@ interface RegisterAssetInput {
   fileDataUri?: string; // Base64 data URI of the file content
   beneficiaryIds?: string[];
   visibility: FileVisibility;
+  estimatedUSDValue?: number;
 }
 
 interface HandleRegisterAssetResult {
@@ -56,6 +57,7 @@ export async function handleRegisterAsset(
   //      beneficiaryIds: input.beneficiaryIds,
   //      visibility: input.visibility,
   //      registrationDate: new Date().toISOString(),
+  //      estimatedUSDValue: input.estimatedUSDValue,
   //    };
   // 4. Save `newAsset` metadata to Firestore.
   //    const docRef = await addDoc(collection(db, "registeredAssets"), newAsset);
@@ -84,6 +86,7 @@ export async function handleRegisterAsset(
     beneficiaryIds: input.beneficiaryIds,
     visibility: input.visibility,
     registrationDate: new Date().toISOString(),
+    estimatedUSDValue: input.estimatedUSDValue,
   };
 
   // Simulate some delay
