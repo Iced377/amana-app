@@ -158,8 +158,8 @@ export default function SettingsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {countryCodes.map(country => (
-                    <SelectItem key={country.code} value={country.code}>
-                      <span className="mr-2">{country.flag}</span>{country.name} ({country.code})
+                    <SelectItem key={country.code + '-' + country.name} value={country.code}>
+                      <span className="mr-2 rtl:ml-2">{country.flag}</span>{country.name} ({country.code})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -168,8 +168,8 @@ export default function SettingsPage() {
             <div className="space-y-1.5">
               <Label htmlFor="phoneNumber">Phone Number</Label>
               <div className="relative">
-                <Phone className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input id="phoneNumber" type="tel" value={userPhoneNumber} onChange={(e) => setUserPhoneNumber(e.target.value)} placeholder="Your phone number" className="pl-8" />
+                <Phone className="absolute left-2.5 rtl:right-2.5 rtl:left-auto top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input id="phoneNumber" type="tel" value={userPhoneNumber} onChange={(e) => setUserPhoneNumber(e.target.value)} placeholder="Your phone number" className="pl-8 rtl:pr-8 rtl:pl-3" />
               </div>
             </div>
           </div>

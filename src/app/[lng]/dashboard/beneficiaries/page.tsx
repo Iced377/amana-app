@@ -113,11 +113,11 @@ export default function BeneficiariesPage() {
               <CardDescription>Add, edit, or remove beneficiaries who will receive your assets.</CardDescription>
             </div>
             <div className="relative w-full md:w-auto md:min-w-[250px]">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 rtl:right-2.5 rtl:left-auto top-2.5 h-4 w-4 text-muted-foreground" />
               <Input 
                 type="search" 
                 placeholder="Search beneficiaries..." 
-                className="pl-8 w-full"
+                className="pl-8 rtl:pr-8 rtl:pl-3 w-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -195,7 +195,7 @@ export default function BeneficiariesPage() {
                         </SelectTrigger>
                         <SelectContent>
                             {countryCodes.map(country => (
-                                <SelectItem key={country.code} value={country.code}>
+                                <SelectItem key={country.code + '-' + country.name} value={country.code}>
                                    <span className="mr-1 rtl:ml-1">{country.flag}</span> {country.name} ({country.code})
                                 </SelectItem>
                             ))}
@@ -205,8 +205,8 @@ export default function BeneficiariesPage() {
                 <div className="col-span-2 space-y-1.5">
                     <Label htmlFor="phoneNumber">Phone Number</Label>
                      <div className="relative">
-                        <Phone className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input id="phoneNumber" name="phoneNumber" type="tel" value={currentBeneficiary.phoneNumber} onChange={handleInputChange} placeholder="Phone number" className="pl-8" />
+                        <Phone className="absolute left-2.5 rtl:right-2.5 rtl:left-auto top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input id="phoneNumber" name="phoneNumber" type="tel" value={currentBeneficiary.phoneNumber} onChange={handleInputChange} placeholder="Phone number" className="pl-8 rtl:pr-8 rtl:pl-3" />
                      </div>
                 </div>
             </div>
