@@ -2,27 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Base variables (default to Conventional Theme) */
 @layer base {
   :root {
-    --background: 0 0% 93.3%; /* Soft Gray - #EEEEEE */
-    --foreground: 220 13% 20%; /* Darker gray for text for better contrast */
+    /* Conventional Light Theme HSL Variables */
+    --background: 216 67% 98%; /* #F7F9FC - Conventional Background */
+    --foreground: 219 28% 14%; /* #1A202C - Conventional Text */
     --card: 0 0% 100%; /* White */
-    --card-foreground: 220 13% 20%;
+    --card-foreground: 219 28% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 20%;
-    --primary: 200 46.1% 35.1%; /* Deep Blue - #306983 */
+    --popover-foreground: 219 28% 14%;
+    --primary: 223 52% 23%; /* #1C2D5A - Conventional Primary (Deep Navy) */
     --primary-foreground: 0 0% 98%; /* White/Light Gray */
     --secondary: 210 40% 96.1%; /* Standard ShadCN Light Gray */
-    --secondary-foreground: 200 46.1% 35.1%; /* Deep Blue */
-    --muted: 210 40% 90.1%; /* Slightly darker muted */
+    --secondary-foreground: 223 52% 23%; /* Conventional Primary for text on secondary */
+    --muted: 210 40% 90.1%;
     --muted-foreground: 210 40% 45.1%;
-    --accent: 195 38.1% 73.9%; /* Light Teal - #A0CED9 */
-    --accent-foreground: 200 46.1% 25%; /* Darker Deep Blue for text on accent */
+    --accent: 171 60% 44%; /* #2EB5A3 - Conventional Accent (Turquoise) */
+    --accent-foreground: 0 0% 100%; /* White text on Turquoise */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 86.7%; /* Slightly darker gray than background - #DDDDDD */
-    --input: 0 0% 86.7%;
-    --ring: 200 46.1% 35.1%; /* Deep Blue */
+    --border: 216 30% 88%; /* Lighter border for conventional */
+    --input: 216 30% 88%;
+    --ring: 223 52% 23%; /* Conventional Primary for ring */
+    
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -30,46 +33,111 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
 
-    /* Sidebar specific theme */
-    --sidebar-background: 0 0% 90%; /* Slightly darker gray for sidebar */
-    --sidebar-foreground: 200 46.1% 35.1%; /* Deep Blue */
-    --sidebar-primary: 200 46.1% 35.1%; /* Deep Blue */
-    --sidebar-primary-foreground: 0 0% 98%; /* White */
-    --sidebar-accent: 195 38.1% 73.9%; /* Light Teal */
-    --sidebar-accent-foreground: 200 46.1% 35.1%; /* Deep Blue */
-    --sidebar-border: 0 0% 80%; /* Darker border for sidebar */
-    --sidebar-ring: 200 46.1% 35.1%; /* Deep Blue */
+    /* Sidebar specific theme - can be generic or themed */
+    --sidebar-background: 216 50% 95%; 
+    --sidebar-foreground: 223 52% 23%; 
+    --sidebar-primary: 223 52% 23%; 
+    --sidebar-primary-foreground: 0 0% 98%; 
+    --sidebar-accent: 171 60% 44%; 
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 216 30% 85%; 
+    --sidebar-ring: 223 52% 23%;
+  }
+
+  html[data-theme="conventional"] {
+    /* Variables are same as :root for conventional light */
+  }
+
+  html[data-theme="islamic"] {
+    /* Islamic Light Theme HSL Variables */
+    --background: 40 80% 96%;    /* #FDF8EE - Islamic Background */
+    --foreground: 210 15% 12%;    /* #1B1F23 - Islamic Text */
+    --card: 0 0% 100%;           /* White */
+    --card-foreground: 210 15% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 15% 12%;
+    --primary: 163 49% 20%;     /* #1B4D3E - Islamic Primary (Deep Emerald) */
+    --primary-foreground: 0 0% 98%; /* White/Light Gray */
+    --secondary: 160 30% 95%;   /* Lighter green/gray for secondary */
+    --secondary-foreground: 163 49% 20%; /* Islamic Primary for text on secondary */
+    --muted: 40 50% 92%;      /* Softer muted for Islamic theme */
+    --muted-foreground: 163 30% 35%;
+    --accent: 45 65% 52%;        /* #D4AF37 - Islamic Accent (Gold) */
+    --accent-foreground: 163 49% 15%; /* Darker Emerald for text on Gold */
+    --border: 40 40% 88%;       /* Softer border for Islamic theme */
+    --input: 40 40% 88%;
+    --ring: 163 49% 20%;        /* Islamic Primary for ring */
+
+    --sidebar-background: 40 60% 93%; 
+    --sidebar-foreground: 163 49% 20%; 
+    --sidebar-primary: 163 49% 20%; 
+    --sidebar-primary-foreground: 0 0% 98%; 
+    --sidebar-accent: 45 65% 52%; 
+    --sidebar-accent-foreground: 163 49% 15%;
+    --sidebar-border: 40 50% 85%; 
+    --sidebar-ring: 163 49% 20%;
   }
 
   .dark {
-    --background: 220 13% 10%; /* Dark background */
-    --foreground: 0 0% 95%; /* Light foreground */
+    /* Conventional Dark Theme HSL Variables */
+    --background: 220 13% 10%; 
+    --foreground: 0 0% 95%; 
     --card: 220 13% 12%;
     --card-foreground: 0 0% 95%;
     --popover: 220 13% 12%;
     --popover-foreground: 0 0% 95%;
-    --primary: 195 38.1% 73.9%; /* Light Teal for dark mode primary */
-    --primary-foreground: 200 46.1% 25%; /* Dark Blue for text on Light Teal */
+    --primary: 171 60% 55%; /* Brighter Turquoise for dark primary */
+    --primary-foreground: 223 50% 15%; /* Dark Navy for text on Turquoise */
     --secondary: 220 13% 20%;
     --secondary-foreground: 0 0% 95%;
     --muted: 220 13% 20%;
     --muted-foreground: 0 0% 60%;
-    --accent: 200 46.1% 35.1%; /* Deep Blue for dark mode accent */
+    --accent: 223 52% 35%; /* Darker Navy for dark accent */
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 220 13% 25%;
     --input: 220 13% 25%;
-    --ring: 195 38.1% 73.9%; /* Light Teal for ring */
+    --ring: 171 60% 55%; /* Brighter Turquoise for ring */
     
-    --sidebar-background: 220 13% 15%; /* Slightly lighter dark sidebar background */
-    --sidebar-foreground: 0 0% 95%; /* Light text */
-    --sidebar-primary: 195 38.1% 73.9%; /* Light Teal */
-    --sidebar-primary-foreground: 200 46.1% 25%; /* Dark Blue */
-    --sidebar-accent: 200 46.1% 45.1%; /* Slightly brighter Deep Blue for dark sidebar accent */
+    --sidebar-background: 220 13% 15%; 
+    --sidebar-foreground: 0 0% 95%; 
+    --sidebar-primary: 171 60% 55%; 
+    --sidebar-primary-foreground: 223 50% 15%;
+    --sidebar-accent: 223 52% 45%; 
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 220 13% 20%;
-    --sidebar-ring: 195 38.1% 73.9%;
+    --sidebar-ring: 171 60% 55%;
+  }
+  
+  .dark html[data-theme="islamic"] {
+    /* Islamic Dark Theme HSL Variables */
+    --background: 163 30% 8%;    /* Dark Emerald/Black */
+    --foreground: 40 60% 90%;     /* Light Gold/Cream */
+    --card: 163 30% 10%;
+    --card-foreground: 40 60% 90%;
+    --popover: 163 30% 10%;
+    --popover-foreground: 40 60% 90%;
+    --primary: 45 65% 62%;        /* Brighter Gold for dark primary */
+    --primary-foreground: 163 50% 15%; /* Dark Emerald for text on Gold */
+    --secondary: 163 30% 15%;   /* Darker green/gray */
+    --secondary-foreground: 40 60% 90%;
+    --muted: 163 30% 15%;
+    --muted-foreground: 40 40% 70%;
+    --accent: 163 49% 30%;     /* Darker Emerald for dark accent */
+    --accent-foreground: 0 0% 98%;
+    --border: 163 30% 20%;
+    --input: 163 30% 20%;
+    --ring: 45 65% 62%;        /* Brighter Gold for ring */
+
+    --sidebar-background: 163 30% 12%; 
+    --sidebar-foreground: 40 60% 90%; 
+    --sidebar-primary: 45 65% 62%; 
+    --sidebar-primary-foreground: 163 50% 15%;
+    --sidebar-accent: 163 49% 40%; 
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 163 30% 18%;
+    --sidebar-ring: 45 65% 62%;
   }
 }
 
@@ -77,8 +145,15 @@
   * {
     @apply border-border;
   }
+  html.font-conventional {
+    font-family: theme('fontFamily.conventional');
+  }
+  html.font-islamic {
+    font-family: theme('fontFamily.islamic');
+  }
   body {
     @apply bg-background text-foreground;
+    /* Font will be inherited from html tag based on .font-conventional or .font-islamic */
   }
 
   /* RTL specific styles */
@@ -97,17 +172,17 @@
   }
    html[dir="rtl"] .pl-8 {
     padding-right: 2rem !important;
-    padding-left: unset !important; /* Or specific padding if needed */
+    padding-left: unset !important; 
   }
   html[dir="rtl"] .pr-8 {
     padding-left: 2rem !important;
     padding-right: unset !important;
   }
-  html[dir="rtl"] .left-2\.5 {
+  html[dir="rtl"] .left-2\\.5 { /* Escaped dot */
     right: 0.625rem !important;
     left: auto !important;
   }
-   html[dir="rtl"] .right-2\.5 {
+   html[dir="rtl"] .right-2\\.5 { /* Escaped dot */
     left: 0.625rem !important;
     right: auto !important;
   }
@@ -127,18 +202,6 @@
     right: 1rem !important;
     left: auto !important;
   }
-
-  /* For dropdowns and other absolutely positioned elements that might need specific side adjustments */
-   html[dir="rtl"] [data-side="left"] {
-    /* For Radix/Shadcn components, they might handle this internally, but good to be aware */
-   }
-   html[dir="rtl"] [data-side="right"] {
-    /* */
-   }
-   html[dir="rtl"] [align="end"] {
-    /* Shadcn dropdowns use align="end" to mean right. In RTL, this should mean left. */
-    /* This might require component-level adjustments or specific classes if not handled by Radix */
-   }
 }
 
 /* Add .dark:bg-sidebar-dark to sidebar elements that need explicit dark mode background */

@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -66,6 +67,11 @@ export default {
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
   		},
+      fontFamily: {
+        conventional: ['Inter', 'var(--font-sans)', 'sans-serif'],
+        islamic: ['Amiri', 'serif'],
+        sans: ['Inter', 'var(--font-sans)', 'sans-serif'] // Ensure Inter is part of sans
+      },
   		keyframes: {
   			'accordion-down': {
   				from: {

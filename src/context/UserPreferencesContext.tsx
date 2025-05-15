@@ -1,3 +1,4 @@
+
 "use client";
 
 import type React from 'react';
@@ -13,8 +14,8 @@ interface UserPreferencesContextType {
   setLanguage: (language: Language) => void;
   isLoading: boolean;
   updateProfileField: (updates: Partial<UserProfile>) => void;
-  generateEncryptionKey: () => string;
-  getEncryptionKey: () => string | null;
+  // generateEncryptionKey: () => string; // Removed as per previous request
+  // getEncryptionKey: () => string | null; // Removed as per previous request
 }
 
 const UserPreferencesContext = createContext<UserPreferencesContextType | undefined>(undefined);
@@ -23,36 +24,45 @@ const defaultProfile: UserProfile = {
   id: '',
   email: null,
   displayName: null,
-  mode: 'conventional',
+  mode: 'conventional', // Default mode
   language: 'en',
   subscriptionTier: 'free',
   is2FAEnabled: false,
-  encryptionKey: undefined, 
+  // encryptionKey: undefined, // Removed
   sadaqahEnabled: false,
   sadaqahPercentage: undefined, 
-  islamicPreferences: { madhhab: ''}, // Default Madhhab
+  islamicPreferences: { madhhab: ''}, 
 };
 
 export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [profile, setProfileState] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const applyThemeAndFont = useCallback((themeMode: UserPreferenceMode) => {
+    if (typeof window !== 'undefined') {
+      document.documentElement.dataset.theme = themeMode;
+      document.documentElement.classList.remove('font-islamic', 'font-conventional');
+      document.documentElement.classList.add(themeMode === 'islamic' ? 'font-islamic' : 'font-conventional');
+    }
+  }, []);
+
   useEffect(() => {
     const storedProfileString = localStorage.getItem('userProfile');
+    let effectiveMode = defaultProfile.mode;
     if (storedProfileString) {
       try {
         const storedProfile = JSON.parse(storedProfileString) as UserProfile;
-        // Ensure new fields have defaults if not in storedProfile
         const mergedProfile = {
           ...defaultProfile,
           ...storedProfile,
           id: storedProfile.id || 'guestUser',
-          islamicPreferences: { // Ensure islamicPreferences and madhhab have defaults
+          islamicPreferences: {
             ...defaultProfile.islamicPreferences,
             ...(storedProfile.islamicPreferences || {}),
           },
         };
         setProfileState(mergedProfile);
+        effectiveMode = mergedProfile.mode;
       } catch (e) {
         console.error("Failed to parse userProfile from localStorage", e);
         setProfileState({...defaultProfile, id: 'guestUser', displayName: 'Guest User'});
@@ -60,27 +70,32 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
     } else {
       setProfileState({...defaultProfile, id: 'guestUser', displayName: 'Guest User'});
     }
+    applyThemeAndFont(effectiveMode);
     setIsLoading(false);
-  }, []);
+  }, [applyThemeAndFont]);
 
   const setProfile = useCallback((newProfile: UserProfile | null) => {
-    setProfileState(newProfile);
+    let effectiveMode = defaultProfile.mode;
     if (newProfile) {
+      effectiveMode = newProfile.mode;
+      setProfileState(newProfile);
       localStorage.setItem('userProfile', JSON.stringify(newProfile));
     } else {
       localStorage.removeItem('userProfile');
-      // When profile is null (e.g., logout), reset to a guest-like default state
       setProfileState({...defaultProfile, id: 'guestUser', displayName: 'Guest User'});
     }
-  }, []);
+    applyThemeAndFont(effectiveMode);
+  }, [applyThemeAndFont]);
   
   const updateProfileField = useCallback((updates: Partial<UserProfile>) => {
     setProfileState(prevProfile => {
       const baseProfile = prevProfile || defaultProfile;
-      // Deep merge for islamicPreferences
       const updatedIslamicPreferences = updates.islamicPreferences 
         ? { ...(baseProfile.islamicPreferences || {}), ...updates.islamicPreferences } 
         : baseProfile.islamicPreferences;
+
+      const oldMode = baseProfile.mode;
+      const newMode = updates.mode || oldMode;
 
       const updatedProfile = { 
         ...baseProfile, 
@@ -89,12 +104,17 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
         id: baseProfile.id || (updates.id || 'guestUser') 
       };
       localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
+      
+      if (newMode !== oldMode || (updates.mode && updates.mode !== baseProfile.mode)) {
+        applyThemeAndFont(newMode);
+      }
       return updatedProfile;
     });
-  }, []);
+  }, [applyThemeAndFont]);
 
   const setMode = useCallback((newMode: UserPreferenceMode) => {
     updateProfileField({ mode: newMode });
+    // applyThemeAndFont is called within updateProfileField if mode changes
   }, [updateProfileField]);
 
   const setLanguage = useCallback((newLanguage: Language) => {
@@ -105,36 +125,19 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
     }
   }, [updateProfileField]);
 
-  const generateEncryptionKey = (): string => {
-    const array = new Uint32Array(8);
-    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
-      window.crypto.getRandomValues(array);
-    } else {
-      for (let i = 0; i < array.length; i++) {
-        array[i] = Math.floor(Math.random() * Math.pow(2,32));
-      }
-      console.warn("Using insecure fallback for crypto.getRandomValues. This should not happen in a browser environment.");
-    }
-    const key = Array.from(array, dec => ('0' + dec.toString(16)).slice(-2)).join('');
-    // console.log("Generated encryption key (demo):", key); // Demo only
-    return key;
-  };
-
-  const getEncryptionKey = (): string | null => {
-    if (profile?.encryptionKey) {
-      return profile.encryptionKey;
-    }
-    console.warn("Encryption key requested but not found in profile.");
-    return null;
-  };
-
+  // Removed encryption key functions as per previous updates
 
   useEffect(() => {
     if (profile?.language && typeof window !== 'undefined') {
       document.documentElement.lang = profile.language;
       document.documentElement.dir = profile.language === 'ar' ? 'rtl' : 'ltr';
     }
-  }, [profile?.language]);
+    // Apply theme on initial load based on profile, if not already handled by the main useEffect
+    if (profile && !isLoading) { // ensure profile is loaded
+        applyThemeAndFont(profile.mode);
+    }
+
+  }, [profile, isLoading, applyThemeAndFont]);
 
 
   if (isLoading) {
@@ -151,8 +154,8 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
       setLanguage,
       isLoading,
       updateProfileField,
-      generateEncryptionKey,
-      getEncryptionKey,
+      // generateEncryptionKey, // Removed
+      // getEncryptionKey, // Removed
     }}>
       {children}
     </UserPreferencesContext.Provider>
