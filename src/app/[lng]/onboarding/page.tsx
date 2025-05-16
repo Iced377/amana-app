@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, use } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { useTranslation } from '@/locales/client';
-import type { LocaleTypes, Madhhab, UserPreferenceMode, Language, UserProfile, VaultDetails } from '@/locales/settings';
+import type { LocaleTypes, Madhhab, UserPreferenceMode, Language, UserProfile } from '@/locales/settings';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { QuranicVerse } from '@/components/QuranicVerse';
 import { countryCodes } from '@/lib/countryCodes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, User, CheckSquare, Landmark, Languages, Shield, Briefcase } from 'lucide-react'; // Added Briefcase
+import { Loader2, User, CheckSquare, Landmark, Languages, Shield, Briefcase } from 'lucide-react';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -31,10 +31,10 @@ const NONE_SELECTED_COUNTRY_VALUE = "_NONE_";
 export default function OnboardingPage({ params }: { params: { lng: LocaleTypes } }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { profile, updateProfileField, isLoading: profileLoading, addUserVault } = useUserPreferences();
+  const { profile, updateProfileField, isLoading: profileLoading } = useUserPreferences();
   const { user: firebaseUser, loading: authLoading } = useAuth();
   
-  const resolvedParams = use(params); // Use React.use to unwrap params
+  const resolvedParams = use(params);
   const defaultInitialLocale = resolvedParams.lng || 'en';
 
   const [currentLocaleForUI, setCurrentLocaleForUI] = useState(profile?.language || defaultInitialLocale);
@@ -43,11 +43,12 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
 
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('language');
 
-  const [displayName, setDisplayName] = useState(profile?.displayName || '');
+  const [displayName, setDisplayName] = useState(profile?.displayName || (firebaseUser?.displayName || ''));
   const [selectedCountry, setSelectedCountry] = useState<string | undefined>(profile?.country);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(profile?.photoURL || null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(profile?.photoURL || firebaseUser?.photoURL || null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
+  // All useEffects MUST be declared before conditional returns.
 
   useEffect(() => {
     if (profile?.language && i18n.language !== profile.language) {
@@ -57,46 +58,62 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
     }
   }, [profile?.language, i18n, defaultInitialLocale]);
 
-
-  useEffect(() => {
-    if (authLoading || profileLoading) {
-      return; 
-    }
-
-    const hasValidAppProfile = profile && profile.id && profile.id !== 'guestUser';
-
-    if (!firebaseUser && !hasValidAppProfile) {
-      router.replace(`/${currentLocaleForUI}/login`);
-    } else if (profile && profile.onboardingCompleted) { 
-      router.replace(`/${currentLocaleForUI}/dashboard`);
-    }
-  }, [authLoading, profileLoading, firebaseUser, profile, router, currentLocaleForUI]);
-
-
   useEffect(() => {
     if (profile) {
-      setDisplayName(profile.displayName || (firebaseUser?.displayName || ''));
-      setSelectedCountry(profile.country || undefined);
-      setPhotoPreview(profile.photoURL || firebaseUser?.photoURL || null);
-      if(profile.language) setCurrentLocaleForUI(profile.language);
-      // If mode or madhhab is already set, potentially skip to next relevant step or profile
+      if (!displayName && (profile.displayName || firebaseUser?.displayName)) {
+        setDisplayName(profile.displayName || firebaseUser?.displayName || '');
+      }
+      if (!selectedCountry && profile.country) {
+        setSelectedCountry(profile.country);
+      }
+      if (!photoPreview && (profile.photoURL || firebaseUser?.photoURL)) {
+        setPhotoPreview(profile.photoURL || firebaseUser?.photoURL || null);
+      }
+      if(profile.language && currentLocaleForUI !== profile.language) {
+        setCurrentLocaleForUI(profile.language);
+      }
+      // Initial step logic based on already set profile fields (if user returns to onboarding)
       if (currentStep === 'language' && profile.language) {
-        setCurrentStep('mode');
-      }
-      if (currentStep === 'mode' && profile.mode) {
-         setCurrentStep('profile');
-      }
-       if (currentStep === 'profile' && profile.displayName) { // Example condition for skipping profile if name exists
-         if (profile.mode === 'islamic' && !profile.islamicPreferences?.madhhab) {
-            setCurrentStep('madhhab');
-         } else if (profile.mode === 'islamic' && profile.islamicPreferences?.madhhab) {
-            // Potentially finish if madhhab also set, or go to next step if one existed
-         }
+        // If language is set, but mode isn't, move to mode. This helps if user partially completed.
+        if (!profile.mode) setCurrentStep('mode');
+        else if (!profile.displayName) setCurrentStep('profile');
+        else if (profile.mode === 'islamic' && !profile.islamicPreferences?.madhhab) setCurrentStep('madhhab');
+
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile, firebaseUser]); // currentStep removed to prevent loop on step change
+  }, [profile, firebaseUser, currentLocaleForUI, displayName, selectedCountry, photoPreview, currentStep]);
 
+
+  // Effect for redirecting if onboarding IS completed
+  useEffect(() => {
+    if (!profileLoading && profile && profile.onboardingCompleted) {
+      router.replace(`/${currentLocaleForUI}/dashboard`);
+    }
+  }, [profileLoading, profile, router, currentLocaleForUI]);
+
+  // Effect for redirecting if NOT authenticated for onboarding
+  const isAuthenticatedForOnboarding = firebaseUser || (profile && profile.id && profile.id !== 'guestUser');
+  useEffect(() => {
+    if (!authLoading && !profileLoading && !isAuthenticatedForOnboarding) {
+      router.replace(`/${currentLocaleForUI}/login`);
+    }
+  }, [authLoading, profileLoading, isAuthenticatedForOnboarding, router, currentLocaleForUI]);
+
+
+  // Conditional returns for loading and authentication checks are NOW AFTER all hook declarations.
+  if (authLoading || profileLoading || !profile) {
+    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> Loading Onboarding...</div>;
+  }
+
+  if (!isAuthenticatedForOnboarding) {
+      return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> Redirecting to login...</div>;
+  }
+
+  // If profile is loaded and onboarding is completed, the useEffect above will handle redirection.
+  // This return is a fallback if redirect hasn't happened yet.
+  if (profile.onboardingCompleted) {
+    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> Finalizing session...</div>;
+  }
 
   const handleNextStep = () => {
     switch (currentStep) {
@@ -116,9 +133,9 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
         break;
       case 'profile':
         updateProfileField({
-            displayName: displayName || undefined, // Save even if empty, can be required later
+            displayName: displayName || undefined,
             country: selectedCountry === NONE_SELECTED_COUNTRY_VALUE ? undefined : selectedCountry,
-            photoURL: photoPreview || undefined // In real app, upload photo and save URL here
+            photoURL: photoPreview || undefined
         });
         if (profile?.mode === 'islamic') {
           setCurrentStep('madhhab');
@@ -155,14 +172,14 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
   };
 
   const handleFinishOnboarding = () => {
-    if (!profile?.displayName) { // Example: Make display name required before finishing
+    if (!profile?.displayName) {
         toast({ title: t("profileInfoMissingTitle"), description: t("displayNameRequiredDesc"), variant: "destructive" });
-        setCurrentStep('profile'); // Go back to profile step
+        setCurrentStep('profile');
         return;
     }
     if (profile?.mode === 'islamic' && !profile?.islamicPreferences?.madhhab) {
         toast({ title: t("madhhabSelectionRequiredTitle"), description: t("madhhabSelectionRequiredDesc"), variant: "destructive"});
-        setCurrentStep('madhhab'); // Go back to madhhab step
+        setCurrentStep('madhhab');
         return;
     }
 
@@ -177,7 +194,6 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
 
   const handleLanguageSelection = (language: Language) => {
     updateProfileField({ language });
-    // Context's useEffect will handle i18n and path change
   };
 
   const handleMadhhabSelection = (madhhab: Madhhab) => {
@@ -191,7 +207,6 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
         setPhotoPreview(dataUrl);
-        // updateProfileField({ photoURL: dataUrl }); // Save preview, actual upload would be more complex
       };
       reader.readAsDataURL(file);
     }
@@ -200,37 +215,13 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
   const handleCountryChange = (value: string) => {
       setSelectedCountry(value === NONE_SELECTED_COUNTRY_VALUE ? undefined : value);
   };
-
-
-  if (authLoading || profileLoading || !profile) { // Check for profile presence too
-    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> Loading Onboarding...</div>;
-  }
   
-  // This effect now handles the redirection after profile state is confirmed.
-  // This was previously in the main body, causing "cannot update during render" errors.
-  useEffect(() => {
-    if (!profileLoading && profile && profile.onboardingCompleted) {
-      router.replace(`/${currentLocaleForUI}/dashboard`);
-    }
-  }, [profileLoading, profile, router, currentLocaleForUI]);
-
-  if (profile.onboardingCompleted) {
-     // This is a fallback in case the useEffect above hasn't redirected yet
-    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> Finalizing session...</div>;
-  }
-  
-  const isAuthenticatedForOnboarding = firebaseUser || (profile && profile.id && profile.id !== 'guestUser');
-  if (!isAuthenticatedForOnboarding) {
-      return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> Redirecting to login...</div>;
-  }
-
-
   const getStepNumber = () => {
     switch(currentStep) {
         case 'language': return 1;
         case 'mode': return 2;
         case 'profile': return 3;
-        case 'madhhab': return 4;
+        case 'madhhab': return profile?.mode === 'islamic' ? 4 : 3; // Madhhab is step 4 only if Islamic mode
         default: return 0;
     }
   };
