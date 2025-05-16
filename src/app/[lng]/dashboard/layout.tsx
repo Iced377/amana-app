@@ -1,7 +1,7 @@
 
 "use client";
 import type React from 'react';
-import { useEffect } from 'react'; // Corrected import
+import { useEffect, use } from 'react'; // Corrected import, added use
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -31,35 +31,45 @@ export default function DashboardLayout({
   const { user: firebaseUser, loading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const currentLocale = params.lng; 
+  const resolvedParams = use(params);
+  const currentLocale = resolvedParams.lng;
   const { t } = useTranslation(currentLocale);
 
   useEffect(() => {
     if (authLoading || profileLoading) {
-      return; 
+      return;
     }
 
     const hasValidAppProfile = profile && profile.id && profile.id !== 'guestUser';
 
     if (!firebaseUser && !hasValidAppProfile) {
-      if (!pathname.includes('/login')) {
+      if (!pathname.includes(`/${currentLocale}/login`)) { // Ensure path check includes locale
         router.replace(`/${currentLocale}/login`);
       }
     } else if (profile && !profile.onboardingCompleted) {
-      if (!pathname.includes('/onboarding')) {
+      if (!pathname.includes(`/${currentLocale}/onboarding`)) { // Ensure path check includes locale
         router.replace(`/${currentLocale}/onboarding`);
       }
     }
   }, [firebaseUser, authLoading, profile, profileLoading, router, currentLocale, pathname]);
 
+
   if (authLoading || profileLoading) {
     return <div className="flex h-screen w-screen items-center justify-center">Loading Dashboard...</div>;
   }
+  
+  const hasValidAppProfileForDisplay = profile && profile.id && profile.id !== 'guestUser';
+  const canStayOnDashboard = (firebaseUser || hasValidAppProfileForDisplay) && profile?.onboardingCompleted;
 
-  const canStayOnDashboard = (firebaseUser || (profile && profile.id && profile.id !== 'guestUser')) && profile?.onboardingCompleted;
   if (!canStayOnDashboard) {
-    return <div className="flex h-screen w-screen items-center justify-center">Finalizing session...</div>;
+     // If conditions to stay aren't met, and we're not already loading,
+     // it implies a redirect is pending or has just occurred.
+     // Showing a generic message is better than flashing content.
+     if (!pathname.includes(`/${currentLocale}/login`) && !pathname.includes(`/${currentLocale}/onboarding`)) {
+        return <div className="flex h-screen w-screen items-center justify-center">Finalizing session...</div>;
+     }
   }
+
 
   const navItems = [
     { href: `/${currentLocale}/dashboard`, labelKey: 'dashboardTitle', icon: Home },
@@ -77,6 +87,7 @@ export default function DashboardLayout({
 
   const getLabel = (key: string) => {
     const translated = t(key);
+    // Fallback logic if translation is missing
     if (translated === key || translated === '') {
         switch (key) {
             case 'dashboardTitle': return 'Dashboard';
@@ -129,11 +140,11 @@ export default function DashboardLayout({
                 size="icon"
                 className="shrink-0 md:hidden"
               >
-                <ShieldCheck className="h-5 w-5" />
+                <ShieldCheck className="h-5 w-5" /> {/* Changed from Menu to ShieldCheck for thematic consistency */}
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col bg-sidebar dark:bg-sidebar-dark p-0">
+            <SheetContent side="left" className="flex flex-col bg-sidebar dark:bg-sidebar-dark p-0"> {/* Ensure sidebar theme */}
               <SheetHeader className="flex h-16 items-center border-b px-4 lg:px-6">
                 <SheetTitle>
                   <AppLogo />
@@ -154,6 +165,17 @@ export default function DashboardLayout({
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
+            {/* Optional: Search bar or other header content */}
+            {/* <form>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search product..."
+                  className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
+                />
+              </div>
+            </form> */}
           </div>
           <LanguageToggle />
           <ModeToggle />
@@ -181,7 +203,7 @@ export default function DashboardLayout({
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-secondary/30 dark:bg-background">
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-secondary/30 dark:bg-background"> {/* Ensure themed background */}
           {children}
         </main>
       </div>
