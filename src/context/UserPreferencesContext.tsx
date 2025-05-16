@@ -3,7 +3,9 @@
 import { useAuth } from '@/hooks/use-auth'; // Assuming a hook for auth state and user data
 import type React from 'react';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import type { UserPreferenceMode, Language, UserProfile, IslamicPreferences } from '@/types';
+import type { UserPreferenceMode, Language, UserProfile, IslamicPreferences, VaultDetails } from '@/types'; // Added VaultDetails
+import { locales, fallbackLng, type LocaleTypes } from '@/locales/settings';
+import { useRouter, usePathname } from 'next/navigation'; // For language redirection
 
 interface UserPreferencesContextType {
   profile: UserProfile | null;
@@ -14,8 +16,10 @@ interface UserPreferencesContextType {
   setLanguage: (language: Language) => void;
   isLoading: boolean;
   savePreferencesToFirebase: (preferences: Partial<UserProfile>) => Promise<void>;
-  updateProfileField: (updates: Partial<UserProfile>) => void; // Added this line
-  generateEncryptionKey?: () => string | null; // Made optional based on previous removal
+  updateProfileField: (updates: Partial<UserProfile>) => void;
+  // generateEncryptionKey?: () => string | null; // Encryption key management seems removed
+  userVaults: VaultDetails[]; // Added userVaults
+  addUserVault: (vault: VaultDetails) => void; // Added addUserVault
 }
 
 const UserPreferencesContext = createContext<UserPreferencesContextType | undefined>(undefined);
@@ -25,19 +29,25 @@ const defaultProfile: UserProfile = {
   email: null,
   displayName: null,
   mode: 'conventional', // Default mode
-  language: 'en',
+  language: fallbackLng,
   subscriptionTier: 'free',
   is2FAEnabled: false,
   // encryptionKey: undefined, // Removed
-  sadaqahEnabled: false, // Example additional preference
-  sadaqahPercentage: undefined, // Example additional preference
-  islamicPreferences: { madhhab: ''}, // Example nested preference
+  sadaqahEnabled: false, 
+  sadaqahPercentage: undefined, 
+  islamicPreferences: { madhhab: ''}, 
+  onboardingCompleted: false, // Default for new users
+  photoURL: undefined,
+  country: undefined,
 };
 
 export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; initialPreferences?: Partial<UserProfile> }> = ({ children, initialPreferences }) => {
   const [profile, setProfileState] = useState<UserProfile | null>(() => ({...defaultProfile, ...initialPreferences}));
-  const [isLoading, setIsLoading] = useState(false); 
+  const [isLoading, setIsLoading] = useState(true); // Start with loading true
   const { user: firebaseUser, loading: authLoading } = useAuth(); 
+  const router = useRouter();
+  const pathname = usePathname();
+  const [userVaults, setUserVaults] = useState<VaultDetails[]>([]);
 
   const applyThemeAndFont = useCallback((themeMode: UserPreferenceMode) => {
     if (typeof window !== 'undefined') {
@@ -47,49 +57,70 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; init
     }
   }, []);
 
-  // Function to simulate reading preferences from Firebase
   const readPreferencesFromFirebase = useCallback(async (userId: string): Promise<UserProfile | null> => {
-    // TODO: Implement actual Firebase read logic (e.g., from 'users' collection)
     console.log(`Simulating reading preferences for user: ${userId} from Firebase`);
-    // Placeholder: Return a mock profile or null
-    return null;
+    // In a real app, fetch from Firestore: db.collection('users').doc(userId).get()
+    // For now, returning null to simulate a new user or let initial profile take precedence
+    return null; 
   }, []);
 
-  // Function to simulate saving preferences to Firebase
   const savePreferencesToFirebase = useCallback(async (preferences: Partial<UserProfile>): Promise<void> => {
-    // TODO: Implement actual Firebase save logic
-    console.log("Simulating saving preferences to Firebase:", preferences);
-    // In a real app, you'd update the user's document in Firestore here
-  }, []);
+    if (!profile?.id || profile.id === 'guestUser') {
+      console.warn("Attempted to save preferences for guest user or user with no ID.");
+      return;
+    }
+    console.log("Simulating saving preferences to Firebase for user:", profile.id, preferences);
+    // In a real app: await db.collection('users').doc(profile.id).set(preferences, { merge: true });
+  }, [profile?.id]);
 
   useEffect(() => {
     const fetchAndSetProfile = async () => {
       setIsLoading(true);
-      let fetchedProfile: UserProfile | null = null;
-
       if (firebaseUser) {
-        // Attempt to read from Firebase if user is logged in
-        fetchedProfile = await readPreferencesFromFirebase(firebaseUser.uid);
-        if (fetchedProfile) {
-          setProfileState({ ...defaultProfile, ...initialPreferences, ...fetchedProfile, id: firebaseUser.uid, email: firebaseUser.email || fetchedProfile.email, displayName: firebaseUser.displayName || fetchedProfile.displayName });
-          applyThemeAndFont(fetchedProfile.mode || defaultProfile.mode);
-        } else {
-           // If no profile in Firebase, maybe it's a new user or fetch failed. Use default.
-           setProfileState({ ...defaultProfile, ...initialPreferences, id: firebaseUser.uid, email: firebaseUser.email, displayName: firebaseUser.displayName });
-           applyThemeAndFont(initialPreferences?.mode || defaultProfile.mode);
+        const fetchedProfile = await readPreferencesFromFirebase(firebaseUser.uid);
+        const initialLang = (pathname.split('/')[1] as Language) || fallbackLng;
+
+        const baseProfileData = {
+          ...defaultProfile,
+          ...initialPreferences,
+          id: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName || fetchedProfile?.displayName || defaultProfile.displayName,
+          language: fetchedProfile?.language || initialLang, // Prioritize fetched, then path, then default
+        };
+        
+        const finalProfile = fetchedProfile 
+          ? { ...baseProfileData, ...fetchedProfile } 
+          : baseProfileData;
+
+        setProfileState(finalProfile);
+        applyThemeAndFont(finalProfile.mode);
+        if (finalProfile.language !== initialLang) {
+            const newPath = pathname.replace(`/${initialLang}`, `/${finalProfile.language}`);
+            if (newPath !== pathname) router.replace(newPath);
         }
+
       } else {
-        // Handle guest user or logged out state - perhaps clear profile or use default guest
-        setProfileState({ ...defaultProfile, ...initialPreferences, id: 'guestUser', displayName: 'Guest User' });
-        applyThemeAndFont(initialPreferences?.mode || defaultProfile.mode);
+        // Guest user
+        const guestLang = (pathname.split('/')[1] as Language) || fallbackLng;
+        const guestProfile: UserProfile = { 
+            ...defaultProfile, 
+            ...initialPreferences, 
+            id: 'guestUser', 
+            displayName: 'Guest User',
+            language: guestLang
+        };
+        setProfileState(guestProfile);
+        applyThemeAndFont(guestProfile.mode);
       }
       setIsLoading(false);
     };
 
-    if (!authLoading) {
+    if (!authLoading) { // Only run if Firebase auth state is resolved
        fetchAndSetProfile();
     }
-  }, [firebaseUser, authLoading, readPreferencesFromFirebase, applyThemeAndFont, initialPreferences]);
+  }, [firebaseUser, authLoading, readPreferencesFromFirebase, applyThemeAndFont, initialPreferences, pathname, router]);
+
 
   const updateProfileField = useCallback(async (updates: Partial<UserProfile>) => {
      setProfileState(prevProfile => {
@@ -100,33 +131,55 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; init
 
        const oldMode = baseProfile.mode;
        const newMode = updates.mode || oldMode;
+       const oldLanguage = baseProfile.language;
+       const newLanguage = updates.language || oldLanguage;
 
-       const updatedProfile = {
+       const updatedProfile: UserProfile = {
          ...baseProfile,
          ...updates,
          islamicPreferences: updatedIslamicPreferences,
-         id: baseProfile.id || (updates.id || 'guestUser')
+         id: baseProfile.id || (updates.id || 'guestUser'),
+         language: newLanguage,
        };
 
        if (newMode !== oldMode && newMode !== undefined) {
          applyThemeAndFont(newMode);
        }
+       
+       if (newLanguage !== oldLanguage && typeof window !== 'undefined') {
+          document.documentElement.lang = newLanguage;
+          document.documentElement.dir = newLanguage === 'ar' ? 'rtl' : 'ltr';
+          const currentPathLocale = pathname.split('/')[1];
+          if(currentPathLocale !== newLanguage) {
+            const newPath = pathname.replace(`/${currentPathLocale}`, `/${newLanguage}`);
+            router.replace(newPath);
+          }
+       }
+
 
        if (updatedProfile.id && updatedProfile.id !== 'guestUser') {
            savePreferencesToFirebase({userId: updatedProfile.id, ...updates}); 
        }
        return updatedProfile;
      });
-  }, [applyThemeAndFont, savePreferencesToFirebase, initialPreferences]);
+  }, [applyThemeAndFont, savePreferencesToFirebase, initialPreferences, pathname, router]);
 
   const setProfile = useCallback((newProfile: UserProfile | null) => {
     if (newProfile) {
        updateProfileField(newProfile); 
     } else {
-       setProfileState({ ...defaultProfile, ...initialPreferences, id: 'guestUser', displayName: 'Guest User' });
-       applyThemeAndFont(initialPreferences?.mode || defaultProfile.mode);
+       const guestLang = (pathname.split('/')[1] as Language) || fallbackLng;
+       const guestProfile: UserProfile = { 
+         ...defaultProfile, 
+         ...initialPreferences, 
+         id: 'guestUser', 
+         displayName: 'Guest User',
+         language: guestLang
+       };
+       setProfileState(guestProfile);
+       applyThemeAndFont(guestProfile.mode);
     }
-  }, [updateProfileField, applyThemeAndFont, initialPreferences]);
+  }, [updateProfileField, applyThemeAndFont, initialPreferences, pathname]);
 
    const setMode = useCallback((newMode: UserPreferenceMode) => {
      updateProfileField({ mode: newMode });
@@ -144,10 +197,21 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; init
     if(profile?.mode && typeof window !== 'undefined'){
         applyThemeAndFont(profile.mode);
     }
-  }, [profile, applyThemeAndFont]); 
+  }, [profile?.language, profile?.mode, applyThemeAndFont]); 
 
-  if (authLoading || isLoading) {
-     return null; 
+  const addUserVault = useCallback((vault: VaultDetails) => {
+    setUserVaults(prevVaults => [...prevVaults, vault]);
+    // TODO: Persist to Firestore for the current user
+    if (profile?.id && profile.id !== 'guestUser') {
+        console.log(`Simulating saving vault "${vault.name}" for user ${profile.id} to Firestore.`);
+        // Example: db.collection('users').doc(profile.id).collection('vaults').add(vault);
+    }
+  }, [profile?.id]);
+
+
+  // Initial check for authLoading to prevent premature rendering of children
+  if (authLoading) {
+     return null; // Or a global loading spinner
   }
 
   return (
@@ -158,10 +222,11 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; init
       setMode,
       language: profile?.language || initialPreferences?.language || defaultProfile.language, 
       setLanguage,
-      isLoading,
+      isLoading: isLoading || authLoading, // Combine loading states
       savePreferencesToFirebase, 
       updateProfileField,
-      // generateEncryptionKey // Removed as per previous change
+      userVaults,
+      addUserVault
     }}>
       {children}
     </UserPreferencesContext.Provider>

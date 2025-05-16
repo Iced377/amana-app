@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from 'lucide-react';
 
 export type FileType = 'document' | 'image' | 'video' | 'other';
@@ -61,10 +62,13 @@ export interface UserProfile {
   subscriptionTier: SubscriptionTier;
   subscriptionEndDate?: string; 
   is2FAEnabled: boolean;
-  encryptionKey?: string; 
+  // encryptionKey?: string; // Removed as per previous changes
   sadaqahEnabled?: boolean; 
   sadaqahPercentage?: 1 | 5 | 10; 
   islamicPreferences?: IslamicPreferences;
+  onboardingCompleted?: boolean; // Added for onboarding flow
+  photoURL?: string; // Optional photo URL
+  country?: string; // Optional country
 }
 
 export interface ActiveSession {
@@ -210,4 +214,10 @@ export interface InheritanceCalculationOutput {
   calculationNotes?: string; // General notes, e.g. "Residue distributed via Radd"
   unassignedResidue?: number; // Percentage if any
   errors?: string[]; // Errors in calculation or input
+}
+
+// Onboarding types
+export interface VaultDetails {
+  name: string;
+  description?: string;
 }

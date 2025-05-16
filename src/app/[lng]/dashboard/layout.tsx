@@ -3,9 +3,9 @@
 // Marking as client component because it uses hooks like useUserPreferences and useTranslation
 
 import type React from 'react';
-import { use } from 'react'; // Import React.use
+import { use, useEffect } from 'react'; // Import React.use and useEffect
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation'; // Added useRouter
 import {
   Home,
   FileText,
@@ -39,6 +39,7 @@ import { LanguageToggle } from '@/components/language-toggle';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { useTranslation } from '@/locales/client'; 
 import { fallbackLng, locales, type LocaleTypes } from '@/locales/settings';
+import { useAuth } from '@/hooks/use-auth'; // For checking auth status
 
 export default function DashboardLayout({
   children,
@@ -47,13 +48,35 @@ export default function DashboardLayout({
   children: React.ReactNode;
   params: { lng: LocaleTypes }; 
 }) {
-  const { profile } = useUserPreferences();
+  const { profile, isLoading: profileLoading } = useUserPreferences();
+  const { user: firebaseUser, loading: authLoading } = useAuth();
+  const router = useRouter();
   const pathname = usePathname();
   
-  const resolvedParams = use(params); // Use React.use to unwrap the Promise
+  const resolvedParams = use(params);
   const currentLocale = resolvedParams.lng;
   
   const { t } = useTranslation(currentLocale); 
+
+  useEffect(() => {
+    if (!authLoading && !profileLoading) {
+      if (!firebaseUser) {
+        // Not authenticated, redirect to login
+        router.replace(`/${currentLocale}/login`);
+      } else if (profile && !profile.onboardingCompleted) {
+        // Authenticated, but onboarding not complete
+        if (!pathname.includes('/onboarding')) { // Avoid redirect loop if already on onboarding
+            router.replace(`/${currentLocale}/onboarding`);
+        }
+      }
+    }
+  }, [firebaseUser, authLoading, profile, profileLoading, router, currentLocale, pathname]);
+
+  if (authLoading || profileLoading || (!firebaseUser && !pathname.includes('/login')) || (firebaseUser && profile && !profile.onboardingCompleted && !pathname.includes('/onboarding')) ) {
+    // Show a loading state or null while checking auth/onboarding status or redirecting
+    // This helps prevent rendering dashboard content prematurely
+    return <div className="flex h-screen w-screen items-center justify-center">Loading...</div>; // Or a proper loader component
+  }
 
 
   const navItems = [
@@ -72,6 +95,7 @@ export default function DashboardLayout({
   
   const getLabel = (key: string) => {
     const translated = t(key);
+    // Basic fallback if translation is missing
     if (translated === key || translated === '') { 
         switch (key) {
             case 'dashboardTitle': return 'Dashboard';
@@ -85,6 +109,7 @@ export default function DashboardLayout({
             case 'islamicInheritancePlanning': return 'Islamic Inheritance';
             case 'pricingTitle': return 'Pricing';
             case 'infoHelpTitle': return 'Info & Help';
+            case 'logout': return 'Logout';
             default: return key.replace(/([A-Z])/g, ' $1').trim(); 
         }
     }
@@ -183,4 +208,3 @@ export default function DashboardLayout({
     </div>
   );
 }
-

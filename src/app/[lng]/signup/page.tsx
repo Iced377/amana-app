@@ -11,7 +11,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import React, { useState } from 'react';
 import { ModeToggle } from "@/components/mode-toggle";
-import { LanguageToggle } from "@/components/language-toggle"; // Import LanguageToggle
+import { LanguageToggle } from "@/components/language-toggle";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
 import type { UserPreferenceMode, UserProfile } from "@/types";
 import type { LocaleTypes } from "@/locales/settings";
@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { auth, googleProvider } from '@/lib/firebase'; 
 import { signInWithPopup, type UserCredential } from "firebase/auth"; 
 import { AppLogo } from "@/components/AppLogo";
-import { QuranicVerse } from '@/components/QuranicVerse'; // Added import
+import { QuranicVerse } from '@/components/QuranicVerse';
 
 // Inline SVG for Google Icon
 const GoogleIcon = () => (
@@ -44,15 +44,15 @@ const GoogleIcon = () => (
   </svg>
 );
 
-const QURAN_VERSE_AMANAH = "إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُّوا۟ ٱلْأَمَٰنَٰتِ إِلَىٰٓ أَهْلِهَا"; // An-Nisa 4:58
+const QURAN_VERSE_AMANAH = "إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُّوا۟ ٱلْأَمَٰنَٰتِ إِلَىٰٓ أَهْلِهَا";
 const QURAN_VERSE_AMANAH_CITATION = "سورة النساء: ٥٨";
 
 export default function SignupPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const { setProfile, profile: currentGlobalProfile } = useUserPreferences(); // Removed generateEncryptionKey
+  const { setProfile, updateProfileField } = useUserPreferences();
   const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
+  const [emailAddress, setEmailAddress] = useState(''); // Renamed to avoid conflict with email variable from context
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [selectedMode, setSelectedMode] = useState<UserPreferenceMode>('conventional');
@@ -60,28 +60,32 @@ export default function SignupPage() {
 
   const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes;
 
+  const handleSuccessfulSignup = (firebaseUser: any) => {
+    const newUserProfile: UserProfile = {
+      id: firebaseUser.uid, 
+      email: firebaseUser.email,
+      displayName: firebaseUser.displayName || fullName || firebaseUser.email?.split('@')[0] || 'New User', 
+      mode: selectedMode, 
+      language: currentLocale, 
+      subscriptionTier: 'free',
+      is2FAEnabled: false,
+      onboardingCompleted: false, // Key change for onboarding
+      sadaqahEnabled: selectedMode === 'islamic', // Default Sadaqah for Islamic mode users
+      sadaqahPercentage: selectedMode === 'islamic' ? 1 : undefined, // Default 1% for Islamic mode
+    };
+    
+    // setProfile(newUserProfile); // updateProfileField will also call setProfile internally
+    updateProfileField(newUserProfile); // This will save to Firebase (mocked) and update context
+
+    toast({ title: "Account Created!", description: "Welcome to Amana. Redirecting to onboarding...", variant: "default" });
+    router.push(`/${currentLocale}/onboarding`); // Redirect to onboarding
+  };
+
+
   const handleGoogleSignUp = async () => {
     try {
       const result: UserCredential = await signInWithPopup(auth, googleProvider);
-      const firebaseUser = result.user;
-
-      const newUserProfile: UserProfile = {
-        id: firebaseUser.uid, 
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName || fullName, 
-        mode: selectedMode, 
-        language: currentLocale,
-        subscriptionTier: 'free',
-        is2FAEnabled: false,
-        // encryptionKey is no longer set here
-      };
-      
-      console.log("Google Sign-Up Profile being set in SignupPage:", JSON.stringify(newUserProfile, null, 2));
-      setProfile(newUserProfile);
-
-      toast({ title: "Account Created with Google!", description: "Welcome to Amana. Redirecting...", variant: "default" });
-      router.push(`/${currentLocale}/dashboard`);
-
+      handleSuccessfulSignup(result.user);
     } catch (error: any) {
       console.error("Google Sign-Up error:", error);
       toast({ title: "Google Sign-Up Failed", description: error.message || "An unexpected error occurred.", variant: "destructive" });
@@ -100,26 +104,14 @@ export default function SignupPage() {
       return;
     }
     
-    console.log("Signup submitted for:", email, "Mode:", selectedMode);
-    
-    const mockUserId = `user_${Date.now()}`; 
-    
-    const newUserProfile: UserProfile = {
-      id: mockUserId,
-      email: email,
-      displayName: fullName,
-      mode: selectedMode,
-      language: currentLocale, 
-      subscriptionTier: 'free',
-      is2FAEnabled: false,
-      // encryptionKey is no longer set here
+    console.log("Signup submitted for:", emailAddress, "Mode:", selectedMode);
+    // Mock Firebase Auth user creation
+    const mockFirebaseUser = {
+      uid: `user_${Date.now()}`,
+      email: emailAddress,
+      displayName: fullName || emailAddress.split('@')[0],
     };
-
-    console.log("Profile being set in SignupPage:", JSON.stringify(newUserProfile, null, 2));
-    setProfile(newUserProfile); 
-
-    toast({ title: "Account Created!", description: "Welcome to Amana. Redirecting to your dashboard..." });
-    router.push(`/${currentLocale}/dashboard`); 
+    handleSuccessfulSignup(mockFirebaseUser);
   };
 
   return (
@@ -144,7 +136,7 @@ export default function SignupPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Input id="email" type="email" placeholder="your@email.com" value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password (min. 6 characters)</Label>
