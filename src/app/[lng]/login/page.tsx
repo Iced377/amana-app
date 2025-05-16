@@ -11,7 +11,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import React, { useState, useEffect } from 'react';
 import { ModeToggle } from "@/components/mode-toggle";
-import { LanguageToggle } from "@/components/language-toggle"; // Import LanguageToggle
+import { LanguageToggle } from "@/components/language-toggle";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
 import type { UserProfile } from "@/types";
 import type { LocaleTypes } from "@/locales/settings";
@@ -54,7 +54,7 @@ const GoogleIcon = () => (
 export default function LoginPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const { profile: currentGlobalProfile, setProfile, generateEncryptionKey } = useUserPreferences();
+  const { profile: currentGlobalProfile, setProfile } = useUserPreferences();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { toast } = useToast();
@@ -86,7 +86,18 @@ export default function LoginPage() {
   const handleSuccessfulLogin = (firebaseUser: any, method: "Google" | "Email" | "Phone") => {
     let userProfile: UserProfile;
 
-    if (!currentGlobalProfile || currentGlobalProfile.id === 'guestUser' || currentGlobalProfile.id !== firebaseUser.uid) {
+    // If there's an existing profile in context that matches the UID, merge with it.
+    // Otherwise, create a new one or merge with a guest profile if present.
+    if (currentGlobalProfile && currentGlobalProfile.id === firebaseUser.uid && currentGlobalProfile.id !== 'guestUser') {
+      userProfile = {
+        ...currentGlobalProfile,
+        email: firebaseUser.email || currentGlobalProfile.email, 
+        displayName: firebaseUser.displayName || currentGlobalProfile.displayName, 
+        language: currentLocale,
+        onboardingCompleted: currentGlobalProfile.onboardingCompleted || true, // Ensure it's true
+      };
+    } else {
+      // This path is for new logins or if currentGlobalProfile is guest/mismatched
       userProfile = {
         id: firebaseUser.uid,
         email: firebaseUser.email || null, 
@@ -95,38 +106,17 @@ export default function LoginPage() {
         language: currentLocale,
         subscriptionTier: currentGlobalProfile?.subscriptionTier || 'free',
         is2FAEnabled: currentGlobalProfile?.is2FAEnabled || false,
-        encryptionKey: undefined,
+        onboardingCompleted: true, // Set onboarding to true
         sadaqahEnabled: currentGlobalProfile?.sadaqahEnabled || false,
+        sadaqahPercentage: currentGlobalProfile?.sadaqahPercentage,
+        islamicPreferences: currentGlobalProfile?.islamicPreferences || { madhhab: '' },
+        photoURL: currentGlobalProfile?.photoURL || firebaseUser.photoURL,
+        country: currentGlobalProfile?.country,
       };
-      // Encryption key is no longer generated/needed on login/signup based on previous changes
-      // const key = generateEncryptionKey(); 
-      // if (!key) {
-      //   console.error(`Failed to generate encryption key on ${method} login.`);
-      //   toast({ title: "Login Error", description: "Could not initialize security settings.", variant: "destructive" });
-      //   return;
-      // }
-      // userProfile.encryptionKey = key;
-    } else {
-      userProfile = {
-        ...currentGlobalProfile,
-        id: firebaseUser.uid,
-        email: firebaseUser.email || currentGlobalProfile.email, 
-        displayName: firebaseUser.displayName || currentGlobalProfile.displayName, 
-        language: currentLocale,
-      };
-      // if (!userProfile.encryptionKey) {
-      //   const key = generateEncryptionKey();
-      //   if (!key) {
-      //       console.error(`Failed to generate encryption key for existing profile on ${method} login.`);
-      //       toast({ title: "Security Warning", description: "Could not re-verify security settings.", variant: "destructive" });
-      //   } else {
-      //       userProfile.encryptionKey = key;
-      //   }
-      // }
     }
     
     setProfile(userProfile);
-    router.push(`/${currentLocale}/dashboard`);
+    router.push(`/${currentLocale}/dashboard`); // Redirect to dashboard
   };
 
   const handleGoogleSignIn = async () => {
@@ -220,7 +210,7 @@ export default function LoginPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-secondary/30 p-4">
       <div className="absolute top-4 right-4 rtl:left-4 rtl:right-auto flex items-center gap-2">
-        <LanguageToggle /> {/* Added LanguageToggle */}
+        <LanguageToggle />
         <ModeToggle />
       </div>
       <Card className="w-full max-w-md shadow-xl">

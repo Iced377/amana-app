@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-// Removed RadioGroup import as mode selection is moved to onboarding
-// import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ShieldCheck, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -14,13 +12,12 @@ import React, { useState } from 'react';
 import { ModeToggle } from "@/components/mode-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
-import type { UserProfile } from "@/types"; // UserPreferenceMode removed from direct use here
+import type { UserProfile } from "@/types";
 import type { LocaleTypes } from "@/locales/settings";
 import { useToast } from "@/hooks/use-toast";
 import { auth, googleProvider } from '@/lib/firebase';
 import { signInWithPopup, type UserCredential } from "firebase/auth";
 import { AppLogo } from "@/components/AppLogo";
-import { QuranicVerse } from '@/components/QuranicVerse';
 
 // Inline SVG for Google Icon
 const GoogleIcon = () => (
@@ -45,19 +42,14 @@ const GoogleIcon = () => (
   </svg>
 );
 
-// Quranic verse for Islamic mode, now moved to onboarding
-// const QURAN_VERSE_AMANAH = "إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُّوا۟ ٱلْأَمَٰنَٰتِ إِلَىٰٓ أَهْلِهَا";
-// const QURAN_VERSE_AMANAH_CITATION = "سورة النساء: ٥٨";
 
 export default function SignupPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const { updateProfileField } = useUserPreferences(); // Removed setProfile, as updateProfileField handles it
-  // Removed fullName state as it's collected in onboarding
+  const { updateProfileField } = useUserPreferences();
   const [emailAddress, setEmailAddress] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  // Removed selectedMode state as it's selected in onboarding
   const { toast } = useToast();
 
   const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes;
@@ -68,26 +60,25 @@ export default function SignupPage() {
       id: firebaseUser.uid,
       email: firebaseUser.email,
       displayName: initialDisplayName,
-      mode: 'conventional', // Default to conventional, user will choose in onboarding
+      mode: 'conventional', // Default to conventional, user can change in settings
       language: currentLocale,
       subscriptionTier: 'free',
       is2FAEnabled: false,
-      onboardingCompleted: false,
-      sadaqahEnabled: false, // Default to false, will be updated in onboarding if Islamic mode is chosen
-      sadaqahPercentage: undefined, // Default to undefined
+      onboardingCompleted: true, // Set onboarding to true
+      sadaqahEnabled: false,
+      sadaqahPercentage: undefined,
     };
 
     updateProfileField(newUserProfile);
 
-    toast({ title: "Account Created!", description: "Welcome to Amana. Redirecting to onboarding...", variant: "default" });
-    router.push(`/${currentLocale}/onboarding`);
+    toast({ title: "Account Created!", description: "Welcome to Amana. Redirecting to dashboard...", variant: "default" });
+    router.push(`/${currentLocale}/dashboard`); // Redirect to dashboard
   };
 
 
   const handleGoogleSignUp = async () => {
     try {
       const result: UserCredential = await signInWithPopup(auth, googleProvider);
-      // Pass a simplified firebaseUser object for consistency in handleSuccessfulSignup
       const simplifiedFirebaseUser = {
         uid: result.user.uid,
         email: result.user.email,
@@ -115,9 +106,9 @@ export default function SignupPage() {
     console.log("Signup submitted for:", emailAddress);
     // Mock Firebase Auth user creation
     const mockFirebaseUser = {
-      uid: `user_${Date.now()}`, // More unique mock UID
+      uid: `user_${Date.now()}`,
       email: emailAddress,
-      displayName: emailAddress.split('@')[0], // Use part of email as initial display name
+      displayName: emailAddress.split('@')[0],
     };
     handleSuccessfulSignup(mockFirebaseUser);
   };
@@ -138,7 +129,6 @@ export default function SignupPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Full Name input removed */}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" placeholder="your@email.com" value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} required />
@@ -151,8 +141,6 @@ export default function SignupPage() {
               <Label htmlFor="confirmPassword">Confirm Password</Label>
               <Input id="confirmPassword" type="password" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
             </div>
-
-            {/* Experience Mode selection removed */}
 
             <Button type="submit" className="w-full" size="lg">
               <UserPlus className="mr-2 h-5 w-5" /> Sign Up
@@ -180,4 +168,3 @@ export default function SignupPage() {
     </div>
   );
 }
-

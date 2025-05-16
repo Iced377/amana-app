@@ -34,14 +34,14 @@ const defaultProfile: UserProfile = {
   sadaqahEnabled: false,
   sadaqahPercentage: undefined,
   islamicPreferences: { madhhab: ''},
-  onboardingCompleted: false,
+  onboardingCompleted: true, // Default to true to bypass onboarding
   photoURL: undefined,
   country: undefined,
 };
 
 export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; initialPreferences?: Partial<UserProfile> }> = ({ children, initialPreferences }) => {
   const [profileState, setProfileState] = useState<UserProfile | null>(() => ({...defaultProfile, ...initialPreferences}));
-  const [isLoading, setIsLoading] = useState(true); // Start as true
+  const [isLoading, setIsLoading] = useState(true);
   const { user: firebaseUser, loading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -69,7 +69,6 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; init
     }
     const { id, ...dataToSave } = preferencesToSave;
     console.log("Simulating saving preferences to Firebase for user:", userIdToSave, dataToSave);
-    // In a real app: await db.collection('users').doc(userIdToSave).set(dataToSave, { merge: true });
   }, [profileState?.id]);
 
   const updateProfileField = useCallback((updates: Partial<UserProfile>) => {
@@ -90,6 +89,7 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; init
          islamicPreferences: updatedIslamicPreferences,
          id: updates.id || baseProfile.id || 'guestUser',
          language: newLanguage,
+         onboardingCompleted: updates.onboardingCompleted !== undefined ? updates.onboardingCompleted : (baseProfile.onboardingCompleted || true), // Ensure onboarding is true
        };
 
        if (newMode !== oldMode && newMode !== undefined) {
@@ -100,7 +100,7 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; init
           document.documentElement.lang = newLanguage;
           document.documentElement.dir = newLanguage === 'ar' ? 'rtl' : 'ltr';
           const currentPathLocale = pathname.split('/')[1];
-          if(currentPathLocale !== newLanguage && !isLoading) { // Check isLoading to prevent premature navigation
+          if(currentPathLocale !== newLanguage && !isLoading) {
             const newPath = pathname.replace(`/${currentPathLocale}`, `/${newLanguage}`);
             if (newPath !== pathname) router.replace(newPath);
           }
@@ -111,13 +111,11 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; init
        }
        return updatedProfile;
      });
-  }, [applyThemeAndFont, savePreferencesToFirebase, initialPreferences, pathname, router, isLoading]); // Added isLoading dependency
+  }, [applyThemeAndFont, savePreferencesToFirebase, initialPreferences, pathname, router, isLoading]);
 
   const setProfile = useCallback((newProfile: UserProfile | null) => {
     if (newProfile && newProfile.id && newProfile.id !== 'guestUser') {
-       updateProfileField(newProfile);
-       // Crucially, if setProfile is called with a valid (even mock) user,
-       // we consider the profile "loaded" for this app session.
+       updateProfileField({...newProfile, onboardingCompleted: true}); // Ensure onboarding is true
        setIsLoading(false);
     } else {
        const guestLang = (pathname.split('/')[1] as Language) || fallbackLng;
@@ -127,23 +125,23 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; init
          id: 'guestUser', 
          displayName: 'Guest User',
          language: guestLang,
-         onboardingCompleted: false,
+         onboardingCompleted: true, // Guest users are also "onboarded" by default now
        };
        setProfileState(guestProfileData);
        applyThemeAndFont(guestProfileData.mode);
-       setIsLoading(false); // Guest profile is also a "loaded" state for the app
+       setIsLoading(false);
     }
   }, [updateProfileField, applyThemeAndFont, initialPreferences, pathname]);
 
   useEffect(() => {
     const manageProfileBasedOnAuth = async () => {
       if (authLoading) {
-        setIsLoading(true); // Keep true until auth is resolved
+        setIsLoading(true);
         return;
       }
 
       if (firebaseUser) {
-        setIsLoading(true); // Start loading process for Firebase user
+        setIsLoading(true);
         const fetchedProfileFromDB = await readPreferencesFromFirebase(firebaseUser.uid);
         const pathLocale = (pathname.split('/')[1] as Language) || fallbackLng;
 
@@ -156,7 +154,7 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; init
           displayName: firebaseUser.displayName || fetchedProfileFromDB?.displayName || defaultProfile.displayName,
           language: fetchedProfileFromDB?.language || pathLocale,
           mode: fetchedProfileFromDB?.mode || initialPreferences?.mode || defaultProfile.mode,
-          onboardingCompleted: fetchedProfileFromDB?.onboardingCompleted || initialPreferences?.onboardingCompleted || defaultProfile.onboardingCompleted,
+          onboardingCompleted: fetchedProfileFromDB?.onboardingCompleted || true, // Default to true
           subscriptionTier: fetchedProfileFromDB?.subscriptionTier || initialPreferences?.subscriptionTier || defaultProfile.subscriptionTier,
           is2FAEnabled: fetchedProfileFromDB?.is2FAEnabled || initialPreferences?.is2FAEnabled || defaultProfile.is2FAEnabled,
           sadaqahEnabled: fetchedProfileFromDB?.sadaqahEnabled || initialPreferences?.sadaqahEnabled || defaultProfile.sadaqahEnabled,
@@ -168,17 +166,17 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; init
         
         setProfileState(baseProfile);
         applyThemeAndFont(baseProfile.mode);
-        savePreferencesToFirebase(baseProfile); // Save merged profile to ensure consistency
+        if (baseProfile.id !== 'guestUser') { // Only save if not guest
+          savePreferencesToFirebase(baseProfile);
+        }
 
         const currentPathLang = (pathname.split('/')[1] as Language) || fallbackLng;
         if (baseProfile.language !== currentPathLang && typeof window !== 'undefined') {
             const newPath = pathname.replace(`/${currentPathLang}`, `/${baseProfile.language}`);
             if (newPath !== pathname) router.replace(newPath);
         }
-        setIsLoading(false); // Finished processing Firebase user
-      } else { // No Firebase user
-        // If isLoading is already false, it means setProfile (e.g., from mock login)
-        // has already established a profile state. Respect it.
+        setIsLoading(false);
+      } else { 
         if (!isLoading && profileState && profileState.id !== 'guestUser') {
             applyThemeAndFont(profileState.mode);
              const currentPathLang = (pathname.split('/')[1] as Language) || fallbackLng;
@@ -187,9 +185,7 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; init
                 if (newPath !== pathname) router.replace(newPath);
             }
         } else {
-          // If isLoading is true, or if profileState is still guest/null,
-          // then set the default guest profile.
-          setIsLoading(true); // Indicate we are about to set a definitive guest state
+          setIsLoading(true);
           const guestLang = (pathname.split('/')[1] as Language) || fallbackLng;
           const guestProfile: UserProfile = {
             ...defaultProfile,
@@ -197,19 +193,16 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; init
             id: 'guestUser',
             displayName: 'Guest User',
             language: guestLang,
-            onboardingCompleted: false,
+            onboardingCompleted: true, // Guest users are also "onboarded"
           };
           setProfileState(guestProfile);
           applyThemeAndFont(guestProfile.mode);
-          setIsLoading(false); // Finished setting guest profile
+          setIsLoading(false);
         }
       }
     };
 
     manageProfileBasedOnAuth();
-  // Removed profileState and isLoading from dependencies to avoid potential loops from their own updates within this effect.
-  // The effect should primarily react to authLoading and firebaseUser changes.
-  // The internal logic now correctly checks the existing profileState and isLoading values before acting.
   }, [firebaseUser, authLoading, readPreferencesFromFirebase, applyThemeAndFont, initialPreferences, pathname, router, savePreferencesToFirebase]);
 
 
@@ -230,7 +223,6 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; init
     }
   }, [profileState?.id]);
 
-   // Fallback loading state to prevent rendering children before context is fully initialized
   if (isLoading && (!profileState || profileState.id === 'guestUser' && !firebaseUser)) {
      return null;
   }
@@ -243,7 +235,7 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; init
       setMode: (newMode) => updateProfileField({ mode: newMode }),
       language: profileState?.language || initialPreferences?.language || defaultProfile.language, 
       setLanguage: (newLang) => updateProfileField({ language: newLang }),
-      isLoading: isLoading, // Expose the context's loading state
+      isLoading: isLoading,
       savePreferencesToFirebase, 
       updateProfileField,
       userVaults,

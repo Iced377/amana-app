@@ -1,7 +1,7 @@
 
 "use client";
 import type React from 'react';
-import { useEffect, use } from 'react'; // Corrected import, added use
+import { useEffect, use } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -43,14 +43,11 @@ export default function DashboardLayout({
     const hasValidAppProfile = profile && profile.id && profile.id !== 'guestUser';
 
     if (!firebaseUser && !hasValidAppProfile) {
-      if (!pathname.includes(`/${currentLocale}/login`)) { // Ensure path check includes locale
+      if (!pathname.includes(`/${currentLocale}/login`)) {
         router.replace(`/${currentLocale}/login`);
       }
-    } else if (profile && !profile.onboardingCompleted) {
-      if (!pathname.includes(`/${currentLocale}/onboarding`)) { // Ensure path check includes locale
-        router.replace(`/${currentLocale}/onboarding`);
-      }
-    }
+    } 
+    // Removed the check for profile.onboardingCompleted, as users now go directly to dashboard
   }, [firebaseUser, authLoading, profile, profileLoading, router, currentLocale, pathname]);
 
 
@@ -59,13 +56,12 @@ export default function DashboardLayout({
   }
   
   const hasValidAppProfileForDisplay = profile && profile.id && profile.id !== 'guestUser';
-  const canStayOnDashboard = (firebaseUser || hasValidAppProfileForDisplay) && profile?.onboardingCompleted;
+  // Adjusted condition: now only checks if user is authenticated (Firebase or app profile)
+  // and onboarding is implicitly considered complete.
+  const canStayOnDashboard = (firebaseUser || hasValidAppProfileForDisplay); 
 
   if (!canStayOnDashboard) {
-     // If conditions to stay aren't met, and we're not already loading,
-     // it implies a redirect is pending or has just occurred.
-     // Showing a generic message is better than flashing content.
-     if (!pathname.includes(`/${currentLocale}/login`) && !pathname.includes(`/${currentLocale}/onboarding`)) {
+     if (!pathname.includes(`/${currentLocale}/login`)) {
         return <div className="flex h-screen w-screen items-center justify-center">Finalizing session...</div>;
      }
   }
@@ -87,7 +83,6 @@ export default function DashboardLayout({
 
   const getLabel = (key: string) => {
     const translated = t(key);
-    // Fallback logic if translation is missing
     if (translated === key || translated === '') {
         switch (key) {
             case 'dashboardTitle': return 'Dashboard';
@@ -140,11 +135,11 @@ export default function DashboardLayout({
                 size="icon"
                 className="shrink-0 md:hidden"
               >
-                <ShieldCheck className="h-5 w-5" /> {/* Changed from Menu to ShieldCheck for thematic consistency */}
+                <ShieldCheck className="h-5 w-5" />
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col bg-sidebar dark:bg-sidebar-dark p-0"> {/* Ensure sidebar theme */}
+            <SheetContent side="left" className="flex flex-col bg-sidebar dark:bg-sidebar-dark p-0">
               <SheetHeader className="flex h-16 items-center border-b px-4 lg:px-6">
                 <SheetTitle>
                   <AppLogo />
@@ -165,17 +160,6 @@ export default function DashboardLayout({
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
-            {/* Optional: Search bar or other header content */}
-            {/* <form>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search product..."
-                  className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
-                />
-              </div>
-            </form> */}
           </div>
           <LanguageToggle />
           <ModeToggle />
@@ -203,7 +187,7 @@ export default function DashboardLayout({
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-secondary/30 dark:bg-background"> {/* Ensure themed background */}
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-secondary/30 dark:bg-background">
           {children}
         </main>
       </div>
