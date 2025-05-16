@@ -16,16 +16,16 @@ import { useToast } from '@/hooks/use-toast';
 import { QuranicVerse } from '@/components/QuranicVerse';
 import { countryCodes } from '@/lib/countryCodes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-// import { Textarea } from '@/components/ui/textarea'; // No longer needed for vault description here
-import { Loader2, User, CheckSquare, Landmark, Languages, Shield } from 'lucide-react'; // Removed Home icon for Vault
+import { Loader2, User, CheckSquare, Landmark, Languages, Shield } from 'lucide-react'; 
 import Image from 'next/image';
+import { useAuth } from '@/hooks/use-auth';
 
 
 // Quranic verses
 const QURAN_VERSE_AMANAH = "إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُُّوا۟ ٱلْأَمَٰنَٰتِ إِلَىٰٓ أَهْلِهَا"; // An-Nisa 4:58
 const QURAN_VERSE_AMANAH_CITATION = "سورة النساء: ٥٨";
 
-type OnboardingStep = 'language' | 'mode' | 'profile' | 'madhhab' | 'completed'; // Removed 'vault'
+type OnboardingStep = 'language' | 'mode' | 'profile' | 'madhhab';
 
 const NONE_SELECTED_COUNTRY_VALUE = "_NONE_"; 
 
@@ -33,6 +33,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const pathname = usePathname();
   const { profile, updateProfileField, isLoading: profileLoading } = useUserPreferences();
+  const { user: firebaseUser, loading: authLoading } = useAuth();
   
   const currentLocale = profile?.language || (pathname.split('/')[1] as LocaleTypes) || 'en';
   const { t, i18n } = useTranslation(currentLocale, "translation");
@@ -46,10 +47,25 @@ export default function OnboardingPage() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
-    if (!profileLoading && profile?.onboardingCompleted) {
-      router.replace(`/${currentLocale}/dashboard`);
+    if (!authLoading && !profileLoading) {
+      const hasValidAppProfile = profile && profile.id && profile.id !== 'guestUser';
+
+      if (!firebaseUser && !hasValidAppProfile) {
+        // No Firebase session and no valid app profile, should be on login
+        if (!pathname.includes('/login')) {
+          router.replace(`/${currentLocale}/login`);
+        }
+      } else if (hasValidAppProfile && profile.onboardingCompleted) {
+        // Has a valid app profile and onboarding is done, should be on dashboard
+        if (!pathname.includes('/dashboard')) {
+          router.replace(`/${currentLocale}/dashboard`);
+        }
+      }
+      // If hasValidAppProfile and onboarding is NOT complete, they should stay on onboarding.
+      // If firebaseUser exists but no hasValidAppProfile yet (profile still loading from context), the loading screen handles it.
     }
-  }, [profile, profileLoading, router, currentLocale]);
+  }, [firebaseUser, authLoading, profile, profileLoading, router, currentLocale, pathname]);
+
 
   useEffect(() => {
     if (profile) {
@@ -80,7 +96,7 @@ export default function OnboardingPage() {
         if (profile?.mode === 'islamic') {
           setCurrentStep('madhhab');
         } else {
-          handleFinishOnboarding(); // Conventional mode finishes after profile
+          handleFinishOnboarding(); 
         }
         break;
       case 'madhhab':
@@ -141,8 +157,7 @@ export default function OnboardingPage() {
       setSelectedCountry(value === NONE_SELECTED_COUNTRY_VALUE ? undefined : value);
   };
 
-
-  if (profileLoading || !profile) {
+  if (authLoading || profileLoading) { 
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -150,8 +165,9 @@ export default function OnboardingPage() {
     );
   }
   
-  if (profile.onboardingCompleted) {
-    // This useEffect will handle the redirection. Return a loader or null here.
+  // If, after loading, the profile indicates onboarding is complete, or if there's no valid profile,
+  // the useEffect at the top will handle redirection. This conditional return is a fallback.
+  if ((!authLoading && !profileLoading) && ((profile?.onboardingCompleted) || (!firebaseUser && (!profile || !profile.id || profile.id === 'guestUser')))) {
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   }
   
@@ -160,14 +176,12 @@ export default function OnboardingPage() {
         case 'language': return 1;
         case 'mode': return 2;
         case 'profile': return 3;
-        case 'madhhab': return 4; // Madhhab is step 4 if Islamic mode
+        case 'madhhab': return 4; 
         default: return 0;
     }
   };
   
   const currentStepNumber = getStepNumber();
-  // If Islamic mode, total steps = 4 (Language, Mode, Profile, Madhhab)
-  // If Conventional mode, total steps = 3 (Language, Mode, Profile)
   const effectiveTotalSteps = profile?.mode === 'islamic' ? 4 : 3;
 
 
@@ -177,7 +191,7 @@ export default function OnboardingPage() {
         return (
           <div className="space-y-4">
             <RadioGroup
-              value={profile.language}
+              value={profile?.language}
               onValueChange={(value) => handleLanguageSelection(value as Language)}
               className="flex flex-col space-y-2"
             >
@@ -196,7 +210,7 @@ export default function OnboardingPage() {
         return (
           <div className="space-y-4">
             <RadioGroup
-              value={profile.mode}
+              value={profile?.mode}
               onValueChange={(value) => handleModeSelection(value as UserPreferenceMode)}
               className="flex flex-col space-y-2"
             >
@@ -209,7 +223,7 @@ export default function OnboardingPage() {
                 <span>{t('islamicMode')}</span>
               </Label>
             </RadioGroup>
-            {profile.mode === 'islamic' && (
+            {profile?.mode === 'islamic' && (
               <QuranicVerse verse={QURAN_VERSE_AMANAH} citation={QURAN_VERSE_AMANAH_CITATION} className="mt-2 text-sm" />
             )}
             <p className="text-xs text-muted-foreground">{t('islamicModeDescription')}</p>
@@ -252,11 +266,11 @@ export default function OnboardingPage() {
           </div>
         );
       case 'madhhab':
-        if (profile.mode !== 'islamic') return null;
+        if (profile?.mode !== 'islamic') return null;
         return (
           <div className="space-y-4">
             <RadioGroup
-              value={profile.islamicPreferences?.madhhab || ''}
+              value={profile?.islamicPreferences?.madhhab || ''}
               onValueChange={(value) => handleMadhhabSelection(value as Madhhab)}
               className="flex flex-col space-y-2"
             >
@@ -336,4 +350,3 @@ export default function OnboardingPage() {
     </div>
   );
 }
-

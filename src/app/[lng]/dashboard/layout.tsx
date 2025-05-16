@@ -60,22 +60,29 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (!authLoading && !profileLoading) {
-      if (!firebaseUser) {
-        // Not authenticated, redirect to login
-        router.replace(`/${currentLocale}/login`);
+      const hasValidAppProfile = profile && profile.id && profile.id !== 'guestUser';
+
+      if (!firebaseUser && !hasValidAppProfile) {
+        // No Firebase session AND no valid app profile, should be on login
+        if (!pathname.includes('/login')) { 
+          router.replace(`/${currentLocale}/login`);
+        }
       } else if (profile && !profile.onboardingCompleted) {
-        // Authenticated, but onboarding not complete
-        if (!pathname.includes('/onboarding')) { // Avoid redirect loop if already on onboarding
+        // Has firebaseUser OR valid app profile, but onboarding not done, redirect to onboarding
+        if (!pathname.includes('/onboarding')) {
             router.replace(`/${currentLocale}/onboarding`);
         }
       }
+      // If (firebaseUser OR valid app profile) AND onboarding IS complete, stay on dashboard.
     }
   }, [firebaseUser, authLoading, profile, profileLoading, router, currentLocale, pathname]);
 
-  if (authLoading || profileLoading || (!firebaseUser && !pathname.includes('/login')) || (firebaseUser && profile && !profile.onboardingCompleted && !pathname.includes('/onboarding')) ) {
-    // Show a loading state or null while checking auth/onboarding status or redirecting
-    // This helps prevent rendering dashboard content prematurely
-    return <div className="flex h-screen w-screen items-center justify-center">Loading...</div>; // Or a proper loader component
+  // Loading state: show if auth or profile is loading, OR if not truly authenticated/profiled and not already on login page
+  if (authLoading || profileLoading || 
+      ((!firebaseUser && (!profile || !profile.id || profile.id === 'guestUser')) && !pathname.includes('/login')) ||
+      ( (firebaseUser || (profile && profile.id && profile.id !== 'guestUser')) && profile && !profile.onboardingCompleted && !pathname.includes('/onboarding') )
+     ) {
+    return <div className="flex h-screen w-screen items-center justify-center">Loading...</div>; 
   }
 
 
