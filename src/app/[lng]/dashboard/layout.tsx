@@ -1,7 +1,8 @@
 
 "use client";
+import { use } from 'react';
 import type React from 'react';
-import { useEffect, use } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -32,22 +33,28 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const resolvedParams = use(params);
-  const currentLocale = resolvedParams.lng;
+  const currentLocale = resolvedParams.lng; 
   const { t } = useTranslation(currentLocale);
 
   useEffect(() => {
     if (authLoading || profileLoading) {
-      return;
+      return; // Still loading, wait for auth/profile state to settle
     }
 
     const hasValidAppProfile = profile && profile.id && profile.id !== 'guestUser';
 
     if (!firebaseUser && !hasValidAppProfile) {
+      // No Firebase user and no valid app profile (e.g. guest trying to access dashboard)
       if (!pathname.includes(`/${currentLocale}/login`)) {
         router.replace(`/${currentLocale}/login`);
       }
-    } 
-    // Removed the check for profile.onboardingCompleted, as users now go directly to dashboard
+    } else if (profile && !profile.onboardingCompleted) {
+      // User is authenticated (Firebase or app profile) but hasn't completed onboarding
+      if (!pathname.includes(`/${currentLocale}/onboarding`)) {
+        router.replace(`/${currentLocale}/onboarding`);
+      }
+    }
+    // If user is authenticated AND onboarding is complete, they can stay on dashboard pages.
   }, [firebaseUser, authLoading, profile, profileLoading, router, currentLocale, pathname]);
 
 
@@ -56,14 +63,12 @@ export default function DashboardLayout({
   }
   
   const hasValidAppProfileForDisplay = profile && profile.id && profile.id !== 'guestUser';
-  // Adjusted condition: now only checks if user is authenticated (Firebase or app profile)
-  // and onboarding is implicitly considered complete.
-  const canStayOnDashboard = (firebaseUser || hasValidAppProfileForDisplay); 
+  // Condition to stay on dashboard: authenticated AND onboarding completed
+  const canStayOnDashboard = (firebaseUser || hasValidAppProfileForDisplay) && profile?.onboardingCompleted;
 
-  if (!canStayOnDashboard) {
-     if (!pathname.includes(`/${currentLocale}/login`)) {
-        return <div className="flex h-screen w-screen items-center justify-center">Finalizing session...</div>;
-     }
+  if (!canStayOnDashboard && !pathname.includes(`/${currentLocale}/login`) && !pathname.includes(`/${currentLocale}/onboarding`)) {
+    // If conditions to stay are not met, and not already on login/onboarding, show finalising and let useEffect handle redirect
+     return <div className="flex h-screen w-screen items-center justify-center">Finalizing session...</div>;
   }
 
 
@@ -83,6 +88,7 @@ export default function DashboardLayout({
 
   const getLabel = (key: string) => {
     const translated = t(key);
+    // Basic fallback if translation key is missing, can be enhanced
     if (translated === key || translated === '') {
         switch (key) {
             case 'dashboardTitle': return 'Dashboard';
@@ -97,7 +103,7 @@ export default function DashboardLayout({
             case 'pricingTitle': return 'Pricing';
             case 'infoHelpTitle': return 'Info & Help';
             case 'logout': return 'Logout';
-            default: return key.replace(/([A-Z])/g, ' $1').trim();
+            default: return key.replace(/([A-Z])/g, ' $1').trim(); // Fallback for untranslated keys
         }
     }
     return translated;
@@ -135,7 +141,7 @@ export default function DashboardLayout({
                 size="icon"
                 className="shrink-0 md:hidden"
               >
-                <ShieldCheck className="h-5 w-5" />
+                <ShieldCheck className="h-5 w-5" /> {/* Using ShieldCheck as placeholder, consider Menu icon */}
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
@@ -160,6 +166,7 @@ export default function DashboardLayout({
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
+            {/* Optional: Add a search bar or other header content here */}
           </div>
           <LanguageToggle />
           <ModeToggle />
@@ -182,6 +189,7 @@ export default function DashboardLayout({
               <DropdownMenuItem asChild><Link href={`/${currentLocale}/dashboard/settings`}>Settings</Link></DropdownMenuItem>
               <DropdownMenuSeparator />
                <DropdownMenuItem asChild>
+                {/* TODO: Implement actual logout logic */}
                 <Link href={`/${currentLocale}/login`}>{getLabel('logout')} <LogOut className="ml-2 h-4 w-4" /></Link>
               </DropdownMenuItem>
             </DropdownMenuContent>

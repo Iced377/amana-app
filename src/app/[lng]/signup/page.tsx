@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, UserPlus } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import React, { useState } from 'react';
@@ -46,7 +46,7 @@ const GoogleIcon = () => (
 export default function SignupPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const { updateProfileField } = useUserPreferences();
+  const { setProfile } = useUserPreferences(); // Use setProfile to update the context
   const [emailAddress, setEmailAddress] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -60,31 +60,28 @@ export default function SignupPage() {
       id: firebaseUser.uid,
       email: firebaseUser.email,
       displayName: initialDisplayName,
-      mode: 'conventional', // Default to conventional, user can change in settings
-      language: currentLocale,
+      mode: 'conventional', // Default to conventional, user changes in onboarding
+      language: currentLocale, // Start with current page locale
       subscriptionTier: 'free',
       is2FAEnabled: false,
-      onboardingCompleted: true, // Set onboarding to true
+      onboardingCompleted: false, // NEW USER: Onboarding is NOT completed yet
       sadaqahEnabled: false,
       sadaqahPercentage: undefined,
+      photoURL: firebaseUser.photoURL || undefined,
     };
 
-    updateProfileField(newUserProfile);
+    setProfile(newUserProfile); // Update the context
 
-    toast({ title: "Account Created!", description: "Welcome to Amana. Redirecting to dashboard...", variant: "default" });
-    router.push(`/${currentLocale}/dashboard`); // Redirect to dashboard
+    toast({ title: "Account Created!", description: "Welcome to Amana. Let's get you set up.", variant: "default" });
+    router.push(`/${currentLocale}/onboarding`); // Redirect to onboarding
   };
 
 
   const handleGoogleSignUp = async () => {
     try {
       const result: UserCredential = await signInWithPopup(auth, googleProvider);
-      const simplifiedFirebaseUser = {
-        uid: result.user.uid,
-        email: result.user.email,
-        displayName: result.user.displayName
-      };
-      handleSuccessfulSignup(simplifiedFirebaseUser);
+      // Pass the actual Firebase user object
+      handleSuccessfulSignup(result.user);
     } catch (error: any) {
       console.error("Google Sign-Up error:", error);
       toast({ title: "Google Sign-Up Failed", description: error.message || "An unexpected error occurred.", variant: "destructive" });
@@ -106,9 +103,10 @@ export default function SignupPage() {
     console.log("Signup submitted for:", emailAddress);
     // Mock Firebase Auth user creation
     const mockFirebaseUser = {
-      uid: `user_${Date.now()}`,
+      uid: `user_${Date.now()}`, // Ensure unique ID for mock
       email: emailAddress,
       displayName: emailAddress.split('@')[0],
+      photoURL: undefined,
     };
     handleSuccessfulSignup(mockFirebaseUser);
   };

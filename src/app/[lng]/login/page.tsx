@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShieldCheck, LogIn, Phone, MessageSquare } from "lucide-react";
+import { LogIn, Phone, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import React, { useState, useEffect } from 'react';
@@ -86,18 +86,20 @@ export default function LoginPage() {
   const handleSuccessfulLogin = (firebaseUser: any, method: "Google" | "Email" | "Phone") => {
     let userProfile: UserProfile;
 
-    // If there's an existing profile in context that matches the UID, merge with it.
-    // Otherwise, create a new one or merge with a guest profile if present.
+    // Check if there's an existing profile in context that matches the UID and is not a guest.
+    // Or, if this is a mock login, the context might already have the mock user's profile.
     if (currentGlobalProfile && currentGlobalProfile.id === firebaseUser.uid && currentGlobalProfile.id !== 'guestUser') {
       userProfile = {
         ...currentGlobalProfile,
         email: firebaseUser.email || currentGlobalProfile.email, 
         displayName: firebaseUser.displayName || currentGlobalProfile.displayName, 
-        language: currentLocale,
-        onboardingCompleted: currentGlobalProfile.onboardingCompleted || true, // Ensure it's true
+        language: currentGlobalProfile.language || currentLocale, // Prefer existing language or current page
+        onboardingCompleted: currentGlobalProfile.onboardingCompleted || false, // Preserve existing onboarding status
+        photoURL: currentGlobalProfile.photoURL || firebaseUser.photoURL,
       };
     } else {
       // This path is for new logins or if currentGlobalProfile is guest/mismatched
+      // For a real login, we'd fetch from DB. For mock, we assume it's like a new user for profile purposes.
       userProfile = {
         id: firebaseUser.uid,
         email: firebaseUser.email || null, 
@@ -106,22 +108,30 @@ export default function LoginPage() {
         language: currentLocale,
         subscriptionTier: currentGlobalProfile?.subscriptionTier || 'free',
         is2FAEnabled: currentGlobalProfile?.is2FAEnabled || false,
-        onboardingCompleted: true, // Set onboarding to true
+        onboardingCompleted: false, // Default to false for login too; DB/context would clarify this for real users
         sadaqahEnabled: currentGlobalProfile?.sadaqahEnabled || false,
         sadaqahPercentage: currentGlobalProfile?.sadaqahPercentage,
         islamicPreferences: currentGlobalProfile?.islamicPreferences || { madhhab: '' },
-        photoURL: currentGlobalProfile?.photoURL || firebaseUser.photoURL,
+        photoURL: firebaseUser.photoURL || currentGlobalProfile?.photoURL,
         country: currentGlobalProfile?.country,
       };
     }
     
     setProfile(userProfile);
-    router.push(`/${currentLocale}/dashboard`); // Redirect to dashboard
+    
+    // Redirect based on onboarding status
+    if (userProfile.onboardingCompleted) {
+      router.push(`/${userProfile.language}/dashboard`);
+    } else {
+      router.push(`/${userProfile.language}/onboarding`);
+    }
   };
 
   const handleGoogleSignIn = async () => {
     try {
       const result: UserCredential = await signInWithPopup(auth, googleProvider);
+      // For Google sign-in, we assume they are returning users or new users whose DB profile will be checked by context.
+      // If no profile, context will create one with onboardingCompleted: false.
       handleSuccessfulLogin(result.user, "Google");
     } catch (error: any) {
       console.error("Google Sign-In error:", error);
@@ -132,11 +142,15 @@ export default function LoginPage() {
   const handleEmailPasswordSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     console.log("Email/Password Login submitted for:", email);
+    // MOCK LOGIN:
     const mockFirebaseUser = {
       uid: `user_${email.split('@')[0] || Date.now()}`,
       email: email,
       displayName: email.split('@')[0],
+      photoURL: undefined,
     };
+    // For mock, we assume onboarding status needs to be checked/set.
+    // The handleSuccessfulLogin will determine redirect based on a potentially new profile with onboarding:false
     handleSuccessfulLogin(mockFirebaseUser, "Email");
   };
   
@@ -197,6 +211,7 @@ export default function LoginPage() {
     try {
       const result = await confirmationResult.confirm(otp);
       toast({ title: "Phone Verification Successful!", description: "Logging you in..." });
+      // For Phone OTP, similar to Google, context will handle profile creation/fetching.
       handleSuccessfulLogin(result.user, "Phone");
     } catch (error: any) {
       console.error("Error verifying OTP:", error);

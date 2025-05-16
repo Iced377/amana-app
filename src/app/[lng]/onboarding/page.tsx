@@ -1,11 +1,11 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, use } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { useTranslation } from '@/locales/client';
-import type { LocaleTypes, Madhhab, UserPreferenceMode, Language, UserProfile } from '@/locales/settings';
+import type { LocaleTypes, Madhhab, UserPreferenceMode, Language, UserProfile, VaultDetails } from '@/locales/settings';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { QuranicVerse } from '@/components/QuranicVerse';
 import { countryCodes } from '@/lib/countryCodes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, User, CheckSquare, Landmark, Languages, Shield } from 'lucide-react';
+import { Loader2, User, CheckSquare, Landmark, Languages, Shield, Briefcase } from 'lucide-react'; // Added Briefcase
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -31,10 +31,12 @@ const NONE_SELECTED_COUNTRY_VALUE = "_NONE_";
 export default function OnboardingPage({ params }: { params: { lng: LocaleTypes } }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { profile, updateProfileField, isLoading: profileLoading } = useUserPreferences();
+  const { profile, updateProfileField, isLoading: profileLoading, addUserVault } = useUserPreferences();
   const { user: firebaseUser, loading: authLoading } = useAuth();
+  
+  const resolvedParams = use(params); // Use React.use to unwrap params
+  const defaultInitialLocale = resolvedParams.lng || 'en';
 
-  const defaultInitialLocale = (pathname.split('/')[1] as LocaleTypes) || 'en';
   const [currentLocaleForUI, setCurrentLocaleForUI] = useState(profile?.language || defaultInitialLocale);
   const { t, i18n } = useTranslation(currentLocaleForUI, "translation");
   const { toast } = useToast();
@@ -45,6 +47,7 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
   const [selectedCountry, setSelectedCountry] = useState<string | undefined>(profile?.country);
   const [photoPreview, setPhotoPreview] = useState<string | null>(profile?.photoURL || null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => {
     if (profile?.language && i18n.language !== profile.language) {
@@ -64,7 +67,7 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
 
     if (!firebaseUser && !hasValidAppProfile) {
       router.replace(`/${currentLocaleForUI}/login`);
-    } else if (profile && profile.onboardingCompleted) { // Check profile directly
+    } else if (profile && profile.onboardingCompleted) { 
       router.replace(`/${currentLocaleForUI}/dashboard`);
     }
   }, [authLoading, profileLoading, firebaseUser, profile, router, currentLocaleForUI]);
@@ -75,23 +78,47 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
       setDisplayName(profile.displayName || (firebaseUser?.displayName || ''));
       setSelectedCountry(profile.country || undefined);
       setPhotoPreview(profile.photoURL || firebaseUser?.photoURL || null);
+      if(profile.language) setCurrentLocaleForUI(profile.language);
+      // If mode or madhhab is already set, potentially skip to next relevant step or profile
+      if (currentStep === 'language' && profile.language) {
+        setCurrentStep('mode');
+      }
+      if (currentStep === 'mode' && profile.mode) {
+         setCurrentStep('profile');
+      }
+       if (currentStep === 'profile' && profile.displayName) { // Example condition for skipping profile if name exists
+         if (profile.mode === 'islamic' && !profile.islamicPreferences?.madhhab) {
+            setCurrentStep('madhhab');
+         } else if (profile.mode === 'islamic' && profile.islamicPreferences?.madhhab) {
+            // Potentially finish if madhhab also set, or go to next step if one existed
+         }
+      }
     }
-  }, [profile, firebaseUser]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, firebaseUser]); // currentStep removed to prevent loop on step change
 
 
   const handleNextStep = () => {
     switch (currentStep) {
       case 'language':
+        if (!profile?.language) {
+            toast({ title: t("selectionRequiredTitle"), description: t("languageSelectionRequiredDesc"), variant: "destructive"});
+            return;
+        }
         setCurrentStep('mode');
         break;
       case 'mode':
+         if (!profile?.mode) {
+            toast({ title: t("selectionRequiredTitle"), description: t("modeSelectionRequiredDesc"), variant: "destructive"});
+            return;
+        }
         setCurrentStep('profile');
         break;
       case 'profile':
         updateProfileField({
-            displayName: displayName || undefined,
+            displayName: displayName || undefined, // Save even if empty, can be required later
             country: selectedCountry === NONE_SELECTED_COUNTRY_VALUE ? undefined : selectedCountry,
-            photoURL: photoPreview || undefined
+            photoURL: photoPreview || undefined // In real app, upload photo and save URL here
         });
         if (profile?.mode === 'islamic') {
           setCurrentStep('madhhab');
@@ -100,6 +127,10 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
         }
         break;
       case 'madhhab':
+         if (profile?.mode === 'islamic' && !profile?.islamicPreferences?.madhhab) {
+            toast({ title: t("selectionRequiredTitle"), description: t("madhhabSelectionRequiredDesc"), variant: "destructive"});
+            return;
+        }
         handleFinishOnboarding();
         break;
       default:
@@ -124,6 +155,17 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
   };
 
   const handleFinishOnboarding = () => {
+    if (!profile?.displayName) { // Example: Make display name required before finishing
+        toast({ title: t("profileInfoMissingTitle"), description: t("displayNameRequiredDesc"), variant: "destructive" });
+        setCurrentStep('profile'); // Go back to profile step
+        return;
+    }
+    if (profile?.mode === 'islamic' && !profile?.islamicPreferences?.madhhab) {
+        toast({ title: t("madhhabSelectionRequiredTitle"), description: t("madhhabSelectionRequiredDesc"), variant: "destructive"});
+        setCurrentStep('madhhab'); // Go back to madhhab step
+        return;
+    }
+
     updateProfileField({ onboardingCompleted: true });
     toast({ title: t("onboardingCompleteTitle"), description: t("onboardingCompleteDesc") });
     router.push(`/${currentLocaleForUI}/dashboard`);
@@ -135,7 +177,7 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
 
   const handleLanguageSelection = (language: Language) => {
     updateProfileField({ language });
-    // Context will handle path redirect due to language change
+    // Context's useEffect will handle i18n and path change
   };
 
   const handleMadhhabSelection = (madhhab: Madhhab) => {
@@ -149,7 +191,7 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
         setPhotoPreview(dataUrl);
-        // Note: actual upload to storage and getting URL would happen here or on finish
+        // updateProfileField({ photoURL: dataUrl }); // Save preview, actual upload would be more complex
       };
       reader.readAsDataURL(file);
     }
@@ -160,18 +202,23 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
   };
 
 
-  if (authLoading || profileLoading) {
+  if (authLoading || profileLoading || !profile) { // Check for profile presence too
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> Loading Onboarding...</div>;
   }
   
-  // This check handles the scenario where user lands on /onboarding but is already onboarded.
-  // The useEffect above will handle the redirection.
-  if (profile && profile.onboardingCompleted) {
-     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> Finalizing session...</div>;
+  // This effect now handles the redirection after profile state is confirmed.
+  // This was previously in the main body, causing "cannot update during render" errors.
+  useEffect(() => {
+    if (!profileLoading && profile && profile.onboardingCompleted) {
+      router.replace(`/${currentLocaleForUI}/dashboard`);
+    }
+  }, [profileLoading, profile, router, currentLocaleForUI]);
+
+  if (profile.onboardingCompleted) {
+     // This is a fallback in case the useEffect above hasn't redirected yet
+    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> Finalizing session...</div>;
   }
   
-  // This check handles scenario where user lands on /onboarding but is not authenticated at all.
-  // The useEffect above will handle redirection.
   const isAuthenticatedForOnboarding = firebaseUser || (profile && profile.id && profile.id !== 'guestUser');
   if (!isAuthenticatedForOnboarding) {
       return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> Redirecting to login...</div>;
@@ -348,7 +395,7 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
             <Button variant="outline" onClick={handlePreviousStep} disabled={currentStep === 'language'}>
             {t('previousButton')}
             </Button>
-            <Button onClick={handleNextStep}>
+            <Button onClick={isLastStep ? handleFinishOnboarding : handleNextStep}>
             {isLastStep ? t('finishButton') : t('nextButton')}
             </Button>
         </CardFooter>
