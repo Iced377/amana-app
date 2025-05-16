@@ -29,6 +29,8 @@ type OnboardingStep = 'mode' | 'language' | 'profile' | 'vault' | 'madhhab' | 'c
 
 const totalSteps = 5; // Adjust if Madhhab step is conditional
 
+const NONE_SELECTED_COUNTRY_VALUE = "_NONE_"; // Special value for "None Selected"
+
 export default function OnboardingPage() {
   const router = useRouter();
   const pathname = usePathname();
@@ -79,11 +81,13 @@ export default function OnboardingPage() {
         updateProfileField({ 
             displayName: displayName || undefined, // ensure undefined if empty
             country: selectedCountry,
-            // photoURL will be handled by actual upload logic if implemented
+            photoURL: photoPreview || undefined // Save the preview URL or actual uploaded URL
         });
         setCurrentStep('vault');
         break;
       case 'vault':
+        // Vault creation/skip logic handled within its own step's buttons
+        // This case might not be directly hit by a generic "Next" button for vault
         if (profile?.mode === 'islamic') {
           setCurrentStep('madhhab');
         } else {
@@ -141,9 +145,9 @@ export default function OnboardingPage() {
       const file = event.target.files[0];
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-        // In a real app, you'd upload this to Firebase Storage and save the URL
-        // updateProfileField({ photoURL: reader.result as string }); // For demo, store Data URL
+        const dataUrl = reader.result as string;
+        setPhotoPreview(dataUrl);
+        // updateProfileField({ photoURL: dataUrl }); // Save data URL; in real app, upload then save URL
       };
       reader.readAsDataURL(file);
     }
@@ -155,10 +159,9 @@ export default function OnboardingPage() {
         return;
     }
     const newVault: VaultDetails = { name: vaultName, description: vaultDescription };
-    addUserVault(newVault); // Add to context (and eventually Firestore)
+    addUserVault(newVault); 
     toast({ title: t("vaultCreatedTitle"), description: t("vaultCreatedDesc", { vaultName }) });
     
-    // Proceed to next step
     if (profile?.mode === 'islamic') {
       setCurrentStep('madhhab');
     } else {
@@ -174,6 +177,14 @@ export default function OnboardingPage() {
     }
   };
 
+  const handleCountryChange = (value: string) => {
+    if (value === NONE_SELECTED_COUNTRY_VALUE) {
+      setSelectedCountry(undefined);
+    } else {
+      setSelectedCountry(value);
+    }
+  };
+
 
   if (profileLoading || !profile) {
     return (
@@ -183,7 +194,6 @@ export default function OnboardingPage() {
     );
   }
 
-  // Redirect if onboarding is already done (double check)
   if (profile.onboardingCompleted) {
     router.replace(`/${currentLocale}/dashboard`);
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -270,12 +280,12 @@ export default function OnboardingPage() {
             </div>
             <div>
               <Label htmlFor="country">{t('countryOptionalLabel')}</Label>
-              <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+              <Select value={selectedCountry || NONE_SELECTED_COUNTRY_VALUE} onValueChange={handleCountryChange}>
                 <SelectTrigger id="country"><SelectValue placeholder={t('selectCountryPlaceholder')} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t('noneSelected')}</SelectItem>
+                  <SelectItem value={NONE_SELECTED_COUNTRY_VALUE}>{t('noneSelected')}</SelectItem>
                   {countryCodes.map(country => (
-                    <SelectItem key={`${country.code}-${country.name}`} value={country.name}> {/* Store name for display */}
+                    <SelectItem key={`${country.code}-${country.name}`} value={country.name}>
                       <span className="mr-2 rtl:ml-2">{country.flag}</span> {country.name}
                     </SelectItem>
                   ))}
@@ -374,14 +384,13 @@ export default function OnboardingPage() {
         <CardContent>
           {renderStepContent()}
         </CardContent>
-        {/* Footer is outside CardContent if it's not part of a scrollable area for steps like Vault */}
         {currentStep !== 'vault' && (
              <CardFooter className="flex justify-between pt-4 border-t">
                 <Button variant="outline" onClick={handlePreviousStep} disabled={currentStep === 'mode'}>
                 {t('previousButton')}
                 </Button>
                 <Button onClick={handleNextStep}>
-                {currentStep === 'madhhab' || (currentStep === 'vault' && profile?.mode === 'conventional') ? t('finishButton') : t('nextButton')}
+                {currentStep === 'madhhab' || (currentStep === 'profile' && profile?.mode === 'conventional') ? t('finishButton') : t('nextButton')}
                 </Button>
             </CardFooter>
         )}
@@ -389,79 +398,3 @@ export default function OnboardingPage() {
     </div>
   );
 }
-
-// Add translations for onboarding keys in your JSON files
-// e.g. src/locales/en/translation.json
-/*
-{
-  "onboardingCompleteTitle": "Onboarding Complete!",
-  "onboardingCompleteDesc": "Welcome to Amana! You can now explore your dashboard.",
-  "fullNameLabel": "Full Name",
-  "fullNamePlaceholder": "Enter your full name",
-  "profilePhotoOptionalLabel": "Profile Photo (Optional)",
-  "countryOptionalLabel": "Country (Optional)",
-  "selectCountryPlaceholder": "Select your country",
-  "vaultCreationPrompt": "Let's create your first secure vault to store your legacy items.",
-  "vaultNameLabel": "Vault Name",
-  "vaultNamePlaceholder": "e.g., My Personal Legacy, Family Documents",
-  "vaultDescriptionOptionalLabel": "Description (Optional)",
-  "vaultDescriptionPlaceholder": "A brief description of this vault's purpose",
-  "skipForNowButton": "Skip for Now",
-  "createVaultButton": "Create Vault",
-  "previousButton": "Previous",
-  "nextButton": "Next",
-  "finishButton": "Finish Onboarding",
-  "onboardingStepModeTitle": "Choose Your Experience",
-  "onboardingStepModeDesc": "Select the mode that best suits your planning needs.",
-  "onboardingStepLanguageTitle": "Select Language",
-  "onboardingStepLanguageDesc": "Choose your preferred language for the Amana app.",
-  "onboardingStepProfileTitle": "Set Up Your Profile",
-  "onboardingStepProfileDesc": "Help us personalize your experience.",
-  "onboardingStepVaultTitle": "Create Your First Vault",
-  "onboardingStepVaultDesc": "A vault is a secure space to organize your important files and information.",
-  "onboardingStepMadhhabTitle": "Select Your Madhhab",
-  "onboardingStepMadhhabDesc": "Choose your Islamic school of thought for inheritance calculations (if Islamic Mode selected).",
-  "madhhabChoiceNoteOnboarding": "This choice helps tailor Islamic inheritance features. You can change it later in settings.",
-  "vaultNameRequiredTitle": "Vault Name Required",
-  "vaultNameRequiredDesc": "Please enter a name for your vault to proceed.",
-  "vaultCreatedTitle": "Vault Created",
-  "vaultCreatedDesc": "\"{vaultName}\" has been successfully created."
-}
-*/
-// e.g. src/locales/ar/translation.json
-/*
-{
-  "onboardingCompleteTitle": "اكتمل الإعداد!",
-  "onboardingCompleteDesc": "أهلاً بك في أمانة! يمكنك الآن استكشاف لوحة التحكم الخاصة بك.",
-  "fullNameLabel": "الاسم الكامل",
-  "fullNamePlaceholder": "أدخل اسمك الكامل",
-  "profilePhotoOptionalLabel": "صورة الملف الشخصي (اختياري)",
-  "countryOptionalLabel": "الدولة (اختياري)",
-  "selectCountryPlaceholder": "اختر دولتك",
-  "vaultCreationPrompt": "لنقم بإنشاء أول خزنة آمنة لك لتخزين عناصر إرثك.",
-  "vaultNameLabel": "اسم الخزنة",
-  "vaultNamePlaceholder": "مثال: إرثي الشخصي، مستندات العائلة",
-  "vaultDescriptionOptionalLabel": "الوصف (اختياري)",
-  "vaultDescriptionPlaceholder": "وصف موجز لغرض هذه الخزنة",
-  "skipForNowButton": "تخطي الآن",
-  "createVaultButton": "إنشاء الخزنة",
-  "previousButton": "السابق",
-  "nextButton": "التالي",
-  "finishButton": "إنهاء الإعداد",
-  "onboardingStepModeTitle": "اختر تجربتك",
-  "onboardingStepModeDesc": "حدد الوضع الذي يناسب احتياجات التخطيط الخاصة بك.",
-  "onboardingStepLanguageTitle": "اختر اللغة",
-  "onboardingStepLanguageDesc": "اختر لغتك المفضلة لتطبيق أمانة.",
-  "onboardingStepProfileTitle": "إعداد ملفك الشخصي",
-  "onboardingStepProfileDesc": "ساعدنا في تخصيص تجربتك.",
-  "onboardingStepVaultTitle": "أنشئ خزنتك الأولى",
-  "onboardingStepVaultDesc": "الخزنة هي مساحة آمنة لتنظيم ملفاتك ومعلوماتك المهمة.",
-  "onboardingStepMadhhabTitle": "اختر مذهبك",
-  "onboardingStepMadhhabDesc": "اختر مذهبك الفقهي لحسابات الميراث (إذا تم اختيار الوضع الإسلامي).",
-  "madhhabChoiceNoteOnboarding": "يساعد هذا الاختيار في تخصيص ميزات الميراث الإسلامي. يمكنك تغييره لاحقًا في الإعدادات.",
-  "vaultNameRequiredTitle": "اسم الخزنة مطلوب",
-  "vaultNameRequiredDesc": "يرجى إدخال اسم لخزنتك للمتابعة.",
-  "vaultCreatedTitle": "تم إنشاء الخزنة",
-  "vaultCreatedDesc": "تم إنشاء \"{vaultName}\" بنجاح."
-}
-*/
