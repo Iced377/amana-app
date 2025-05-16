@@ -1,6 +1,6 @@
 
 "use client";
-
+import { useAuth } from '@/hooks/use-auth'; // Assuming a hook for auth state and user data
 import type React from 'react';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { UserPreferenceMode, Language, UserProfile, IslamicPreferences } from '@/types';
@@ -13,9 +13,9 @@ interface UserPreferencesContextType {
   language: Language;
   setLanguage: (language: Language) => void;
   isLoading: boolean;
-  updateProfileField: (updates: Partial<UserProfile>) => void;
-  // generateEncryptionKey: () => string; // Removed as per previous request
-  // getEncryptionKey: () => string | null; // Removed as per previous request
+  savePreferencesToFirebase: (preferences: Partial<UserProfile>) => Promise<void>;
+  updateProfileField: (updates: Partial<UserProfile>) => void; // Added this line
+  generateEncryptionKey?: () => string | null; // Made optional based on previous removal
 }
 
 const UserPreferencesContext = createContext<UserPreferencesContextType | undefined>(undefined);
@@ -29,14 +29,15 @@ const defaultProfile: UserProfile = {
   subscriptionTier: 'free',
   is2FAEnabled: false,
   // encryptionKey: undefined, // Removed
-  sadaqahEnabled: false,
-  sadaqahPercentage: undefined, 
-  islamicPreferences: { madhhab: ''}, 
+  sadaqahEnabled: false, // Example additional preference
+  sadaqahPercentage: undefined, // Example additional preference
+  islamicPreferences: { madhhab: ''}, // Example nested preference
 };
 
-export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [profile, setProfileState] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export const UserPreferencesProvider: React.FC<{ children: React.ReactNode; initialPreferences?: Partial<UserProfile> }> = ({ children, initialPreferences }) => {
+  const [profile, setProfileState] = useState<UserProfile | null>(() => ({...defaultProfile, ...initialPreferences}));
+  const [isLoading, setIsLoading] = useState(false); 
+  const { user: firebaseUser, loading: authLoading } = useAuth(); 
 
   const applyThemeAndFont = useCallback((themeMode: UserPreferenceMode) => {
     if (typeof window !== 'undefined') {
@@ -46,116 +47,121 @@ export const UserPreferencesProvider: React.FC<{ children: React.ReactNode }> = 
     }
   }, []);
 
+  // Function to simulate reading preferences from Firebase
+  const readPreferencesFromFirebase = useCallback(async (userId: string): Promise<UserProfile | null> => {
+    // TODO: Implement actual Firebase read logic (e.g., from 'users' collection)
+    console.log(`Simulating reading preferences for user: ${userId} from Firebase`);
+    // Placeholder: Return a mock profile or null
+    return null;
+  }, []);
+
+  // Function to simulate saving preferences to Firebase
+  const savePreferencesToFirebase = useCallback(async (preferences: Partial<UserProfile>): Promise<void> => {
+    // TODO: Implement actual Firebase save logic
+    console.log("Simulating saving preferences to Firebase:", preferences);
+    // In a real app, you'd update the user's document in Firestore here
+  }, []);
+
   useEffect(() => {
-    const storedProfileString = localStorage.getItem('userProfile');
-    let effectiveMode = defaultProfile.mode;
-    if (storedProfileString) {
-      try {
-        const storedProfile = JSON.parse(storedProfileString) as UserProfile;
-        const mergedProfile = {
-          ...defaultProfile,
-          ...storedProfile,
-          id: storedProfile.id || 'guestUser',
-          islamicPreferences: {
-            ...defaultProfile.islamicPreferences,
-            ...(storedProfile.islamicPreferences || {}),
-          },
-        };
-        setProfileState(mergedProfile);
-        effectiveMode = mergedProfile.mode;
-      } catch (e) {
-        console.error("Failed to parse userProfile from localStorage", e);
-        setProfileState({...defaultProfile, id: 'guestUser', displayName: 'Guest User'});
+    const fetchAndSetProfile = async () => {
+      setIsLoading(true);
+      let fetchedProfile: UserProfile | null = null;
+
+      if (firebaseUser) {
+        // Attempt to read from Firebase if user is logged in
+        fetchedProfile = await readPreferencesFromFirebase(firebaseUser.uid);
+        if (fetchedProfile) {
+          setProfileState({ ...defaultProfile, ...initialPreferences, ...fetchedProfile, id: firebaseUser.uid, email: firebaseUser.email || fetchedProfile.email, displayName: firebaseUser.displayName || fetchedProfile.displayName });
+          applyThemeAndFont(fetchedProfile.mode || defaultProfile.mode);
+        } else {
+           // If no profile in Firebase, maybe it's a new user or fetch failed. Use default.
+           setProfileState({ ...defaultProfile, ...initialPreferences, id: firebaseUser.uid, email: firebaseUser.email, displayName: firebaseUser.displayName });
+           applyThemeAndFont(initialPreferences?.mode || defaultProfile.mode);
+        }
+      } else {
+        // Handle guest user or logged out state - perhaps clear profile or use default guest
+        setProfileState({ ...defaultProfile, ...initialPreferences, id: 'guestUser', displayName: 'Guest User' });
+        applyThemeAndFont(initialPreferences?.mode || defaultProfile.mode);
       }
-    } else {
-      setProfileState({...defaultProfile, id: 'guestUser', displayName: 'Guest User'});
+      setIsLoading(false);
+    };
+
+    if (!authLoading) {
+       fetchAndSetProfile();
     }
-    applyThemeAndFont(effectiveMode);
-    setIsLoading(false);
-  }, [applyThemeAndFont]);
+  }, [firebaseUser, authLoading, readPreferencesFromFirebase, applyThemeAndFont, initialPreferences]);
+
+  const updateProfileField = useCallback(async (updates: Partial<UserProfile>) => {
+     setProfileState(prevProfile => {
+       const baseProfile = prevProfile || {...defaultProfile, ...initialPreferences};
+       const updatedIslamicPreferences = updates.islamicPreferences
+         ? { ...(baseProfile.islamicPreferences || {}), ...updates.islamicPreferences }
+         : baseProfile.islamicPreferences;
+
+       const oldMode = baseProfile.mode;
+       const newMode = updates.mode || oldMode;
+
+       const updatedProfile = {
+         ...baseProfile,
+         ...updates,
+         islamicPreferences: updatedIslamicPreferences,
+         id: baseProfile.id || (updates.id || 'guestUser')
+       };
+
+       if (newMode !== oldMode && newMode !== undefined) {
+         applyThemeAndFont(newMode);
+       }
+
+       if (updatedProfile.id && updatedProfile.id !== 'guestUser') {
+           savePreferencesToFirebase({userId: updatedProfile.id, ...updates}); 
+       }
+       return updatedProfile;
+     });
+  }, [applyThemeAndFont, savePreferencesToFirebase, initialPreferences]);
 
   const setProfile = useCallback((newProfile: UserProfile | null) => {
-    let effectiveMode = defaultProfile.mode;
     if (newProfile) {
-      effectiveMode = newProfile.mode;
-      setProfileState(newProfile);
-      localStorage.setItem('userProfile', JSON.stringify(newProfile));
+       updateProfileField(newProfile); 
     } else {
-      localStorage.removeItem('userProfile');
-      setProfileState({...defaultProfile, id: 'guestUser', displayName: 'Guest User'});
+       setProfileState({ ...defaultProfile, ...initialPreferences, id: 'guestUser', displayName: 'Guest User' });
+       applyThemeAndFont(initialPreferences?.mode || defaultProfile.mode);
     }
-    applyThemeAndFont(effectiveMode);
-  }, [applyThemeAndFont]);
-  
-  const updateProfileField = useCallback((updates: Partial<UserProfile>) => {
-    setProfileState(prevProfile => {
-      const baseProfile = prevProfile || defaultProfile;
-      const updatedIslamicPreferences = updates.islamicPreferences 
-        ? { ...(baseProfile.islamicPreferences || {}), ...updates.islamicPreferences } 
-        : baseProfile.islamicPreferences;
+  }, [updateProfileField, applyThemeAndFont, initialPreferences]);
 
-      const oldMode = baseProfile.mode;
-      const newMode = updates.mode || oldMode;
-
-      const updatedProfile = { 
-        ...baseProfile, 
-        ...updates, 
-        islamicPreferences: updatedIslamicPreferences,
-        id: baseProfile.id || (updates.id || 'guestUser') 
-      };
-      localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
-      
-      if (newMode !== oldMode || (updates.mode && updates.mode !== baseProfile.mode)) {
-        applyThemeAndFont(newMode);
-      }
-      return updatedProfile;
-    });
-  }, [applyThemeAndFont]);
-
-  const setMode = useCallback((newMode: UserPreferenceMode) => {
-    updateProfileField({ mode: newMode });
-    // applyThemeAndFont is called within updateProfileField if mode changes
-  }, [updateProfileField]);
+   const setMode = useCallback((newMode: UserPreferenceMode) => {
+     updateProfileField({ mode: newMode });
+   }, [updateProfileField]);
 
   const setLanguage = useCallback((newLanguage: Language) => {
-    updateProfileField({ language: newLanguage });
-    if (typeof window !== 'undefined') {
-      document.documentElement.lang = newLanguage;
-      document.documentElement.dir = newLanguage === 'ar' ? 'rtl' : 'ltr';
-    }
-  }, [updateProfileField]);
-
-  // Removed encryption key functions as per previous updates
+     updateProfileField({ language: newLanguage });
+   }, [updateProfileField]);
 
   useEffect(() => {
     if (profile?.language && typeof window !== 'undefined') {
       document.documentElement.lang = profile.language;
       document.documentElement.dir = profile.language === 'ar' ? 'rtl' : 'ltr';
     }
-    // Apply theme on initial load based on profile, if not already handled by the main useEffect
-    if (profile && !isLoading) { // ensure profile is loaded
+    if(profile?.mode && typeof window !== 'undefined'){
         applyThemeAndFont(profile.mode);
     }
+  }, [profile, applyThemeAndFont]); 
 
-  }, [profile, isLoading, applyThemeAndFont]);
-
-
-  if (isLoading) {
-    return null; 
+  if (authLoading || isLoading) {
+     return null; 
   }
 
   return (
     <UserPreferencesContext.Provider value={{ 
-      profile, 
-      setProfile,
-      mode: profile?.mode || 'conventional', 
-      setMode, 
-      language: profile?.language || 'en', 
+      profile,
+      setProfile, 
+      mode: profile?.mode || initialPreferences?.mode || defaultProfile.mode, 
+      setMode,
+      language: profile?.language || initialPreferences?.language || defaultProfile.language, 
       setLanguage,
       isLoading,
+      savePreferencesToFirebase, 
       updateProfileField,
-      // generateEncryptionKey, // Removed
-      // getEncryptionKey, // Removed
+      // generateEncryptionKey // Removed as per previous change
     }}>
       {children}
     </UserPreferencesContext.Provider>

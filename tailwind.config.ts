@@ -12,6 +12,24 @@ export default {
   	extend: {
   		colors: {
   			background: 'hsl(var(--background))',
+ islamic: {
+ primary: '#1B4D3E', // deep emerald
+ accent: '#D4AF37', // gold
+ background: '#FDF8EE',
+ surface: '#FFFFFF',
+ text: '#1B1F23',
+ },
+ conventional: {
+ primary: '#1C2D5A', // deep navy
+ accent: '#2EB5A3', // turquoise
+ background: '#F7F9FC',
+ surface: '#FFFFFF',
+ text: '#1A202C',
+ },
+ // Ensure default colors are still available
+ default: { // You might want to rename these or merge strategically
+ foreground: 'hsl(var(--foreground))',
+ },
   			foreground: 'hsl(var(--foreground))',
   			card: {
   				DEFAULT: 'hsl(var(--card))',
@@ -68,7 +86,7 @@ export default {
   			sm: 'calc(var(--radius) - 4px)'
   		},
       fontFamily: {
-        conventional: ['Inter', 'var(--font-sans)', 'sans-serif'],
+ conventional: ['Inter', 'sans-serif'],
         islamic: ['Amiri', 'serif'],
         sans: ['Inter', 'var(--font-sans)', 'sans-serif'] // Ensure Inter is part of sans
       },

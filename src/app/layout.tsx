@@ -1,6 +1,7 @@
 
 import type { Metadata } from 'next';
 import './globals.css'; // Keep global styles here
+import { UserPreferencesProvider } from '@/context/UserPreferencesContext';
 import { Inter } from 'next/font/google'; // Import Inter
 
 // Initialize Inter font
@@ -23,10 +24,13 @@ export default function RootLayout({
   // This root layout is minimal.
   return (
     // The `inter.variable` class applies the CSS variable to the html tag
-    // The theme-specific font class will be added by UserPreferencesContext
+    // The theme-specific font class and data-theme will be added by UserPreferencesContext
     <html lang="en" className={inter.variable}> 
       <body>
-        {children}
+        {/* TODO: Read initial user preferences from Firebase */}
+        <UserPreferencesProvider initialPreferences={{ mode: 'conventional' }}>
+          {children}
+        </UserPreferencesProvider>
       </body>
     </html>
   );
