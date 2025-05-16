@@ -25,7 +25,7 @@ import Image from 'next/image';
 const QURAN_VERSE_AMANAH = "إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُُّوا۟ ٱلْأَمَٰنَٰتِ إِلَىٰٓ أَهْلِهَا"; // An-Nisa 4:58
 const QURAN_VERSE_AMANAH_CITATION = "سورة النساء: ٥٨";
 
-type OnboardingStep = 'mode' | 'language' | 'profile' | 'vault' | 'madhhab' | 'completed';
+type OnboardingStep = 'language' | 'mode' | 'profile' | 'vault' | 'madhhab' | 'completed'; // Changed order
 
 const totalSteps = 5; // Adjust if Madhhab step is conditional
 
@@ -40,7 +40,7 @@ export default function OnboardingPage() {
   const { t, i18n } = useTranslation(currentLocale, "translation");
   const { toast } = useToast();
 
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>('mode');
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>('language'); // Default to language step
   
   // Local form state for profile step
   const [displayName, setDisplayName] = useState(profile?.displayName || '');
@@ -72,13 +72,19 @@ export default function OnboardingPage() {
     }
   }, [profile, i18n]);
 
+  useEffect(() => {
+    if (!profileLoading && profile && profile.onboardingCompleted) {
+      router.replace(`/${currentLocale}/dashboard`);
+    }
+  }, [profile, profileLoading, router, currentLocale]);
+
 
   const handleNextStep = () => {
     switch (currentStep) {
-      case 'mode':
-        setCurrentStep('language');
-        break;
       case 'language':
+        setCurrentStep('mode');
+        break;
+      case 'mode':
         setCurrentStep('profile');
         break;
       case 'profile':
@@ -88,11 +94,7 @@ export default function OnboardingPage() {
             country: selectedCountry === NONE_SELECTED_COUNTRY_VALUE ? undefined : selectedCountry,
             photoURL: photoPreview || undefined 
         });
-        if (profile?.mode === 'islamic') {
-          setCurrentStep('vault'); // Islamic mode goes to vault then madhhab
-        } else {
-          setCurrentStep('vault'); // Conventional mode goes to vault then finishes
-        }
+        setCurrentStep('vault'); // Both modes go to vault next
         break;
       case 'vault':
         // This case is handled by create/skip vault buttons directly
@@ -114,10 +116,10 @@ export default function OnboardingPage() {
         setCurrentStep('profile');
         break;
       case 'profile':
-        setCurrentStep('language');
-        break;
-      case 'language':
         setCurrentStep('mode');
+        break;
+      case 'mode': 
+        setCurrentStep('language'); 
         break;
       default:
         break;
@@ -136,7 +138,7 @@ export default function OnboardingPage() {
 
   const handleLanguageSelection = (language: Language) => {
     updateProfileField({ language });
-    i18n.changeLanguage(language); 
+    // i18n.changeLanguage will be handled by context's updateProfileField effect
   };
 
   const handleMadhhabSelection = (madhhab: Madhhab) => {
@@ -180,7 +182,7 @@ export default function OnboardingPage() {
   };
 
   const handleCountryChange = (value: string) => {
-      setSelectedCountry(value);
+      setSelectedCountry(value === NONE_SELECTED_COUNTRY_VALUE ? undefined : value);
   };
 
 
@@ -192,15 +194,10 @@ export default function OnboardingPage() {
     );
   }
   
-  // This check is now handled by useEffect to prevent calling router.replace during render
-  // if (profile.onboardingCompleted) {
-  //   return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
-  // }
-  
   const getStepNumber = () => {
     switch(currentStep) {
-        case 'mode': return 1;
-        case 'language': return 2;
+        case 'language': return 1;
+        case 'mode': return 2;
         case 'profile': return 3;
         case 'vault': return 4;
         case 'madhhab': return 5;
@@ -214,6 +211,25 @@ export default function OnboardingPage() {
 
   const renderStepContent = () => {
     switch (currentStep) {
+      case 'language':
+        return (
+          <div className="space-y-4">
+            <RadioGroup
+              value={profile.language}
+              onValueChange={(value) => handleLanguageSelection(value as Language)}
+              className="flex flex-col space-y-2"
+            >
+              <Label htmlFor="lang-en" className="flex items-center space-x-2 rtl:space-x-reverse p-3 border rounded-md hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground cursor-pointer">
+                <RadioGroupItem value="en" id="lang-en" />
+                <span>{t('english')}</span>
+              </Label>
+              <Label htmlFor="lang-ar" className="flex items-center space-x-2 rtl:space-x-reverse p-3 border rounded-md hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground cursor-pointer">
+                <RadioGroupItem value="ar" id="lang-ar" />
+                <span>{t('arabic')}</span>
+              </Label>
+            </RadioGroup>
+          </div>
+        );
       case 'mode':
         return (
           <div className="space-y-4">
@@ -237,25 +253,6 @@ export default function OnboardingPage() {
             <p className="text-xs text-muted-foreground">{t('islamicModeDescription')}</p>
           </div>
         );
-      case 'language':
-        return (
-          <div className="space-y-4">
-            <RadioGroup
-              value={profile.language}
-              onValueChange={(value) => handleLanguageSelection(value as Language)}
-              className="flex flex-col space-y-2"
-            >
-              <Label htmlFor="lang-en" className="flex items-center space-x-2 rtl:space-x-reverse p-3 border rounded-md hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground cursor-pointer">
-                <RadioGroupItem value="en" id="lang-en" />
-                <span>{t('english')}</span>
-              </Label>
-              <Label htmlFor="lang-ar" className="flex items-center space-x-2 rtl:space-x-reverse p-3 border rounded-md hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground cursor-pointer">
-                <RadioGroupItem value="ar" id="lang-ar" />
-                <span>{t('arabic')}</span>
-              </Label>
-            </RadioGroup>
-          </div>
-        );
       case 'profile':
         return (
           <div className="space-y-4">
@@ -267,7 +264,7 @@ export default function OnboardingPage() {
               <Label htmlFor="photoUpload">{t('profilePhotoOptionalLabel')}</Label>
               <div className="flex items-center gap-4">
                 {photoPreview ? (
-                  <Image src={photoPreview} alt="Profile preview" width={80} height={80} className="rounded-full object-cover" data-ai-hint="profile picture" />
+                  <Image src={photoPreview} alt="Profile preview" width={80} height={80} className="rounded-full object-cover" data-ai-hint="profile picture"/>
                 ) : (
                   <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
                     <User className="w-10 h-10 text-muted-foreground" />
@@ -336,8 +333,8 @@ export default function OnboardingPage() {
   
   const getStepTitle = () => {
     switch(currentStep) {
-        case 'mode': return t('onboardingStepModeTitle');
         case 'language': return t('onboardingStepLanguageTitle');
+        case 'mode': return t('onboardingStepModeTitle');
         case 'profile': return t('onboardingStepProfileTitle');
         case 'vault': return t('onboardingStepVaultTitle');
         case 'madhhab': return t('onboardingStepMadhhabTitle');
@@ -347,8 +344,8 @@ export default function OnboardingPage() {
 
   const getStepDescription = () => {
     switch(currentStep) {
-        case 'mode': return t('onboardingStepModeDesc');
         case 'language': return t('onboardingStepLanguageDesc');
+        case 'mode': return t('onboardingStepModeDesc');
         case 'profile': return t('onboardingStepProfileDesc');
         case 'vault': return t('onboardingStepVaultDesc');
         case 'madhhab': return t('onboardingStepMadhhabDesc');
@@ -358,8 +355,8 @@ export default function OnboardingPage() {
   
   const getStepIcon = () => {
     switch(currentStep) {
-        case 'mode': return <Shield className="h-6 w-6 text-primary" />;
         case 'language': return <Languages className="h-6 w-6 text-primary" />;
+        case 'mode': return <Shield className="h-6 w-6 text-primary" />;
         case 'profile': return <User className="h-6 w-6 text-primary" />;
         case 'vault': return <Home className="h-6 w-6 text-primary" />; 
         case 'madhhab': return <Landmark className="h-6 w-6 text-primary" />;
@@ -385,11 +382,11 @@ export default function OnboardingPage() {
         {/* Conditionally render footer based on current step */}
         {currentStep !== 'vault' && (
              <CardFooter className="flex justify-between pt-4 border-t">
-                <Button variant="outline" onClick={handlePreviousStep} disabled={currentStep === 'mode'}>
+                <Button variant="outline" onClick={handlePreviousStep} disabled={currentStep === 'language'}>
                 {t('previousButton')}
                 </Button>
                 <Button onClick={handleNextStep}>
-                { (currentStep === 'madhhab') || (currentStep === 'profile' && profile?.mode === 'conventional') ? t('finishButton') : t('nextButton')}
+                { (currentStep === 'madhhab') || (currentStep === 'profile' && profile?.mode === 'conventional' && effectiveTotalSteps === 4) ? t('finishButton') : t('nextButton')}
                 </Button>
             </CardFooter>
         )}
