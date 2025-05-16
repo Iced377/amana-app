@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react'; // Removed React.use
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { useTranslation } from '@/locales/client';
@@ -24,7 +24,7 @@ import { useAuth } from '@/hooks/use-auth';
 const QURAN_VERSE_AMANAH = "إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُُّوا۟ ٱلْأَمَٰنَٰتِ إِلَىٰٓ أَهْلِهَا";
 const QURAN_VERSE_AMANAH_CITATION = "سورة النساء: ٥٨";
 
-type OnboardingStep = 'language' | 'mode' | 'profile' | 'madhhab'; // Removed 'vault'
+type OnboardingStep = 'language' | 'mode' | 'profile' | 'madhhab';
 
 const NONE_SELECTED_COUNTRY_VALUE = "_NONE_";
 
@@ -57,14 +57,14 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
 
   useEffect(() => {
     if (authLoading || profileLoading) {
-      return; // Wait for critical data
+      return; 
     }
 
     const hasValidAppProfile = profile && profile.id && profile.id !== 'guestUser';
 
     if (!firebaseUser && !hasValidAppProfile) {
       router.replace(`/${currentLocaleForUI}/login`);
-    } else if (hasValidAppProfile && profile.onboardingCompleted) {
+    } else if (profile && profile.onboardingCompleted) { // Check profile directly
       router.replace(`/${currentLocaleForUI}/dashboard`);
     }
   }, [authLoading, profileLoading, firebaseUser, profile, router, currentLocaleForUI]);
@@ -135,7 +135,7 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
 
   const handleLanguageSelection = (language: Language) => {
     updateProfileField({ language });
-    // i18n.changeLanguage(language).then(() => setCurrentLocaleForUI(language)); // Context will handle path redirect
+    // Context will handle path redirect due to language change
   };
 
   const handleMadhhabSelection = (madhhab: Madhhab) => {
@@ -159,17 +159,22 @@ export default function OnboardingPage({ params }: { params: { lng: LocaleTypes 
       setSelectedCountry(value === NONE_SELECTED_COUNTRY_VALUE ? undefined : value);
   };
 
+
   if (authLoading || profileLoading) {
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> Loading Onboarding...</div>;
   }
-
-  // Safeguard after loading: if conditions to be on onboarding aren't met, show loader (useEffect will redirect)
+  
+  // This check handles the scenario where user lands on /onboarding but is already onboarded.
+  // The useEffect above will handle the redirection.
+  if (profile && profile.onboardingCompleted) {
+     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> Finalizing session...</div>;
+  }
+  
+  // This check handles scenario where user lands on /onboarding but is not authenticated at all.
+  // The useEffect above will handle redirection.
   const isAuthenticatedForOnboarding = firebaseUser || (profile && profile.id && profile.id !== 'guestUser');
-  const shouldBeOnOnboarding = isAuthenticatedForOnboarding && !profile?.onboardingCompleted;
-
-  if (!shouldBeOnOnboarding && !isLoading) { // check !isLoading from context as well
-    // This implies a redirect is about to happen or has happened.
-    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> Finalizing session...</div>;
+  if (!isAuthenticatedForOnboarding) {
+      return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> Redirecting to login...</div>;
   }
 
 
