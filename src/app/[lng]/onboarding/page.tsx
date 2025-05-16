@@ -22,7 +22,7 @@ import Image from 'next/image';
 
 
 // Quranic verses
-const QURAN_VERSE_AMANAH = "إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُّوا۟ ٱلْأَمَٰنَٰتِ إِلَىٰٓ أَهْلِهَا"; // An-Nisa 4:58
+const QURAN_VERSE_AMANAH = "إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُُّوا۟ ٱلْأَمَٰنَٰتِ إِلَىٰٓ أَهْلِهَا"; // An-Nisa 4:58
 const QURAN_VERSE_AMANAH_CITATION = "سورة النساء: ٥٨";
 
 type OnboardingStep = 'mode' | 'language' | 'profile' | 'vault' | 'madhhab' | 'completed';
@@ -35,7 +35,9 @@ export default function OnboardingPage() {
   const router = useRouter();
   const pathname = usePathname();
   const { profile, updateProfileField, isLoading: profileLoading, addUserVault } = useUserPreferences();
-  const { t, i18n } = useTranslation(profile?.language || (pathname.split('/')[1] as LocaleTypes) || 'en', "translation");
+  
+  const currentLocale = profile?.language || (pathname.split('/')[1] as LocaleTypes) || 'en';
+  const { t, i18n } = useTranslation(currentLocale, "translation");
   const { toast } = useToast();
 
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('mode');
@@ -50,7 +52,6 @@ export default function OnboardingPage() {
   const [vaultName, setVaultName] = useState('');
   const [vaultDescription, setVaultDescription] = useState('');
 
-  const currentLocale = profile?.language || (pathname.split('/')[1] as LocaleTypes) || 'en';
 
   useEffect(() => {
     if (!profileLoading && profile?.onboardingCompleted) {
@@ -64,8 +65,12 @@ export default function OnboardingPage() {
       setDisplayName(profile.displayName || '');
       setSelectedCountry(profile.country || undefined);
       setPhotoPreview(profile.photoURL || null);
+      // If profile indicates a specific language and i18n isn't aligned, change it
+      if (i18n.language !== profile.language) {
+        i18n.changeLanguage(profile.language);
+      }
     }
-  }, [profile]);
+  }, [profile, i18n]);
 
 
   const handleNextStep = () => {
@@ -79,20 +84,18 @@ export default function OnboardingPage() {
       case 'profile':
         // Save profile info
         updateProfileField({ 
-            displayName: displayName || undefined, // ensure undefined if empty
-            country: selectedCountry,
-            photoURL: photoPreview || undefined // Save the preview URL or actual uploaded URL
+            displayName: displayName || undefined, 
+            country: selectedCountry === NONE_SELECTED_COUNTRY_VALUE ? undefined : selectedCountry,
+            photoURL: photoPreview || undefined 
         });
-        setCurrentStep('vault');
+        if (profile?.mode === 'islamic') {
+          setCurrentStep('vault'); // Islamic mode goes to vault then madhhab
+        } else {
+          setCurrentStep('vault'); // Conventional mode goes to vault then finishes
+        }
         break;
       case 'vault':
-        // Vault creation/skip logic handled within its own step's buttons
-        // This case might not be directly hit by a generic "Next" button for vault
-        if (profile?.mode === 'islamic') {
-          setCurrentStep('madhhab');
-        } else {
-          handleFinishOnboarding();
-        }
+        // This case is handled by create/skip vault buttons directly
         break;
       case 'madhhab':
         handleFinishOnboarding();
@@ -133,7 +136,7 @@ export default function OnboardingPage() {
 
   const handleLanguageSelection = (language: Language) => {
     updateProfileField({ language });
-    i18n.changeLanguage(language); // Change i18next language
+    i18n.changeLanguage(language); 
   };
 
   const handleMadhhabSelection = (madhhab: Madhhab) => {
@@ -147,7 +150,6 @@ export default function OnboardingPage() {
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
         setPhotoPreview(dataUrl);
-        // updateProfileField({ photoURL: dataUrl }); // Save data URL; in real app, upload then save URL
       };
       reader.readAsDataURL(file);
     }
@@ -178,11 +180,7 @@ export default function OnboardingPage() {
   };
 
   const handleCountryChange = (value: string) => {
-    if (value === NONE_SELECTED_COUNTRY_VALUE) {
-      setSelectedCountry(undefined);
-    } else {
       setSelectedCountry(value);
-    }
   };
 
 
@@ -193,11 +191,11 @@ export default function OnboardingPage() {
       </div>
     );
   }
-
-  if (profile.onboardingCompleted) {
-    router.replace(`/${currentLocale}/dashboard`);
-    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
-  }
+  
+  // This check is now handled by useEffect to prevent calling router.replace during render
+  // if (profile.onboardingCompleted) {
+  //   return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+  // }
   
   const getStepNumber = () => {
     switch(currentStep) {
@@ -224,11 +222,11 @@ export default function OnboardingPage() {
               onValueChange={(value) => handleModeSelection(value as UserPreferenceMode)}
               className="flex flex-col space-y-2"
             >
-              <Label htmlFor="mode-conventional" className="flex items-center space-x-2 p-3 border rounded-md hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground cursor-pointer">
+              <Label htmlFor="mode-conventional" className="flex items-center space-x-2 rtl:space-x-reverse p-3 border rounded-md hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground cursor-pointer">
                 <RadioGroupItem value="conventional" id="mode-conventional" />
                 <span>{t('conventionalMode')}</span>
               </Label>
-              <Label htmlFor="mode-islamic" className="flex items-center space-x-2 p-3 border rounded-md hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground cursor-pointer">
+              <Label htmlFor="mode-islamic" className="flex items-center space-x-2 rtl:space-x-reverse p-3 border rounded-md hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground cursor-pointer">
                 <RadioGroupItem value="islamic" id="mode-islamic" />
                 <span>{t('islamicMode')}</span>
               </Label>
@@ -247,11 +245,11 @@ export default function OnboardingPage() {
               onValueChange={(value) => handleLanguageSelection(value as Language)}
               className="flex flex-col space-y-2"
             >
-              <Label htmlFor="lang-en" className="flex items-center space-x-2 p-3 border rounded-md hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground cursor-pointer">
+              <Label htmlFor="lang-en" className="flex items-center space-x-2 rtl:space-x-reverse p-3 border rounded-md hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground cursor-pointer">
                 <RadioGroupItem value="en" id="lang-en" />
                 <span>{t('english')}</span>
               </Label>
-              <Label htmlFor="lang-ar" className="flex items-center space-x-2 p-3 border rounded-md hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground cursor-pointer">
+              <Label htmlFor="lang-ar" className="flex items-center space-x-2 rtl:space-x-reverse p-3 border rounded-md hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground cursor-pointer">
                 <RadioGroupItem value="ar" id="lang-ar" />
                 <span>{t('arabic')}</span>
               </Label>
@@ -322,7 +320,7 @@ export default function OnboardingPage() {
               className="flex flex-col space-y-2"
             >
               {['hanafi', 'shafii', 'maliki', 'hanbali'].map((m) => (
-                <Label key={m} htmlFor={`madhhab-${m}`} className="flex items-center space-x-2 p-3 border rounded-md hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground cursor-pointer">
+                <Label key={m} htmlFor={`madhhab-${m}`} className="flex items-center space-x-2 rtl:space-x-reverse p-3 border rounded-md hover:bg-accent has-[:checked]:bg-primary has-[:checked]:text-primary-foreground cursor-pointer">
                   <RadioGroupItem value={m} id={`madhhab-${m}`} />
                   <span>{t(`madhhab${m.charAt(0).toUpperCase() + m.slice(1)}` as any)}</span>
                 </Label>
@@ -363,7 +361,7 @@ export default function OnboardingPage() {
         case 'mode': return <Shield className="h-6 w-6 text-primary" />;
         case 'language': return <Languages className="h-6 w-6 text-primary" />;
         case 'profile': return <User className="h-6 w-6 text-primary" />;
-        case 'vault': return <Home className="h-6 w-6 text-primary" />; // Or FolderLock
+        case 'vault': return <Home className="h-6 w-6 text-primary" />; 
         case 'madhhab': return <Landmark className="h-6 w-6 text-primary" />;
         default: return <CheckSquare className="h-6 w-6 text-primary" />;
     }
@@ -384,13 +382,14 @@ export default function OnboardingPage() {
         <CardContent>
           {renderStepContent()}
         </CardContent>
+        {/* Conditionally render footer based on current step */}
         {currentStep !== 'vault' && (
              <CardFooter className="flex justify-between pt-4 border-t">
                 <Button variant="outline" onClick={handlePreviousStep} disabled={currentStep === 'mode'}>
                 {t('previousButton')}
                 </Button>
                 <Button onClick={handleNextStep}>
-                {currentStep === 'madhhab' || (currentStep === 'profile' && profile?.mode === 'conventional') ? t('finishButton') : t('nextButton')}
+                { (currentStep === 'madhhab') || (currentStep === 'profile' && profile?.mode === 'conventional') ? t('finishButton') : t('nextButton')}
                 </Button>
             </CardFooter>
         )}
@@ -398,3 +397,4 @@ export default function OnboardingPage() {
     </div>
   );
 }
+
