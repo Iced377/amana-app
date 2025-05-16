@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+// Removed RadioGroup import as mode selection is moved to onboarding
+// import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ShieldCheck, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -13,11 +14,11 @@ import React, { useState } from 'react';
 import { ModeToggle } from "@/components/mode-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useUserPreferences } from "@/context/UserPreferencesContext";
-import type { UserPreferenceMode, UserProfile } from "@/types";
+import type { UserProfile } from "@/types"; // UserPreferenceMode removed from direct use here
 import type { LocaleTypes } from "@/locales/settings";
 import { useToast } from "@/hooks/use-toast";
-import { auth, googleProvider } from '@/lib/firebase'; 
-import { signInWithPopup, type UserCredential } from "firebase/auth"; 
+import { auth, googleProvider } from '@/lib/firebase';
+import { signInWithPopup, type UserCredential } from "firebase/auth";
 import { AppLogo } from "@/components/AppLogo";
 import { QuranicVerse } from '@/components/QuranicVerse';
 
@@ -44,48 +45,55 @@ const GoogleIcon = () => (
   </svg>
 );
 
-const QURAN_VERSE_AMANAH = "إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُّوا۟ ٱلْأَمَٰنَٰتِ إِلَىٰٓ أَهْلِهَا";
-const QURAN_VERSE_AMANAH_CITATION = "سورة النساء: ٥٨";
+// Quranic verse for Islamic mode, now moved to onboarding
+// const QURAN_VERSE_AMANAH = "إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُّوا۟ ٱلْأَمَٰنَٰتِ إِلَىٰٓ أَهْلِهَا";
+// const QURAN_VERSE_AMANAH_CITATION = "سورة النساء: ٥٨";
 
 export default function SignupPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const { setProfile, updateProfileField } = useUserPreferences();
-  const [fullName, setFullName] = useState('');
-  const [emailAddress, setEmailAddress] = useState(''); // Renamed to avoid conflict with email variable from context
+  const { updateProfileField } = useUserPreferences(); // Removed setProfile, as updateProfileField handles it
+  // Removed fullName state as it's collected in onboarding
+  const [emailAddress, setEmailAddress] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [selectedMode, setSelectedMode] = useState<UserPreferenceMode>('conventional');
+  // Removed selectedMode state as it's selected in onboarding
   const { toast } = useToast();
 
   const currentLocale = (pathname.split('/')[1] || 'en') as LocaleTypes;
 
   const handleSuccessfulSignup = (firebaseUser: any) => {
+    const initialDisplayName = firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'New User';
     const newUserProfile: UserProfile = {
-      id: firebaseUser.uid, 
+      id: firebaseUser.uid,
       email: firebaseUser.email,
-      displayName: firebaseUser.displayName || fullName || firebaseUser.email?.split('@')[0] || 'New User', 
-      mode: selectedMode, 
-      language: currentLocale, 
+      displayName: initialDisplayName,
+      mode: 'conventional', // Default to conventional, user will choose in onboarding
+      language: currentLocale,
       subscriptionTier: 'free',
       is2FAEnabled: false,
-      onboardingCompleted: false, // Key change for onboarding
-      sadaqahEnabled: selectedMode === 'islamic', // Default Sadaqah for Islamic mode users
-      sadaqahPercentage: selectedMode === 'islamic' ? 1 : undefined, // Default 1% for Islamic mode
+      onboardingCompleted: false,
+      sadaqahEnabled: false, // Default to false, will be updated in onboarding if Islamic mode is chosen
+      sadaqahPercentage: undefined, // Default to undefined
     };
-    
-    // setProfile(newUserProfile); // updateProfileField will also call setProfile internally
-    updateProfileField(newUserProfile); // This will save to Firebase (mocked) and update context
+
+    updateProfileField(newUserProfile);
 
     toast({ title: "Account Created!", description: "Welcome to Amana. Redirecting to onboarding...", variant: "default" });
-    router.push(`/${currentLocale}/onboarding`); // Redirect to onboarding
+    router.push(`/${currentLocale}/onboarding`);
   };
 
 
   const handleGoogleSignUp = async () => {
     try {
       const result: UserCredential = await signInWithPopup(auth, googleProvider);
-      handleSuccessfulSignup(result.user);
+      // Pass a simplified firebaseUser object for consistency in handleSuccessfulSignup
+      const simplifiedFirebaseUser = {
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName
+      };
+      handleSuccessfulSignup(simplifiedFirebaseUser);
     } catch (error: any) {
       console.error("Google Sign-Up error:", error);
       toast({ title: "Google Sign-Up Failed", description: error.message || "An unexpected error occurred.", variant: "destructive" });
@@ -103,13 +111,13 @@ export default function SignupPage() {
        toast({ title: "Password Too Short", description: "Password must be at least 6 characters long.", variant: "destructive" });
       return;
     }
-    
-    console.log("Signup submitted for:", emailAddress, "Mode:", selectedMode);
+
+    console.log("Signup submitted for:", emailAddress);
     // Mock Firebase Auth user creation
     const mockFirebaseUser = {
-      uid: `user_${Date.now()}`,
+      uid: `user_${Date.now()}`, // More unique mock UID
       email: emailAddress,
-      displayName: fullName || emailAddress.split('@')[0],
+      displayName: emailAddress.split('@')[0], // Use part of email as initial display name
     };
     handleSuccessfulSignup(mockFirebaseUser);
   };
@@ -117,7 +125,7 @@ export default function SignupPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-secondary/30 p-4">
       <div className="absolute top-4 right-4 rtl:left-4 rtl:right-auto flex items-center gap-2">
-        <LanguageToggle /> 
+        <LanguageToggle />
         <ModeToggle />
       </div>
       <Card className="w-full max-w-md shadow-xl">
@@ -130,10 +138,7 @@ export default function SignupPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" type="text" placeholder="Your Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-            </div>
+            {/* Full Name input removed */}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" placeholder="your@email.com" value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} required />
@@ -146,30 +151,8 @@ export default function SignupPage() {
               <Label htmlFor="confirmPassword">Confirm Password</Label>
               <Input id="confirmPassword" type="password" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
             </div>
-            
-            <div className="space-y-3">
-              <Label>Choose Your Experience Mode</Label>
-              <RadioGroup 
-                value={selectedMode}
-                onValueChange={(value: UserPreferenceMode) => setSelectedMode(value)}
-                className="flex flex-col space-y-1"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="conventional" id="mode-conventional" />
-                  <Label htmlFor="mode-conventional" className="font-normal">Conventional Mode</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="islamic" id="mode-islamic" />
-                  <Label htmlFor="mode-islamic" className="font-normal">Islamic Mode (e.g., for Wasiyyah, Faraid)</Label>
-                </div>
-              </RadioGroup>
-              {selectedMode === 'islamic' && (
-                <QuranicVerse verse={QURAN_VERSE_AMANAH} citation={QURAN_VERSE_AMANAH_CITATION} className="mt-2 text-sm" />
-              )}
-              <p className="text-xs text-muted-foreground">
-                Islamic Mode tailors features according to Islamic principles. You can change this later in settings.
-              </p>
-            </div>
+
+            {/* Experience Mode selection removed */}
 
             <Button type="submit" className="w-full" size="lg">
               <UserPlus className="mr-2 h-5 w-5" /> Sign Up
@@ -197,3 +180,4 @@ export default function SignupPage() {
     </div>
   );
 }
+
