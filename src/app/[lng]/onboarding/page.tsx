@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // Removed React.use
 import { useRouter, usePathname } from 'next/navigation';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { useTranslation } from '@/locales/client';
@@ -16,67 +16,67 @@ import { useToast } from '@/hooks/use-toast';
 import { QuranicVerse } from '@/components/QuranicVerse';
 import { countryCodes } from '@/lib/countryCodes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, User, CheckSquare, Landmark, Languages, Shield } from 'lucide-react'; 
+import { Loader2, User, CheckSquare, Landmark, Languages, Shield } from 'lucide-react';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
 
 
-// Quranic verses
-const QURAN_VERSE_AMANAH = "إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُُّوا۟ ٱلْأَمَٰنَٰتِ إِلَىٰٓ أَهْلِهَا"; // An-Nisa 4:58
+const QURAN_VERSE_AMANAH = "إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُُّوا۟ ٱلْأَمَٰنَٰتِ إِلَىٰٓ أَهْلِهَا";
 const QURAN_VERSE_AMANAH_CITATION = "سورة النساء: ٥٨";
 
-type OnboardingStep = 'language' | 'mode' | 'profile' | 'madhhab';
+type OnboardingStep = 'language' | 'mode' | 'profile' | 'madhhab'; // Removed 'vault'
 
-const NONE_SELECTED_COUNTRY_VALUE = "_NONE_"; 
+const NONE_SELECTED_COUNTRY_VALUE = "_NONE_";
 
-export default function OnboardingPage() {
+export default function OnboardingPage({ params }: { params: { lng: LocaleTypes } }) {
   const router = useRouter();
   const pathname = usePathname();
   const { profile, updateProfileField, isLoading: profileLoading } = useUserPreferences();
   const { user: firebaseUser, loading: authLoading } = useAuth();
-  
-  const currentLocale = profile?.language || (pathname.split('/')[1] as LocaleTypes) || 'en';
-  const { t, i18n } = useTranslation(currentLocale, "translation");
+
+  const defaultInitialLocale = (pathname.split('/')[1] as LocaleTypes) || 'en';
+  const [currentLocaleForUI, setCurrentLocaleForUI] = useState(profile?.language || defaultInitialLocale);
+  const { t, i18n } = useTranslation(currentLocaleForUI, "translation");
   const { toast } = useToast();
 
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>('language'); 
-  
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>('language');
+
   const [displayName, setDisplayName] = useState(profile?.displayName || '');
   const [selectedCountry, setSelectedCountry] = useState<string | undefined>(profile?.country);
   const [photoPreview, setPhotoPreview] = useState<string | null>(profile?.photoURL || null);
   const photoInputRef = useRef<HTMLInputElement>(null);
-  
-  useEffect(() => {
-    if (!authLoading && !profileLoading) {
-      const hasValidAppProfile = profile && profile.id && profile.id !== 'guestUser';
 
-      if (!firebaseUser && !hasValidAppProfile) {
-        // No Firebase session and no valid app profile, should be on login
-        if (!pathname.includes('/login')) {
-          router.replace(`/${currentLocale}/login`);
-        }
-      } else if (hasValidAppProfile && profile.onboardingCompleted) {
-        // Has a valid app profile and onboarding is done, should be on dashboard
-        if (!pathname.includes('/dashboard')) {
-          router.replace(`/${currentLocale}/dashboard`);
-        }
-      }
-      // If hasValidAppProfile and onboarding is NOT complete, they should stay on onboarding.
-      // If firebaseUser exists but no hasValidAppProfile yet (profile still loading from context), the loading screen handles it.
+  useEffect(() => {
+    if (profile?.language && i18n.language !== profile.language) {
+      i18n.changeLanguage(profile.language).then(() => setCurrentLocaleForUI(profile.language));
+    } else if (!profile?.language && i18n.language !== defaultInitialLocale) {
+        i18n.changeLanguage(defaultInitialLocale).then(() => setCurrentLocaleForUI(defaultInitialLocale));
     }
-  }, [firebaseUser, authLoading, profile, profileLoading, router, currentLocale, pathname]);
+  }, [profile?.language, i18n, defaultInitialLocale]);
+
+
+  useEffect(() => {
+    if (authLoading || profileLoading) {
+      return; // Wait for critical data
+    }
+
+    const hasValidAppProfile = profile && profile.id && profile.id !== 'guestUser';
+
+    if (!firebaseUser && !hasValidAppProfile) {
+      router.replace(`/${currentLocaleForUI}/login`);
+    } else if (hasValidAppProfile && profile.onboardingCompleted) {
+      router.replace(`/${currentLocaleForUI}/dashboard`);
+    }
+  }, [authLoading, profileLoading, firebaseUser, profile, router, currentLocaleForUI]);
 
 
   useEffect(() => {
     if (profile) {
-      setDisplayName(profile.displayName || '');
+      setDisplayName(profile.displayName || (firebaseUser?.displayName || ''));
       setSelectedCountry(profile.country || undefined);
-      setPhotoPreview(profile.photoURL || null);
-      if (i18n.language !== profile.language) {
-        i18n.changeLanguage(profile.language);
-      }
+      setPhotoPreview(profile.photoURL || firebaseUser?.photoURL || null);
     }
-  }, [profile, i18n]);
+  }, [profile, firebaseUser]);
 
 
   const handleNextStep = () => {
@@ -88,15 +88,15 @@ export default function OnboardingPage() {
         setCurrentStep('profile');
         break;
       case 'profile':
-        updateProfileField({ 
-            displayName: displayName || undefined, 
+        updateProfileField({
+            displayName: displayName || undefined,
             country: selectedCountry === NONE_SELECTED_COUNTRY_VALUE ? undefined : selectedCountry,
-            photoURL: photoPreview || undefined 
+            photoURL: photoPreview || undefined
         });
         if (profile?.mode === 'islamic') {
           setCurrentStep('madhhab');
         } else {
-          handleFinishOnboarding(); 
+          handleFinishOnboarding();
         }
         break;
       case 'madhhab':
@@ -115,8 +115,8 @@ export default function OnboardingPage() {
       case 'profile':
         setCurrentStep('mode');
         break;
-      case 'mode': 
-        setCurrentStep('language'); 
+      case 'mode':
+        setCurrentStep('language');
         break;
       default:
         break;
@@ -126,7 +126,7 @@ export default function OnboardingPage() {
   const handleFinishOnboarding = () => {
     updateProfileField({ onboardingCompleted: true });
     toast({ title: t("onboardingCompleteTitle"), description: t("onboardingCompleteDesc") });
-    router.push(`/${currentLocale}/dashboard`);
+    router.push(`/${currentLocaleForUI}/dashboard`);
   };
 
   const handleModeSelection = (mode: UserPreferenceMode) => {
@@ -135,12 +135,13 @@ export default function OnboardingPage() {
 
   const handleLanguageSelection = (language: Language) => {
     updateProfileField({ language });
+    // i18n.changeLanguage(language).then(() => setCurrentLocaleForUI(language)); // Context will handle path redirect
   };
 
   const handleMadhhabSelection = (madhhab: Madhhab) => {
     updateProfileField({ islamicPreferences: { ...(profile?.islamicPreferences || {}), madhhab } });
   };
-  
+
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
@@ -148,6 +149,7 @@ export default function OnboardingPage() {
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
         setPhotoPreview(dataUrl);
+        // Note: actual upload to storage and getting URL would happen here or on finish
       };
       reader.readAsDataURL(file);
     }
@@ -157,32 +159,32 @@ export default function OnboardingPage() {
       setSelectedCountry(value === NONE_SELECTED_COUNTRY_VALUE ? undefined : value);
   };
 
-  if (authLoading || profileLoading) { 
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
+  if (authLoading || profileLoading) {
+    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> Loading Onboarding...</div>;
   }
-  
-  // If, after loading, the profile indicates onboarding is complete, or if there's no valid profile,
-  // the useEffect at the top will handle redirection. This conditional return is a fallback.
-  if ((!authLoading && !profileLoading) && ((profile?.onboardingCompleted) || (!firebaseUser && (!profile || !profile.id || profile.id === 'guestUser')))) {
-    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+
+  // Safeguard after loading: if conditions to be on onboarding aren't met, show loader (useEffect will redirect)
+  const isAuthenticatedForOnboarding = firebaseUser || (profile && profile.id && profile.id !== 'guestUser');
+  const shouldBeOnOnboarding = isAuthenticatedForOnboarding && !profile?.onboardingCompleted;
+
+  if (!shouldBeOnOnboarding && !isLoading) { // check !isLoading from context as well
+    // This implies a redirect is about to happen or has happened.
+    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> Finalizing session...</div>;
   }
-  
+
+
   const getStepNumber = () => {
     switch(currentStep) {
         case 'language': return 1;
         case 'mode': return 2;
         case 'profile': return 3;
-        case 'madhhab': return 4; 
+        case 'madhhab': return 4;
         default: return 0;
     }
   };
-  
-  const currentStepNumber = getStepNumber();
+
   const effectiveTotalSteps = profile?.mode === 'islamic' ? 4 : 3;
+  const currentStepNumber = getStepNumber();
 
 
   const renderStepContent = () => {
@@ -191,7 +193,7 @@ export default function OnboardingPage() {
         return (
           <div className="space-y-4">
             <RadioGroup
-              value={profile?.language}
+              value={profile?.language || currentLocaleForUI}
               onValueChange={(value) => handleLanguageSelection(value as Language)}
               className="flex flex-col space-y-2"
             >
@@ -288,7 +290,7 @@ export default function OnboardingPage() {
         return null;
     }
   };
-  
+
   const getStepTitle = () => {
     switch(currentStep) {
         case 'language': return t('onboardingStepLanguageTitle');
@@ -308,7 +310,7 @@ export default function OnboardingPage() {
         default: return '';
     }
   };
-  
+
   const getStepIcon = () => {
     switch(currentStep) {
         case 'language': return <Languages className="h-6 w-6 text-primary" />;
@@ -319,10 +321,9 @@ export default function OnboardingPage() {
     }
   };
 
-  const isLastStep = 
+  const isLastStep =
     (currentStep === 'profile' && profile?.mode === 'conventional') ||
     (currentStep === 'madhhab' && profile?.mode === 'islamic');
-
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-muted p-4">
