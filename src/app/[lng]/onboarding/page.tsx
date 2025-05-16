@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { useTranslation } from '@/locales/client';
-import type { LocaleTypes, Madhhab, UserPreferenceMode, Language, UserProfile, VaultDetails } from '@/locales/settings';
+import type { LocaleTypes, Madhhab, UserPreferenceMode, Language, UserProfile } from '@/locales/settings';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,8 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import { QuranicVerse } from '@/components/QuranicVerse';
 import { countryCodes } from '@/lib/countryCodes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Loader2, User, CheckSquare, Landmark, Languages, Shield, Home } from 'lucide-react';
+// import { Textarea } from '@/components/ui/textarea'; // No longer needed for vault description here
+import { Loader2, User, CheckSquare, Landmark, Languages, Shield } from 'lucide-react'; // Removed Home icon for Vault
 import Image from 'next/image';
 
 
@@ -25,34 +25,26 @@ import Image from 'next/image';
 const QURAN_VERSE_AMANAH = "إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُُّوا۟ ٱلْأَمَٰنَٰتِ إِلَىٰٓ أَهْلِهَا"; // An-Nisa 4:58
 const QURAN_VERSE_AMANAH_CITATION = "سورة النساء: ٥٨";
 
-type OnboardingStep = 'language' | 'mode' | 'profile' | 'vault' | 'madhhab' | 'completed'; // Changed order
+type OnboardingStep = 'language' | 'mode' | 'profile' | 'madhhab' | 'completed'; // Removed 'vault'
 
-const totalSteps = 5; // Adjust if Madhhab step is conditional
-
-const NONE_SELECTED_COUNTRY_VALUE = "_NONE_"; // Special value for "None Selected"
+const NONE_SELECTED_COUNTRY_VALUE = "_NONE_"; 
 
 export default function OnboardingPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const { profile, updateProfileField, isLoading: profileLoading, addUserVault } = useUserPreferences();
+  const { profile, updateProfileField, isLoading: profileLoading } = useUserPreferences();
   
   const currentLocale = profile?.language || (pathname.split('/')[1] as LocaleTypes) || 'en';
   const { t, i18n } = useTranslation(currentLocale, "translation");
   const { toast } = useToast();
 
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>('language'); // Default to language step
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>('language'); 
   
-  // Local form state for profile step
   const [displayName, setDisplayName] = useState(profile?.displayName || '');
   const [selectedCountry, setSelectedCountry] = useState<string | undefined>(profile?.country);
   const [photoPreview, setPhotoPreview] = useState<string | null>(profile?.photoURL || null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   
-  // Local form state for vault step
-  const [vaultName, setVaultName] = useState('');
-  const [vaultDescription, setVaultDescription] = useState('');
-
-
   useEffect(() => {
     if (!profileLoading && profile?.onboardingCompleted) {
       router.replace(`/${currentLocale}/dashboard`);
@@ -60,23 +52,15 @@ export default function OnboardingPage() {
   }, [profile, profileLoading, router, currentLocale]);
 
   useEffect(() => {
-    // Sync local form state if profile loads/changes
     if (profile) {
       setDisplayName(profile.displayName || '');
       setSelectedCountry(profile.country || undefined);
       setPhotoPreview(profile.photoURL || null);
-      // If profile indicates a specific language and i18n isn't aligned, change it
       if (i18n.language !== profile.language) {
         i18n.changeLanguage(profile.language);
       }
     }
   }, [profile, i18n]);
-
-  useEffect(() => {
-    if (!profileLoading && profile && profile.onboardingCompleted) {
-      router.replace(`/${currentLocale}/dashboard`);
-    }
-  }, [profile, profileLoading, router, currentLocale]);
 
 
   const handleNextStep = () => {
@@ -88,16 +72,16 @@ export default function OnboardingPage() {
         setCurrentStep('profile');
         break;
       case 'profile':
-        // Save profile info
         updateProfileField({ 
             displayName: displayName || undefined, 
             country: selectedCountry === NONE_SELECTED_COUNTRY_VALUE ? undefined : selectedCountry,
             photoURL: photoPreview || undefined 
         });
-        setCurrentStep('vault'); // Both modes go to vault next
-        break;
-      case 'vault':
-        // This case is handled by create/skip vault buttons directly
+        if (profile?.mode === 'islamic') {
+          setCurrentStep('madhhab');
+        } else {
+          handleFinishOnboarding(); // Conventional mode finishes after profile
+        }
         break;
       case 'madhhab':
         handleFinishOnboarding();
@@ -110,9 +94,6 @@ export default function OnboardingPage() {
   const handlePreviousStep = () => {
      switch (currentStep) {
       case 'madhhab':
-        setCurrentStep('vault');
-        break;
-      case 'vault':
         setCurrentStep('profile');
         break;
       case 'profile':
@@ -138,7 +119,6 @@ export default function OnboardingPage() {
 
   const handleLanguageSelection = (language: Language) => {
     updateProfileField({ language });
-    // i18n.changeLanguage will be handled by context's updateProfileField effect
   };
 
   const handleMadhhabSelection = (madhhab: Madhhab) => {
@@ -157,30 +137,6 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleCreateVault = () => {
-    if (!vaultName) {
-        toast({ title: t("vaultNameRequiredTitle"), description: t("vaultNameRequiredDesc"), variant: "destructive"});
-        return;
-    }
-    const newVault: VaultDetails = { name: vaultName, description: vaultDescription };
-    addUserVault(newVault); 
-    toast({ title: t("vaultCreatedTitle"), description: t("vaultCreatedDesc", { vaultName }) });
-    
-    if (profile?.mode === 'islamic') {
-      setCurrentStep('madhhab');
-    } else {
-      handleFinishOnboarding();
-    }
-  };
-
-  const handleSkipVault = () => {
-     if (profile?.mode === 'islamic') {
-      setCurrentStep('madhhab');
-    } else {
-      handleFinishOnboarding();
-    }
-  };
-
   const handleCountryChange = (value: string) => {
       setSelectedCountry(value === NONE_SELECTED_COUNTRY_VALUE ? undefined : value);
   };
@@ -194,19 +150,25 @@ export default function OnboardingPage() {
     );
   }
   
+  if (profile.onboardingCompleted) {
+    // This useEffect will handle the redirection. Return a loader or null here.
+    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+  }
+  
   const getStepNumber = () => {
     switch(currentStep) {
         case 'language': return 1;
         case 'mode': return 2;
         case 'profile': return 3;
-        case 'vault': return 4;
-        case 'madhhab': return 5;
+        case 'madhhab': return 4; // Madhhab is step 4 if Islamic mode
         default: return 0;
     }
   };
   
   const currentStepNumber = getStepNumber();
-  const effectiveTotalSteps = profile?.mode === 'islamic' ? 5 : 4;
+  // If Islamic mode, total steps = 4 (Language, Mode, Profile, Madhhab)
+  // If Conventional mode, total steps = 3 (Language, Mode, Profile)
+  const effectiveTotalSteps = profile?.mode === 'islamic' ? 4 : 3;
 
 
   const renderStepContent = () => {
@@ -289,24 +251,6 @@ export default function OnboardingPage() {
             </div>
           </div>
         );
-    case 'vault':
-        return (
-            <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">{t('vaultCreationPrompt')}</p>
-                <div>
-                    <Label htmlFor="vaultName">{t('vaultNameLabel')}</Label>
-                    <Input id="vaultName" value={vaultName} onChange={(e) => setVaultName(e.target.value)} placeholder={t('vaultNamePlaceholder')} />
-                </div>
-                <div>
-                    <Label htmlFor="vaultDescription">{t('vaultDescriptionOptionalLabel')}</Label>
-                    <Textarea id="vaultDescription" value={vaultDescription} onChange={(e) => setVaultDescription(e.target.value)} placeholder={t('vaultDescriptionPlaceholder')} />
-                </div>
-                <div className="flex justify-end gap-2 mt-4">
-                    <Button variant="outline" onClick={handleSkipVault}>{t('skipForNowButton')}</Button>
-                    <Button onClick={handleCreateVault} disabled={!vaultName}>{t('createVaultButton')}</Button>
-                </div>
-            </div>
-        );
       case 'madhhab':
         if (profile.mode !== 'islamic') return null;
         return (
@@ -336,7 +280,6 @@ export default function OnboardingPage() {
         case 'language': return t('onboardingStepLanguageTitle');
         case 'mode': return t('onboardingStepModeTitle');
         case 'profile': return t('onboardingStepProfileTitle');
-        case 'vault': return t('onboardingStepVaultTitle');
         case 'madhhab': return t('onboardingStepMadhhabTitle');
         default: return '';
     }
@@ -347,7 +290,6 @@ export default function OnboardingPage() {
         case 'language': return t('onboardingStepLanguageDesc');
         case 'mode': return t('onboardingStepModeDesc');
         case 'profile': return t('onboardingStepProfileDesc');
-        case 'vault': return t('onboardingStepVaultDesc');
         case 'madhhab': return t('onboardingStepMadhhabDesc');
         default: return '';
     }
@@ -358,11 +300,14 @@ export default function OnboardingPage() {
         case 'language': return <Languages className="h-6 w-6 text-primary" />;
         case 'mode': return <Shield className="h-6 w-6 text-primary" />;
         case 'profile': return <User className="h-6 w-6 text-primary" />;
-        case 'vault': return <Home className="h-6 w-6 text-primary" />; 
         case 'madhhab': return <Landmark className="h-6 w-6 text-primary" />;
         default: return <CheckSquare className="h-6 w-6 text-primary" />;
     }
   };
+
+  const isLastStep = 
+    (currentStep === 'profile' && profile?.mode === 'conventional') ||
+    (currentStep === 'madhhab' && profile?.mode === 'islamic');
 
 
   return (
@@ -379,17 +324,14 @@ export default function OnboardingPage() {
         <CardContent>
           {renderStepContent()}
         </CardContent>
-        {/* Conditionally render footer based on current step */}
-        {currentStep !== 'vault' && (
-             <CardFooter className="flex justify-between pt-4 border-t">
-                <Button variant="outline" onClick={handlePreviousStep} disabled={currentStep === 'language'}>
-                {t('previousButton')}
-                </Button>
-                <Button onClick={handleNextStep}>
-                { (currentStep === 'madhhab') || (currentStep === 'profile' && profile?.mode === 'conventional' && effectiveTotalSteps === 4) ? t('finishButton') : t('nextButton')}
-                </Button>
-            </CardFooter>
-        )}
+        <CardFooter className="flex justify-between pt-4 border-t">
+            <Button variant="outline" onClick={handlePreviousStep} disabled={currentStep === 'language'}>
+            {t('previousButton')}
+            </Button>
+            <Button onClick={handleNextStep}>
+            {isLastStep ? t('finishButton') : t('nextButton')}
+            </Button>
+        </CardFooter>
       </Card>
     </div>
   );

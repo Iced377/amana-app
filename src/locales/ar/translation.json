@@ -495,13 +495,7 @@
   "profilePhotoOptionalLabel": "صورة الملف الشخصي (اختياري)",
   "countryOptionalLabel": "الدولة (اختياري)",
   "selectCountryPlaceholder": "اختر دولتك",
-  "vaultCreationPrompt": "لنقم بإنشاء أول خزنة آمنة لك لتخزين عناصر إرثك.",
-  "vaultNameLabel": "اسم الخزنة",
-  "vaultNamePlaceholder": "مثال: إرثي الشخصي، مستندات العائلة",
-  "vaultDescriptionOptionalLabel": "الوصف (اختياري)",
-  "vaultDescriptionPlaceholder": "وصف موجز لغرض هذه الخزنة",
   "skipForNowButton": "تخطي الآن",
-  "createVaultButton": "إنشاء الخزنة",
   "previousButton": "السابق",
   "nextButton": "التالي",
   "finishButton": "إنهاء الإعداد",
@@ -511,14 +505,8 @@
   "onboardingStepLanguageDesc": "اختر لغتك المفضلة لتطبيق أمانة.",
   "onboardingStepProfileTitle": "إعداد ملفك الشخصي",
   "onboardingStepProfileDesc": "ساعدنا في تخصيص تجربتك.",
-  "onboardingStepVaultTitle": "أنشئ خزنتك الأولى",
-  "onboardingStepVaultDesc": "الخزنة هي مساحة آمنة لتنظيم ملفاتك ومعلوماتك المهمة.",
   "onboardingStepMadhhabTitle": "اختر مذهبك",
   "onboardingStepMadhhabDesc": "اختر مذهبك الفقهي لحسابات الميراث (إذا تم اختيار الوضع الإسلامي).",
-  "madhhabChoiceNoteOnboarding": "يساعد هذا الاختيار في تخصيص ميزات الميراث الإسلامي. يمكنك تغييره لاحقًا في الإعدادات.",
-  "vaultNameRequiredTitle": "اسم الخزنة مطلوب",
-  "vaultNameRequiredDesc": "يرجى إدخال اسم لخزنتك للمتابعة.",
-  "vaultCreatedTitle": "تم إنشاء الخزنة",
-  "vaultCreatedDesc": "تم إنشاء \"{vaultName}\" بنجاح."
+  "madhhabChoiceNoteOnboarding": "يساعد هذا الاختيار في تخصيص ميزات الميراث الإسلامي. يمكنك تغييره لاحقًا في الإعدادات."
 }
 
